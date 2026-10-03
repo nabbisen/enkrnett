@@ -22,11 +22,11 @@ randomness, and a `ubus` call (program B) is **725 KB**, or **659 KB** when `ubu
 through a small in-house socket client instead of spawning the `ubus` command; the same function
 on axum + tokio (program C) is **1,053 KB**. Compressed as OpenWrt's squashfs compresses
 (xz, preset 9e, 256 KiB blocks), these are about **128 KB, 234 KB (221 KB), and 341 KB**. Program B
-therefore lands under the provisional budget of 350 KB in squashfs, program C does not. Idle
-memory could so far be measured only for the x86-64 glibc builds (RSS 2.4–2.9 MB, proportional
-share 0.3–0.8 MB); MIPS run-time numbers need `qemu-user` or `qemu-system-mips`, which are not
-installed on the workstation. A statically linked build did not link with this toolchain
-combination (missing self-contained start files and `libunwind`).
+therefore lands under the provisional budget of 350 KB in squashfs, program C does not. Static
+linking adds about 65 KB raw (B: 790 KB, 266 KB compressed) and needs two workarounds in the link
+step. Idle memory could so far be measured only for the x86-64 glibc builds (RSS 2.4–2.9 MB,
+proportional share 0.3–0.8 MB); MIPS run-time numbers need `qemu-user` or `qemu-system-mips`,
+which are not installed on the workstation.
 
 ## Environment
 
@@ -67,12 +67,15 @@ the compressor and settings OpenWrt uses for squashfs; it approximates the cost 
 | x86-64 glibc, for comparison | A floor | 297,776 | 129,706 |
 | | B lean | 540,352 | 229,317 |
 | | C asyncd | 838,608 | 341,599 |
-| MIPS, static musl | all | not produced | — |
+| MIPS, static musl | A floor | 461,836 | 154,401 |
+| | B lean | 789,756 | 265,500 |
+| | C asyncd | 1,183,116 | 379,358 |
 
-Static linking failed twice: `rustc` with `+crt-static` on this target expects the self-contained
-`crt1.o`, `crti.o`, `crtbegin.o` and `libunwind` that the Rust distribution would ship with a Tier 2
-target and that `build-std` does not produce; with `-C link-self-contained=no` and
-`-Zbuild-std-features=llvm-libunwind` the link still failed (log in `out/mips-static.log`).
+Static linking needed two workarounds: `-C link-self-contained=no`, because `rustc` otherwise
+expects the self-contained `crt1.o`, `crti.o`, `crtbegin.o` that only a distributed Tier 2 target
+ships; and a `libunwind.a` that points at the toolchain's `libgcc_eh.a`, because `std` links
+`-lunwind` and `build-std` does not build one. With both, the three programs link and are
+plain (non-PIE) static executables.
 
 ### Step 4–5: memory
 
@@ -127,7 +130,7 @@ Measured on the x86-64 host (3 verifications each). MIPS figures pending the emu
 |---|---|
 | Run target: x86-64 host instead of `malta/le` or a device | No MIPS emulator installed; no device at hand. To complete: `qemu-user` (`qemu-mipsel` with the SDK's musl loader) or `qemu-system-mips` with the `malta/le` 25.12.5 image. |
 | squashfs size approximated with xz | `squashfs-tools` not installed. |
-| Static variant not measured | Link failure, see above. OpenWrt packages are dynamic anyway. |
+| Static variant needed link workarounds | See the size table. OpenWrt packages are dynamic; the static figures are for reference. |
 | Toolchain: nightly `build-std` instead of OpenWrt's packages-feed Rust | The feed builds rustc and LLVM from source (hours, tens of GB). Both routes produce dynamic musl binaries against the same libc; sizes should be close, not identical. |
 
 ## What contradicts an RFC
