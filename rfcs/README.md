@@ -19,12 +19,7 @@ index change in the same commit. A folder is created when its first file arrives
 
 ## Proposed
 
-| ID | Title | Priority | Handoff |
-|---|---|---|---|
-| 009 | [Vocabulary amendment: Erase, Restart, and operator-facing words](./proposed/009-vocabulary-amendment-operator-words.md) | High | — |
-| 010 | [Footprint budgets](./proposed/010-footprint-budgets.md) | High | — |
-| 011 | [Configuration model and transactions](./proposed/011-configuration-model-and-transactions.md) | High | — |
-| 012 | [Guest network modes and protection status](./proposed/012-owe-modes-and-status.md) | High | — |
+None.
 
 ## Accepted
 
@@ -38,6 +33,10 @@ index change in the same commit. A folder is created when its first file arrives
 | 006 | [Feasibility measurements](./accepted/006-feasibility-measurements.md) | 2026-09-29 | [Handoff](./handoffs/006-feasibility-measurements/README.md) |
 | 007 | [Threat model](./accepted/007-threat-model.md) | 2026-09-30 | — |
 | 008 | [Where OpenBSD fits](./accepted/008-openbsd-position.md) | 2026-09-30 | — |
+| 009 | [Vocabulary amendment: Erase, Restart, and operator-facing words](./accepted/009-vocabulary-amendment-operator-words.md) | 2026-10-29 | — |
+| 010 | [Footprint budgets](./accepted/010-footprint-budgets.md) | 2026-10-29 | — |
+| 011 | [Configuration model and transactions](./accepted/011-configuration-model-and-transactions.md) | 2026-10-29 | — |
+| 012 | [Guest network modes and protection status](./accepted/012-owe-modes-and-status.md) | 2026-10-29 | — |
 
 ## Implemented
 

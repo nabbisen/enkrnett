@@ -36,7 +36,7 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 10a | M-3 without radio (image size, overlay, boot, idle memory) on the `constrained` router | Architect | As soon as the router arrives |
 | 10b | Measurements M-4, M-8, M-7 and the rest of M-3 | Holder of the hardware; owner | Blocked by the legal answer |
 | 11 | Round 2 decisions: D-08, D-10, D-12 are decided by RFC 010–012 on acceptance; D-11, D-13, D-14, D-15 are put to the owner in `.git-exclude/reviewed/startup/10-round2-decisions.md` | Owner | **Waiting** |
-| 12 | RFC 009–012 accepted; API, UI, and build RFCs proposed and accepted | Architect; owner | 009–012 **waiting**; the rest blocked by 6 and 11 |
+| 12 | RFC 009–012 accepted; API, UI, and build RFCs proposed and accepted | Architect; owner | 009–012 done; the rest blocked by 6 and 11 |
 | 13 | Consolidated specification in `docs/src/` | Architect | Blocked by 12 |
 | 14 | Repository layout; handoffs for M1 | Architect | Blocked by 12 |
 
@@ -51,10 +51,10 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 5 | 005 Devices, OpenWrt baseline, and installation | Accepted | M1, M3 |
 | 6 | 006 Feasibility measurements | Accepted | Round 2 |
 | 7 | 007 Threat model | Accepted | M1 |
-| 8 | 009 Vocabulary amendment | Proposed | Everything |
-| 9 | 010 Footprint budgets | Proposed | M1 |
-| 10 | 011 Configuration model and transactions | Proposed | M2 |
-| 11 | 012 Guest network modes and protection status | Proposed | M2 |
+| 8 | 009 Vocabulary amendment | Accepted | Everything |
+| 9 | 010 Footprint budgets | Accepted | M1 |
+| 10 | 011 Configuration model and transactions | Accepted | M2 |
+| 11 | 012 Guest network modes and protection status | Accepted | M2 |
 | 12 | Management API | Planned | M1 |
 | 13 | Operator UI | Planned (after M-1) | M1 |
 | 14 | Build, release, update, and upgrade | Planned (after Round 2) | M3 |
