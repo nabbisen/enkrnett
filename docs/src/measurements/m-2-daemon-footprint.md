@@ -7,7 +7,7 @@
 | **Handoff** | `rfcs/handoffs/006-feasibility-measurements/README.md` |
 | **Carried out by** | Architect (acting for the development team, by the owner's instruction) |
 | **Date** | 2026-10-04 |
-| **State** | Ready for review (sizes complete; run-time numbers on MIPS pending an emulator) |
+| **State** | Ready for review |
 
 ## Question
 
@@ -24,9 +24,11 @@ on axum + tokio (program C) is **1,053 KB**. Compressed as OpenWrt's squashfs co
 (xz, preset 9e, 256 KiB blocks), these are about **128 KB, 234 KB (221 KB), and 341 KB**. Program B
 therefore lands under the provisional budget of 350 KB in squashfs, program C does not. Static
 linking adds about 65 KB raw (B: 790 KB, 266 KB compressed) and needs two workarounds in the link
-step. Idle memory could so far be measured only for the x86-64 glibc builds (RSS 2.4–2.9 MB,
-proportional share 0.3–0.8 MB); MIPS run-time numbers need `qemu-user` or `qemu-system-mips`,
-which are not installed on the workstation.
+step. On an emulated MIPS 24Kc running OpenWrt 25.12.5 (`malta/le`, 128 MB), the dynamic lean
+daemon occupies **1.3–1.4 MB** resident (idle and after 300 requests plus password hashing),
+the static one **0.7–0.8 MB**, the async framework **1.8 MB** dynamic; musl returns the argon2
+working memory after each hash. Password checking with argon2id (8 MiB, t = 3) took 182 ms per
+verify under emulation, which is not representative of real hardware.
 
 ## Environment
 
@@ -56,20 +58,23 @@ Source: `.git-exclude/tmp/m/m2/ws/` (outside the repository, as the handoff requ
 `raw` = stripped executable. `xz` = `xz --format=raw --lzma2=preset=9e,lc=0,lp=2,pb=2,dict=256KiB`,
 the compressor and settings OpenWrt uses for squashfs; it approximates the cost inside the image
 (squashfs compresses in independent 256 KiB blocks, so the true value is slightly larger).
-`mksquashfs` is not installed on the workstation; the exact figure can be added later.
+The squashfs column is the exact figure.
 
-| Variant | Program | raw bytes | xz bytes |
-|---|---|---:|---:|
-| MIPS, dynamic musl (as OpenWrt packages) | A floor | 397,108 | 128,223 |
-| | B lean | 724,988 | 234,184 |
-| | B lean, in-house ubus client | 659,320 | 220,681 |
-| | C asyncd | 1,052,808 | 340,577 |
-| x86-64 glibc, for comparison | A floor | 297,776 | 129,706 |
-| | B lean | 540,352 | 229,317 |
-| | C asyncd | 838,608 | 341,599 |
-| MIPS, static musl | A floor | 461,836 | 154,401 |
-| | B lean | 789,756 | 265,500 |
-| | C asyncd | 1,183,116 | 379,358 |
+`squashfs` = size of a squashfs image (xz, 256 KiB blocks, stock `mksquashfs` 4.x) that holds only
+that file; it includes about 1 KiB of filesystem metadata.
+
+| Variant | Program | raw bytes | xz bytes | squashfs bytes |
+|---|---|---:|---:|---:|
+| MIPS, dynamic musl (as OpenWrt packages) | A floor | 397,108 | 128,223 | 135,168 |
+| | B lean | 724,988 | 234,184 | 245,760 |
+| | B lean, in-house ubus client | 659,320 | 220,681 | 229,376 |
+| | C asyncd | 1,052,808 | 340,577 | 360,448 |
+| MIPS, static musl | A floor | 461,836 | 154,401 | 159,744 |
+| | B lean | 789,756 | 265,500 | 278,528 |
+| | C asyncd | 1,183,116 | 379,358 | 401,408 |
+| x86-64 glibc, for comparison | A floor | 297,776 | 129,706 | 131,072 |
+| | B lean | 540,352 | 229,317 | 233,472 |
+| | C asyncd | 838,608 | 341,599 | 348,160 |
 
 Static linking needed two workarounds: `-C link-self-contained=no`, because `rustc` otherwise
 expects the self-contained `crt1.o`, `crti.o`, `crtbegin.o` that only a distributed Tier 2 target
@@ -77,34 +82,46 @@ ships; and a `libunwind.a` that points at the toolchain's `libgcc_eh.a`, because
 `-lunwind` and `build-std` does not build one. With both, the three programs link and are
 plain (non-PIE) static executables.
 
-### Step 4–5: memory
+### Step 4–5: memory on emulated MIPS
 
-MIPS run-time measurements are **pending**: the workstation has neither `qemu-user` (`qemu-mipsel`)
-nor `qemu-system-mips`, and the measurement VM is x86-64. The host builds were measured instead,
-as an indication only:
+Run target: OpenWrt 25.12.5 `malta/le` (`openwrt-25.12.5-malta-le-vmlinux-initramfs.elf`,
+sha256 verified) under `qemu-system-mipsel -M malta -cpu 24Kc -m 128`, kernel 6.12.94, musl
+loader `/lib/ld-musl-mipsel-sf.so.1`. The kernel has no `smaps_rollup`, so only RSS is available.
+Requests were sent from the host through an SSH tunnel (`curl`), because OpenWrt's `wget` cannot
+POST and `uclient-fetch`'s POST did not complete against this toy server.
 
-| Program (x86-64 glibc, dynamic) | Idle, 2 s | Idle, 62 s | After 1,000 requests + 20 logins |
-|---|---|---|---|
-| A floor | RSS 2,372 KiB, PSS 333 KiB | same | — |
-| B lean | RSS 2,432 KiB, PSS 397 KiB | same | RSS 10,860 KiB, PSS 8,825 KiB |
-| C asyncd | RSS 2,924 KiB, PSS 838 KiB | same | RSS 11,248 KiB, PSS 9,162 KiB |
+| Program | Idle, 3 s | Idle, 33 s | After 300 `GET` | After `setpw`, 6 logins (argon2id 8 MiB), `PUT` |
+|---|---:|---:|---:|---:|
+| A floor, dynamic | 1,124 KiB | 1,124 KiB | — | — |
+| A floor, static | 448 KiB | 448 KiB | — | — |
+| B lean, dynamic | 1,312–1,364 KiB | same | 1,432 KiB | 1,444 KiB |
+| B lean, in-house ubus, dynamic | 1,380 KiB | same | 1,452 KiB | — |
+| B lean, static | 660–692 KiB | same | 760 KiB | 768 KiB |
+| C asyncd, dynamic | 1,844 KiB | same | 1,884 KiB | — |
+| C asyncd, static | 1,128 KiB | same | 1,168 KiB | — |
 
-The growth after load is the argon2 working memory (8 MiB) that the allocator keeps; it is
-expected and bounded by the hash parameters.
+Idle values vary by a few tens of KiB between runs. The dynamic binaries' extra 0.6–0.7 MB is the
+shared musl loader and libc pages, which the system shares with every other process; the static
+figures show the daemon's own cost. musl's allocator returns the 8 MiB argon2 working memory after
+each hash, so the resident size does not grow with logins (the x86-64 glibc build kept it:
+RSS 10.9 MB after the same load).
 
 ### Step 6: password check time
 
-Measured on the x86-64 host (3 verifications each). MIPS figures pending the emulator; a
-580–880 MHz MIPS core without an FPU is expected to be one to two orders of magnitude slower.
+3 verifications each. The MIPS column is QEMU's software emulation of a 24Kc on a fast x86-64
+host; it is **not** the speed of an MT7628 or MT7621 and can only be settled on a device (M-3).
 
-| Function | Per verify, x86-64 |
-|---|---:|
-| argon2id m = 4 MiB, t = 4 | 5 ms |
-| argon2id m = 8 MiB, t = 3 | 8 ms |
-| argon2id m = 19 MiB, t = 2 | 12 ms |
-| pbkdf2-sha256, 100,000 iterations | 22 ms |
-| pbkdf2-sha256, 310,000 iterations | 69 ms |
-| pbkdf2-sha256, 600,000 iterations | 134 ms |
+| Function | Per verify, x86-64 host | Per verify, emulated MIPS 24Kc |
+|---|---:|---:|
+| argon2id m = 4 MiB, t = 4 | 5 ms | 118 ms |
+| argon2id m = 8 MiB, t = 3 | 8 ms | 182 ms |
+| argon2id m = 19 MiB, t = 2 | 12 ms | 299 ms |
+| pbkdf2-sha256, 100,000 iterations | 22 ms | 532 ms |
+| pbkdf2-sha256, 310,000 iterations | 69 ms | 1,874 ms |
+| pbkdf2-sha256, 600,000 iterations | 134 ms | 3,280 ms |
+
+argon2id with 8 MiB is 3× cheaper than pbkdf2 at 100,000 iterations on this core and resists
+GPU guessing better; it is the candidate for RFC 004 ENK-OWN-011, subject to the device figure.
 
 ### Step 7: two ways to reach ubus
 
@@ -118,31 +135,36 @@ Measured on the x86-64 host (3 verifications each). MIPS figures pending the emu
 
 | Quantity | Value | Unit | Provisional budget |
 |---|---:|---|---:|
-| Program B inside squashfs (xz estimate) | 234 (221 with in-house ubus) | KB | ≤ 350 |
-| Program C inside squashfs (xz estimate) | 341 | KB | ≤ 350 |
-| Program A inside squashfs (xz estimate) | 128 | KB | — |
-| Program B idle memory, x86-64 glibc | RSS 2.4 / PSS 0.4 | MB | ≤ 3 (on MIPS) |
-| Password check, argon2id 8 MiB t 3, x86-64 | 8 | ms | ≤ 500 (on MIPS) |
+| Program B inside squashfs | 240 (224 with in-house ubus) | KiB | ≤ 350 |
+| Program C inside squashfs | 352 | KiB | ≤ 350 |
+| Program A inside squashfs | 132 | KiB | — |
+| Program B resident memory, MIPS, dynamic, idle / loaded | 1.3 / 1.4 | MB | ≤ 3 |
+| Program B resident memory, MIPS, static, idle / loaded | 0.7 / 0.8 | MB | ≤ 3 |
+| Password check, argon2id 8 MiB t 3, emulated MIPS | 182 | ms | ≤ 500 (device figure pending) |
 
 ## Deviations from the procedure
 
 | Deviation | Why |
 |---|---|
-| Run target: x86-64 host instead of `malta/le` or a device | No MIPS emulator installed; no device at hand. To complete: `qemu-user` (`qemu-mipsel` with the SDK's musl loader) or `qemu-system-mips` with the `malta/le` 25.12.5 image. |
-| squashfs size approximated with xz | `squashfs-tools` not installed. |
+| Run target: emulated `malta/le` instead of a device | No device at hand. Memory figures transfer; timing does not. |
+| Proportional set size not measured | The `malta` kernel has no `smaps_rollup`. |
+| Load generated from the host through an SSH tunnel | OpenWrt's `wget` cannot POST; `uclient-fetch --post-data` received no answer from this toy server (not investigated; the production daemon will be tested against real clients). |
 | Static variant needed link workarounds | See the size table. OpenWrt packages are dynamic; the static figures are for reference. |
 | Toolchain: nightly `build-std` instead of OpenWrt's packages-feed Rust | The feed builds rustc and LLVM from source (hours, tens of GB). Both routes produce dynamic musl binaries against the same libc; sizes should be close, not identical. |
 
 ## What contradicts an RFC
 
 None. The numbers fall on both sides of the provisional budget (D-10) as the RFC anticipated:
-a blocking daemon fits, an asynchronous web framework does not.
+a blocking daemon fits with room to spare (240 KiB of 350; 1.4 MB of 3 MB), an asynchronous web
+framework does not (352 KiB).
 
 ## Observations beyond the question
 
 1. `build-std` with the SDK toolchain works out of the box for dynamic binaries: `rustup target add` is not needed, no patches, a one-line `.cargo` linker setting plus `STAGING_DIR`. The whole workspace (three programs, std included) builds in about 2 minutes on this workstation.
 2. The dynamic MIPS binaries are PIE and expect `/lib/ld-musl-mipsel-sf.so.1`, which the OpenWrt image provides.
-3. `std::process::Command` is expensive on this target (≈ 66 KB compressed-raw difference). A daemon that never spawns processes saves that.
+3. `std::process::Command` is expensive on this target (≈ 66 KB raw, 16 KiB in squashfs). A daemon that never spawns processes saves that.
+6. On musl the resident size stays flat under password hashing; on glibc it grows by the hash's working memory. Memory budgets must be measured on the target libc.
+7. Static linking saves about 0.65 MB of resident memory per process because the loader and libc are not mapped, but the pages of the shared libc are counted once for the whole system; on a device that already runs several musl programs, the dynamic figure overstates the daemon's real cost.
 4. The x86-64 and MIPS compressed sizes are nearly equal although the MIPS raw sizes are 30 % larger: MIPS code compresses better.
 5. The dependency list of program B includes `proc-macro2`, `quote`, `syn` only at build time (serde derive); they do not reach the binary.
 
@@ -153,4 +175,5 @@ cd .git-exclude/tmp/m/m2
 ./build.sh          # builds every variant; logs in out/<variant>.log
 ./build.sh sizes    # size table (adds the exact squashfs figure when mksquashfs is installed)
 ./rss.sh            # host memory and timing
+cd ../malta && ./mvm.sh start && ./mssh 'sh /tmp/m2mem.sh' && ./m2load.sh   # emulated MIPS (bin.img carries the binaries)
 ```
