@@ -2,7 +2,7 @@
 
 **Status.** Proposed
 **Tracks.** Decision D-12 (revised by the self-review, amendment A-3), amendment A-6, measurement
-M-5, RFC 005 open question 3 (ENK-REL-006 in the gap analysis).
+M-5, RFC 005 open question 3 (the gap analysis proposed it as "ENK-REL-006"; that identifier is not used).
 **Touches.** The daemon (configuration owner, transaction engine, start-up); firmware profiles
 (ubusd ACL, file ownership); the management API (apply, confirm); the management UI.
 
@@ -158,7 +158,7 @@ Never: "apply", "commit", "rollback", "transaction" (RFC 009 table C).
 | Affected | Change |
 |---|---|
 | D-12 | Decided: Enkrnett owns the transaction; `rpcd` not used. |
-| RFC 005 open question 3 / ENK-REL-006 | Closed by ENK-CFG-006 to 010. |
+| RFC 005 open question 3 (the gap analysis' proposed "ENK-REL-006") | Closed by ENK-CFG-006 to 010. |
 | RFC 006 handoff | Gains M-5b. |
 | Draft ED §10.3 states `DESIRED, STAGED, APPLYING, VERIFYING, ROLLED_BACK, SYNCHRONIZED` | Replaced by §4 and §8. |
 | Draft API routes `PUT /config` and `POST /config/apply` | One operation: save the desired document; the API RFC names it. |
