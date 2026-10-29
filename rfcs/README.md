@@ -19,7 +19,10 @@ index change in the same commit. A folder is created when its first file arrives
 
 ## Proposed
 
-None.
+| ID | Title | Priority | Handoff |
+|---|---|---|---|
+| 013 | [Build, release, update, and upgrade](./proposed/013-build-release-update.md) | High | — |
+| 014 | [Platform findings that Enkrnett must handle itself](./proposed/014-platform-findings-carried.md) | High | — |
 
 ## Accepted
 
@@ -54,6 +57,5 @@ Not yet written. A number is assigned when the file is created.
 
 | Subject | Depends on |
 |---|---|
-| Build, release, update, and upgrade | Round 2 decisions D-11, D-13, D-14 |
-| Management API | RFC 011, 012 |
+| Management API | RFC 011, 012, 013 |
 | Operator UI | RFC 009, 011, 012; measurements M-1, M-7 |
