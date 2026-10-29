@@ -19,7 +19,12 @@ index change in the same commit. A folder is created when its first file arrives
 
 ## Proposed
 
-None.
+| ID | Title | Priority | Handoff |
+|---|---|---|---|
+| 009 | [Vocabulary amendment: Erase, Restart, and operator-facing words](./proposed/009-vocabulary-amendment-operator-words.md) | High | — |
+| 010 | [Footprint budgets](./proposed/010-footprint-budgets.md) | High | — |
+| 011 | [Configuration model and transactions](./proposed/011-configuration-model-and-transactions.md) | High | — |
+| 012 | [Guest network modes and protection status](./proposed/012-owe-modes-and-status.md) | High | — |
 
 ## Accepted
 
@@ -50,9 +55,6 @@ Not yet written. A number is assigned when the file is created.
 
 | Subject | Depends on |
 |---|---|
-| Configuration model and transactions | Measurement M-5 |
-| OWE behavior and security status | Measurement M-4 |
-| Footprint budgets | Measurements M-2, M-3 |
-| Build, release, update, and upgrade | RFC 005; measurement M-3 |
-| Management API | The RFCs above |
-| Operator UI | The RFCs above; measurements M-1, M-7 |
+| Build, release, update, and upgrade | Round 2 decisions D-11, D-13, D-14 |
+| Management API | RFC 011, 012 |
+| Operator UI | RFC 009, 011, 012; measurements M-1, M-7 |

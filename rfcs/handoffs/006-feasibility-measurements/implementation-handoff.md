@@ -102,6 +102,33 @@ The virtual machine of M-6, with a running access point and one connected statio
 
 ---
 
+## M-5b — Writing owned configuration as a non-root user (added 2026-10-29, RFC 011 ENK-CFG-021)
+
+**Question.** Can a non-root user with a private delta directory and ownership of the files
+`/etc/config/wireless`, `network`, `firewall`, `dhcp` commit changes through `libuci` and
+`uci -t <dir> -P <dir>`, while being unable to replace any other file in `/etc/config`?
+
+### Setup
+
+The M-6 virtual machine, user `enk` from M-5.
+
+### Procedure
+
+| Step | Action |
+|---|---|
+| 1 | `chown enk /etc/config/wireless /etc/config/network /etc/config/firewall /etc/config/dhcp`; `chmod 1775 /etc/config`; `chgrp enk /etc/config`; `mkdir -m 700 /var/run/enk/uci && chown enk /var/run/enk/uci`. Record the resulting permissions. |
+| 2 | As `enk`: `uci -t /var/run/enk/uci -P /var/run/enk/uci set wireless.default_radio0.ssid=m5b; uci -t … -P … commit wireless`. Record the result and the file's owner afterwards. |
+| 3 | As `enk`: try to replace `/etc/config/system` by renaming a file of your own over it, and by `uci … set system.@system[0].hostname=x; commit system`. Both must fail. |
+| 4 | As `enk`: `ubus call network reload`; confirm the new name is on the air. |
+| 5 | Restart the VM; confirm the files keep their owner and the directory its mode. |
+
+### Record
+
+Permissions before and after; result of each step; any platform script that rewrites these files
+or their ownership at boot (`/etc/init.d/*`, `uci-defaults`).
+
+---
+
 ## M-2 — Daemon footprint on `mipsel_24kc`
 
 **Question.** How large is a daemon of Enkrnett's kind, and how much memory does it use?
@@ -352,6 +379,9 @@ alone?
 | 3 | Note whether a phone alone was enough, or a computer was needed. |
 | 4 | The participant follows the guide's recovery section on a device prepared for it. |
 | 5 | Ask the participant what was unclear. |
+| 6 | (added 2026-10-29, self-review A-5) Open the management UI on the participant's phone and ask, without prompting, what the browser's "Not secure" label makes them think. Record the words used. |
+| 7 | (added 2026-10-29) At the end of setup, ask the participant to explain, unprompted, what the *management key* and the *owner password* are for. Record whether both are told apart. |
+| 8 | (added 2026-10-29) Time the network switch between the setup network and the management network: from the "connect to the new Wi-Fi" screen until the owner is logged in. |
 
 ### Record
 
