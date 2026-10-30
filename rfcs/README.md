@@ -19,7 +19,9 @@ index change in the same commit. A folder is created when its first file arrives
 
 ## Proposed
 
-None.
+| ID | Title | Priority | Handoff |
+|---|---|---|---|
+| 016 | [Amendments from the review of RFC 001 to 015](./proposed/016-amendments-review-001-015.md) | High | — |
 
 ## Accepted
 
@@ -57,4 +59,4 @@ Not yet written. A number is assigned when the file is created.
 
 | Subject | Depends on | State |
 |---|---|---|
-| Operator UI | RFC 009, 011, 012, 015; measurements M-4a, M-7 | Next |
+| Operator UI | RFC 009, 011, 012, 015, 016; measurements M-4a, M-7 | Next, after 016 |
