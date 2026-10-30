@@ -19,7 +19,9 @@ index change in the same commit. A folder is created when its first file arrives
 
 ## Proposed
 
-None.
+| ID | Title | Priority | Handoff |
+|---|---|---|---|
+| 015 | [Management API](./proposed/015-management-api.md) | High | — |
 
 ## Accepted
 
@@ -56,5 +58,4 @@ Not yet written. A number is assigned when the file is created.
 
 | Subject | Depends on | State |
 |---|---|---|
-| Management API | RFC 011, 012, 013 | Being written as RFC 015 |
-| Operator UI | RFC 009, 011, 012; measurements M-1, M-7 | After RFC 015 |
+| Operator UI | RFC 009, 011, 012, 015; measurements M-4a, M-7 | Next |

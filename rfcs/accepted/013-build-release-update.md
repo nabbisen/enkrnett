@@ -1,6 +1,9 @@
 # RFC 013 — Build, release, update, and upgrade
 
 **Status.** Accepted (2026-10-31)
+**Erratum 2026-10-31.** The identifiers `ENK-REL-001` to `007` were renamed `ENK-RLS-001` to `007`
+before any other document used them: `ENK-REL` is the reliability area of the draft requirement set,
+and RFC 001 §5.4 forbids reuse. Nothing else changed.
 **Tracks.** Decisions D-11, D-13, D-14 as reviewed in `11-round2-review.md` and accepted by the
 owner on 2026-10-29; RFC 005 ENK-BASE-003 to 007; RFC 008 (infrastructure platform).
 **Touches.** Repository layout; CI; the release checklist; the daemon (update check, update
@@ -38,18 +41,18 @@ Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
 
 | ID | Requirement | Verification |
 |---|---|---|
-| ENK-REL-001 | Releases shall use semantic versioning; tags carry no prefix. Each release names exactly one OpenWrt baseline (ENK-BASE-001). | Inspection |
-| ENK-REL-002 | Image files shall be named `enkrnett-<version>-<baseline>-<device>-<kind>.bin`, where `<kind>` is `sysupgrade` or the vendor-install kind of the device profile. | Inspection |
-| ENK-REL-003 | The status screen shall show the installed Enkrnett version and the baseline in one line, in words the operator can read back to a helper: "Enkrnett 1.2 on OpenWrt 25.12". | Inspection |
+| ENK-RLS-001 | Releases shall use semantic versioning; tags carry no prefix. Each release names exactly one OpenWrt baseline (ENK-BASE-001). | Inspection |
+| ENK-RLS-002 | Image files shall be named `enkrnett-<version>-<baseline>-<device>-<kind>.bin`, where `<kind>` is `sysupgrade` or the vendor-install kind of the device profile. | Inspection |
+| ENK-RLS-003 | The status screen shall show the installed Enkrnett version and the baseline in one line, in words the operator can read back to a helper: "Enkrnett 1.2 on OpenWrt 25.12". | Inspection |
 
 ### 2. Signing and the release index
 
 | ID | Requirement | Verification |
 |---|---|---|
-| ENK-REL-004 | Every published image shall be accompanied by a detached signature made with the project's release key; the release index shall be signed with the same key. | Release checklist |
-| ENK-REL-005 | The image shall embed the public keys that may sign its successor: the current key and one designated next key. A release signed by the next key makes it current and designates a further next key. | Test: rotate once in CI |
-| ENK-REL-006 | The release index shall be one small signed document listing, per device profile and baseline, the latest release: version, file name, size, hash, minimum free memory, release notes URL, and whether it changes the baseline. | Inspection |
-| ENK-REL-007 | The signing key shall never be on a CI runner. Signing is a manual step on the project's signing host (RFC 008). | Release checklist |
+| ENK-RLS-004 | Every published image shall be accompanied by a detached signature made with the project's release key; the release index shall be signed with the same key. | Release checklist |
+| ENK-RLS-005 | The image shall embed the public keys that may sign its successor: the current key and one designated next key. A release signed by the next key makes it current and designates a further next key. | Test: rotate once in CI |
+| ENK-RLS-006 | The release index shall be one small signed document listing, per device profile and baseline, the latest release: version, file name, size, hash, minimum free memory, release notes URL, and whether it changes the baseline. | Inspection |
+| ENK-RLS-007 | The signing key shall never be on a CI runner. Signing is a manual step on the project's signing host (RFC 008). | Release checklist |
 
 Tool: OpenBSD `signify` (Ed25519, one-line format, portable implementations exist for Linux and in
 Rust). Its format is small enough to verify on an 8 MB device.
