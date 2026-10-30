@@ -1,7 +1,7 @@
 # Roadmap
 
 **State.** Draft, waiting for the owner's authorization.
-**Updated.** 2026-10-29 (third update)
+**Updated.** 2026-10-31
 
 Order of work, not a calendar. Dates are set when milestone M0 ends, because its measurements
 decide how much work the later milestones contain.
@@ -37,9 +37,11 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 10c | M-4a: OWE with the Pixel and the iPad against the workstation's Wi-Fi card | Architect prepared the kit; owner runs it | **Owner, when convenient** (`.git-exclude/tmp/m/m4a/README.md`) |
 | 10b | Measurements M-4, M-8, M-7 and the rest of M-3 | Holder of the hardware; owner | Blocked by the legal answer |
 | 11 | Round 2 decisions | Owner | Done (D-08/D-10/D-12 by RFC 010–012; D-11/D-13/D-14/D-15 accepted 2026-10-29) |
-| 12 | RFC 013 (build, release, update) and 014 (platform findings) proposed; API and UI RFCs next | Architect; owner | 013, 014 **waiting**; API RFC next; UI RFC after the M-4a/M-7 inputs |
-| 13 | Consolidated specification in `docs/src/` | Architect | Blocked by 12 |
-| 14 | Repository layout; handoffs for M1 | Architect | Blocked by 12 |
+| 12 | RFC 013 (build, release, update) and 014 (platform findings) | Architect; owner | Accepted 2026-10-31 |
+| 12a | RFC 015 Management API | Architect; owner | **In progress** |
+| 12b | RFC Operator UI | Architect; owner | After 015 and the M-4a input |
+| 13 | Consolidated specification in `docs/src/` | Architect | After 12a and 12b |
+| 14 | Repository layout (RFC 013 §5); handoffs for M1 | Architect | Layout may start now; handoffs after 12a |
 
 ## RFC order
 
@@ -56,10 +58,10 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 9 | 010 Footprint budgets | Accepted | M1 |
 | 10 | 011 Configuration model and transactions | Accepted | M2 |
 | 11 | 012 Guest network modes and protection status | Accepted | M2 |
-| 12 | Management API | Planned | M1 |
-| 13 | Operator UI | Planned (after M-1) | M1 |
-| 14 | 013 Build, release, update, and upgrade | Proposed | M3 |
-| 15 | 014 Platform findings that Enkrnett must handle itself | Proposed | M2 |
+| 12 | 013 Build, release, update, and upgrade | Accepted | M3 |
+| 13 | 014 Platform findings that Enkrnett must handle itself | Accepted | M2 |
+| 14 | 015 Management API | In progress | M1 |
+| 15 | Operator UI | Planned (after 015 and M-4a) | M1 |
 
 ## Release cycle
 

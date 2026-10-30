@@ -19,10 +19,7 @@ index change in the same commit. A folder is created when its first file arrives
 
 ## Proposed
 
-| ID | Title | Priority | Handoff |
-|---|---|---|---|
-| 013 | [Build, release, update, and upgrade](./proposed/013-build-release-update.md) | High | — |
-| 014 | [Platform findings that Enkrnett must handle itself](./proposed/014-platform-findings-carried.md) | High | — |
+None.
 
 ## Accepted
 
@@ -40,6 +37,8 @@ index change in the same commit. A folder is created when its first file arrives
 | 010 | [Footprint budgets](./accepted/010-footprint-budgets.md) | 2026-10-29 | — |
 | 011 | [Configuration model and transactions](./accepted/011-configuration-model-and-transactions.md) | 2026-10-29 | — |
 | 012 | [Guest network modes and protection status](./accepted/012-owe-modes-and-status.md) | 2026-10-29 | — |
+| 013 | [Build, release, update, and upgrade](./accepted/013-build-release-update.md) | 2026-10-31 | — |
+| 014 | [Platform findings that Enkrnett must handle itself](./accepted/014-platform-findings-carried.md) | 2026-10-31 | — |
 
 ## Implemented
 
@@ -55,7 +54,7 @@ None.
 
 Not yet written. A number is assigned when the file is created.
 
-| Subject | Depends on |
-|---|---|
-| Management API | RFC 011, 012, 013 |
-| Operator UI | RFC 009, 011, 012; measurements M-1, M-7 |
+| Subject | Depends on | State |
+|---|---|---|
+| Management API | RFC 011, 012, 013 | Being written as RFC 015 |
+| Operator UI | RFC 009, 011, 012; measurements M-1, M-7 | After RFC 015 |

@@ -1,6 +1,6 @@
 # RFC 014 — Platform findings that Enkrnett must handle itself
 
-**Status.** Proposed
+**Status.** Accepted (2026-10-31)
 **Tracks.** Results of measurements M-8 part 1 and M-3 part 1 (2026-10-29) that add to the
 accepted RFC 002 and RFC 011.
 **Touches.** The daemon's apply and health-check steps (RFC 011 §4); firmware defaults; the test

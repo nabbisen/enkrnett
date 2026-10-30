@@ -1,16 +1,16 @@
 # RFC 013 — Build, release, update, and upgrade
 
-**Status.** Proposed
+**Status.** Accepted (2026-10-31)
 **Tracks.** Decisions D-11, D-13, D-14 as reviewed in `11-round2-review.md` and accepted by the
 owner on 2026-10-29; RFC 005 ENK-BASE-003 to 007; RFC 008 (infrastructure platform).
 **Touches.** Repository layout; CI; the release checklist; the daemon (update check, update
 flow, first boot after an update); the management UI; the project's hosting.
 
-Terms are defined in [RFC 001](../accepted/001-scope-people-vocabulary.md) as amended by
-[RFC 009](../accepted/009-vocabulary-amendment-operator-words.md). Devices and tiers:
-[RFC 005](../accepted/005-devices-baseline-installation.md). Budgets:
-[RFC 010](../accepted/010-footprint-budgets.md). Transactions:
-[RFC 011](../accepted/011-configuration-model-and-transactions.md).
+Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
+[RFC 009](./009-vocabulary-amendment-operator-words.md). Devices and tiers:
+[RFC 005](./005-devices-baseline-installation.md). Budgets:
+[RFC 010](./010-footprint-budgets.md). Transactions:
+[RFC 011](./011-configuration-model-and-transactions.md).
 
 ## Summary
 
