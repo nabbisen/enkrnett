@@ -5,7 +5,7 @@
 M-5, RFC 005 open question 3 (the gap analysis proposed it as "ENK-REL-006"; that identifier is not used).
 **Touches.** The daemon (configuration owner, transaction engine, start-up); firmware profiles
 (ubusd ACL, file ownership); the management API (apply, confirm); the management UI.
-**Amended by.** RFC 015 (what counts as confirmation); RFC 016 (ENK-CFG-008: no country, 600 s; §3 `enk_setup`; §8).
+**Amended by.** RFC 015 (what counts as confirmation); RFC 016 (ENK-CFG-008: no country, 600 s; §3 `enk_setup`; §8); RFC 017 (§8 `not_confirmed` sentence; Japanese wording).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
 [RFC 009](./009-vocabulary-amendment-operator-words.md). Networks:
@@ -148,7 +148,7 @@ is recorded in the internal design, not here.
 | waiting for confirmation | "Saved. Join the new management Wi-Fi within 3 minutes, or the change is undone." with the new name and key and a countdown. *(Amended by RFC 015: the earlier text asked the operator to press *Keep*; there is no button. RFC 016: 10 minutes.)* |
 | settled | "Saved." |
 | undone, health check failed | "Not saved: the device could not start the network this way. Your previous settings are back." + the reason in plain words |
-| undone, no confirmation | "Undone: you did not confirm in time. Your previous settings are back." |
+| undone, no confirmation | "Undone: you did not confirm in time. Your previous settings are back." *(RFC 017 §5.5: "Undone: the new management Wi-Fi was not joined in time. Your previous settings are back.")* |
 | undone, after a restart | "A change from before the restart was not finished and has been undone." |
 | drift | "Settings were changed outside Enkrnett. Restore my settings?" |
 
@@ -181,4 +181,4 @@ Never: "apply", "commit", "rollback", "transaction" (RFC 009 table C).
 |---|---|---|
 | 1 | M-5b result and the file-permission arrangement | Internal design |
 | 2 | Exact health-check criteria per network (which ubus fields) | Internal design, derived from ENK-CFG-007 |
-| 3 | Japanese wording of §8 | Operator UI RFC |
+| 3 | Japanese wording of §8 | Operator UI RFC: RFC 017 §5.5 |

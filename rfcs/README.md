@@ -19,9 +19,7 @@ index change in the same commit. A folder is created when its first file arrives
 
 ## Proposed
 
-| ID | Title | Priority | Handoff |
-|---|---|---|---|
-| 017 | [Operator UI](./proposed/017-operator-ui.md) | High | — |
+None.
 
 ## Accepted
 
@@ -43,6 +41,7 @@ index change in the same commit. A folder is created when its first file arrives
 | 014 | [Platform findings that Enkrnett must handle itself](./accepted/014-platform-findings-carried.md) | 2026-10-31 | — |
 | 015 | [Management API](./accepted/015-management-api.md) | 2026-10-31 | — |
 | 016 | [Amendments from the review of RFC 001 to 015](./accepted/016-amendments-review-001-015.md) | 2026-10-31 | — |
+| 017 | [Operator UI](./accepted/017-operator-ui.md) | 2026-10-31 | — |
 
 ## Implemented
 

@@ -1,6 +1,6 @@
 # RFC 017 — Operator UI
 
-**Status.** Proposed
+**Status.** Accepted (2026-10-31)
 **Tracks.** The management UI as the operator experiences it: screens, words in English and
 Japanese, behaviour. RFC 001 open question 1 (Japanese terms); RFC 011, 012, 015 open questions
 on wording; RFC 009 table C as a hard rule; review 13 suggestions S-1 to S-4; gap analysis
@@ -9,15 +9,15 @@ GAP-070 (no UI design existed).
 the browser harness; the guides (which reuse these sentences); RFC 001 §4 (display forms, see
 Consequences); RFC 011 §8 (one sentence).
 
-Terms are defined in [RFC 001](../accepted/001-scope-people-vocabulary.md) as amended by
-[RFC 009](../accepted/009-vocabulary-amendment-operator-words.md) and
-[RFC 016](../accepted/016-amendments-review-001-015.md). The API the UI speaks is
-[RFC 015](../accepted/015-management-api.md). Delivery and request security:
-[RFC 003](../accepted/003-management-channel-and-ui-delivery.md). The claim:
-[RFC 004](../accepted/004-ownership-credentials-authorization.md). Changes:
-[RFC 011](../accepted/011-configuration-model-and-transactions.md). Guest modes and the notice:
-[RFC 012](../accepted/012-owe-modes-and-status.md). Update:
-[RFC 013](../accepted/013-build-release-update.md).
+Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
+[RFC 009](./009-vocabulary-amendment-operator-words.md) and
+[RFC 016](./016-amendments-review-001-015.md). The API the UI speaks is
+[RFC 015](./015-management-api.md). Delivery and request security:
+[RFC 003](./003-management-channel-and-ui-delivery.md). The claim:
+[RFC 004](./004-ownership-credentials-authorization.md). Changes:
+[RFC 011](./011-configuration-model-and-transactions.md). Guest modes and the notice:
+[RFC 012](./012-owe-modes-and-status.md). Update:
+[RFC 013](./013-build-release-update.md).
 
 ## Summary
 

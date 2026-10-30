@@ -4,7 +4,7 @@
 **Tracks.** What Enkrnett is, whom it serves, the words it uses, and how its specifications are
 written. Startup decisions D-01 and D-02.
 **Touches.** Every document; the structure of `docs/src/`; requirement identifiers.
-**Amended by.** RFC 009 (Reset → Erase); RFC 016 (vocabulary §4.3, areas §5.4, amendment rule §5.1).
+**Amended by.** RFC 009 (Reset → Erase); RFC 016 (vocabulary §4.3, areas §5.4, amendment rule §5.1); RFC 017 (display forms for §4.1 and §4.3; open question 1 closed).
 
 ## Summary
 
@@ -100,6 +100,8 @@ term has one fixed translation per language, kept in `docs/src/`.
 | **Management network** | The Wi-Fi network through which the operator manages the device. |
 | **Setup network** | The temporary Wi-Fi network of an unclaimed device. |
 
+*RFC 017 §2: on screen the three networks are "guest Wi-Fi", "management Wi-Fi", "setup Wi-Fi" (ゲストWi-Fi, 設定用Wi-Fi, セットアップ用Wi-Fi); the uplink is "Internet connection".*
+
 ### 4.2 Actions
 
 | Term | Meaning |
@@ -118,7 +120,7 @@ term has one fixed translation per language, kept in `docs/src/`.
 | **Device** | A router that runs Enkrnett. |
 | **Owner** | The person who claimed the device. |
 | **Owner password** | What the owner enters to change anything. |
-| **Management key** | The Wi-Fi key of the management network. |
+| **Management key** | The Wi-Fi key of the management network. *(RFC 017 §2: shown as "management Wi-Fi password" / 設定用Wi-Fiのパスワード.)* |
 | **Management UI** | The pages the operator uses. |
 | **Management API** | The interface the management UI uses. |
 | **OpenWrt baseline** | The OpenWrt release series that an Enkrnett release is built on. |
@@ -245,7 +247,7 @@ listed in RFC 016 §1.2.
 
 | # | Question |
 |---|---|
-| 1 | Japanese translations of the terms in section 4 are fixed when the UI RFC is written. |
+| 1 | Japanese translations of the terms in section 4 are fixed when the UI RFC is written. *Closed by RFC 017 §2.* |
 
 ## References
 

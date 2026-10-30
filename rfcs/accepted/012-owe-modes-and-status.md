@@ -5,7 +5,7 @@
 proposed ENK-OWE-007 / ENK-GUEST-001 of the gap analysis.
 **Touches.** The desired document (RFC 011 `guest.mode`); the effective state; the management UI;
 the guest notice; the OWE policy in the firmware.
-**Amended by.** RFC 016 (§4 gains a last paragraph).
+**Amended by.** RFC 016 (§4 gains a last paragraph); RFC 017 (Japanese wording, open question 1).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
 [RFC 009](./009-vocabulary-amendment-operator-words.md). Facts about OWE are in the gap analysis
@@ -150,5 +150,5 @@ release; until then the text carries the ledger's values.
 
 | # | Question | Closed by |
 |---|---|---|
-| 1 | Japanese wording of §1, §3, §4 | Operator UI RFC |
+| 1 | Japanese wording of §1, §3, §4 | RFC 017 §5.1, §5.8 |
 | 2 | Compatibility sentences | M-4 |

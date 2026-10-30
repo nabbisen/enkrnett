@@ -7,7 +7,7 @@ names the save operation"; gap analysis GAP-007, GAP-015, GAP-050, GAP-092.
 **Touches.** The daemon (HTTP service, every resource); the management UI (its only data source);
 the browser harness; the consolidated specification; RFC 004 §7 and RFC 011 ENK-CFG-008 / §8
 (amended, see Consequences).
-**Amended by.** RFC 016 (`connection.security`; 10 minutes; `stale_index`).
+**Amended by.** RFC 016 (`connection.security`; 10 minutes; `stale_index`); RFC 017 (open question 2: NFC in the UI).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
 [RFC 009](./009-vocabulary-amendment-operator-words.md). Channel and request security:
@@ -423,7 +423,7 @@ within 180 s *(RFC 016: 600 s)*: `undone`, `reason: not_confirmed`, and the old 
 | # | Question | Closed by |
 |---|---|---|
 | 1 | Whether `Host` also accepts a fixed name (RFC 003 ENK-MGMT-008) | M-1 |
-| 2 | The UI normalises names to Unicode NFC before sending, so that byte counts match what the operator sees | Operator UI RFC |
+| 2 | The UI normalises names to Unicode NFC before sending, so that byte counts match what the operator sees | RFC 017 ENK-UI-015 |
 | 3 | Further `change.detail` codes from the internal design of ENK-CFG-007 | M1 internal design; added here by amendment |
 | 4 | JSON Schema files generated from `enkrnett-model`, used by the UI and the harness | M1 handoff |
 | 5 | `hostapd.<iface> del_client {addr, reason, deauth, ban_time}` exists on 25.12.5 (checked on the measurement VM, 2026-10-31). Its entry in the daemon's ubus ACL (ENK-CFG-020) is part of the internal design. | M1 internal design |
