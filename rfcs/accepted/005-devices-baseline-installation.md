@@ -6,6 +6,7 @@ device, how it moves forward, and what radio regulation requires. Startup decisi
 and D-16.
 **Touches.** Device profiles; build definitions; install guides; the download page; the setup
 flow (country).
+**Amended by.** RFC 016 (ENK-TIER-002: the label address; *settings*).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md).
 
@@ -17,7 +18,7 @@ Terms are defined in [RFC 001](./001-scope-people-vocabulary.md).
 | First Tier 1 device | A `standard`-class device. 8 MB / 64 MB devices are built and measured from the first day and promoted when they pass. |
 | OpenWrt baseline | 25.12 only |
 | Installation | A Tier 1 device can be installed by a non-expert |
-| Update and upgrade | Both are obligations. The mechanism is decided in Round 2. |
+| Update and upgrade | Both are obligations. The mechanism is decided in Round 2. *Decided: RFC 013.* |
 | Radio regulation | The country is established during setup. No prebuilt image is published for a market until the legal basis is documented. |
 
 ## Motivation
@@ -48,7 +49,7 @@ Terms are defined in [RFC 001](./001-scope-people-vocabulary.md).
 | ID | Requirement | Verification |
 |---|---|---|
 | ENK-TIER-001 | Every supported device shall have a device profile that names the model, the hardware revision, the tier, the device class, and the install class. | Inspection |
-| ENK-TIER-002 | A device profile shall declare: the uplink port; the reset button; the light that Enkrnett can control, if any; the radios with their bands and interface limits; and whether the platform's hardening is complete on its target. | Inspection; test on the device |
+| ENK-TIER-002 | A device profile shall declare: the uplink port; the reset button; the light that Enkrnett can control, if any; the radios with their bands and interface limits; and whether the platform's hardening is complete on its target. *(RFC 016 §3.2: and which hardware address the label prints and how the device obtains it.)* | Inspection; test on the device |
 | ENK-TIER-003 | The management UI shall offer only what the device profile and the run-time checks of the device allow. | Test on each profile |
 | ENK-TIER-004 | A device shall enter Tier 1 only when section 2 is met and the owner has accepted it. | Record in an RFC |
 | ENK-TIER-005 | A device on a target with reduced platform hardening shall enter Tier 1 only by a separate owner decision that names this reduction. | Record in an RFC |
@@ -89,7 +90,7 @@ Terms are defined in [RFC 001](./001-scope-people-vocabulary.md).
 | ENK-BASE-001 | An Enkrnett release shall be built on exactly one OpenWrt baseline. The first is 25.12. | Inspection |
 | ENK-BASE-002 | Enkrnett shall publish releases for a baseline only while OpenWrt maintains that baseline. | Release checklist |
 | ENK-BASE-003 | Before the first release, the project shall define and test how an installed device is updated, and how it is upgraded to the next baseline. | Decision D-11; test |
-| ENK-BASE-004 | Update and upgrade shall keep the owner, the management key, and the Wi-Fi configuration. | Test |
+| ENK-BASE-004 | Update and upgrade shall keep the owner, the management key, and the Wi-Fi configuration *(RFC 016: the settings)*. | Test |
 | ENK-BASE-005 | Everything Enkrnett stores shall carry a format version, so that a newer release can read what an older one wrote. | Inspection; test with stored data of every earlier release |
 | ENK-BASE-006 | No release shall leave an installed Tier 1 device without a path to the release that follows it. | Release checklist |
 | ENK-BASE-007 | When a new baseline no longer builds a Tier 1 device, operators of that device shall be told in the management UI at least one release before support ends. | Release checklist |
@@ -186,7 +187,7 @@ Sources: image limits from [`mt7621.mk`][mt7621-mk] and [`mt76x8.mk`][mt76x8-mk]
 |---|---|---|
 | 1 | Which candidate devices can be obtained for measurement? | Owner |
 | 2 | The inquiry for section 6. | Owner |
-| 3 | Mechanism of update and upgrade. | Round 2, decision D-11 |
+| 3 | Mechanism of update and upgrade. | Round 2, decision D-11. *Closed by RFC 013.* |
 
 ## References
 

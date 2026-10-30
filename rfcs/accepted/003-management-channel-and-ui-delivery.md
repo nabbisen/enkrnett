@@ -4,6 +4,7 @@
 **Tracks.** Where the management UI comes from and how it reaches the management API. Startup
 decision D-05.
 **Touches.** The daemon (HTTP service); the UI build; the hosted project site; operator guides.
+**Amended by.** RFC 007 (ENK-SEC-013 to 016); RFC 015 (open question 2).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md). Networks are defined in
 [RFC 002](./002-network-topology-and-separation.md).
@@ -158,7 +159,7 @@ The exact wording belongs to the UI RFC. The content is fixed here because it mu
 | # | Question |
 |---|---|
 | 1 | The fixed name, if M-1 supports offering one. Proposal: a name under `home.arpa`, which is reserved for local use ([RFC 8375][rfc8375]). |
-| 2 | Request limits (sizes, rates, timeouts) are set by the API RFC. |
+| 2 | Request limits (sizes, rates, timeouts) are set by the API RFC. *Closed by RFC 015 §6.* |
 
 ## References
 

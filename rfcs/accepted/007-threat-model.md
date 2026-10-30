@@ -3,8 +3,9 @@
 **Status.** Accepted (2026-09-30)
 **Tracks.** Who may attack what, by which path, what stops them, and what remains.
 **Touches.** RFC 002, 003, 004 (adds six requirements); test plans; the release checklist.
+**Amended by.** RFC 016 (controls of threats 23, 37, 38, 39, 41; threats 43, 44; R-14; open questions).
 
-Terms are defined in [RFC 001](../accepted/001-scope-people-vocabulary.md).
+Terms are defined in [RFC 001](./001-scope-people-vocabulary.md).
 
 ## Summary
 
@@ -179,6 +180,9 @@ of RFC 006. "R-n" refers to section 7.
 | 41 | The device keeps records of guests | — | AS-11 | Decision D-15 | — | Until decided |
 | 42 | The operator's phone is under an attacker's control | AC-9 | AS-1 | None beyond ENK-AUTH-003 | — | R-13 |
 
+The controls of threats 23, 37, 38, 39, and 41 are updated, and threats 43 (replayed release
+index) and 44 (non-booting image) are added, by RFC 016 §5.
+
 ## 6. Requirements added by this RFC
 
 | ID | Requirement | Against | Verification |
@@ -207,6 +211,8 @@ of RFC 006. "R-n" refers to section 7.
 | R-11 | A person at the device restarts it, or resets and claims it. | AC-8 | No service; or a device under that person's control. | The operator's management key stops working. The guide advises placing the device out of reach. | Placement |
 | R-12 | A flaw in a platform component is used before an update is installed. On targets with reduced platform hardening the effect is greater. | AC-1 | Up to full control. | Few services; updates. | — |
 | R-13 | The operator's phone is under an attacker's control. | AC-9 | Full control while the owner is logged in. | Sessions end after 15 minutes without use. | — |
+
+R-14 (an update image that does not boot on a single-slot device) is added by RFC 016 §5.2.
 
 ## 8. Keeping the model current
 
@@ -242,6 +248,8 @@ of RFC 006. "R-n" refers to section 7.
 | 2 | Least privilege for threat 37 | Measurement M-5 |
 | 3 | Threat 38 | RFC on build, release, update |
 | 4 | Threat 41 | Decision D-15 |
+
+All four are closed: RFC 015, RFC 011, RFC 013, RFC 012 (RFC 016 F-15).
 
 ## References
 

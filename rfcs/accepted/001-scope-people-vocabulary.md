@@ -4,6 +4,7 @@
 **Tracks.** What Enkrnett is, whom it serves, the words it uses, and how its specifications are
 written. Startup decisions D-01 and D-02.
 **Touches.** Every document; the structure of `docs/src/`; requirement identifiers.
+**Amended by.** RFC 009 (Reset → Erase); RFC 016 (vocabulary §4.3, areas §5.4, amendment rule §5.1).
 
 ## Summary
 
@@ -108,7 +109,7 @@ term has one fixed translation per language, kept in `docs/src/`.
 | **Claim** | Become the owner of an unclaimed device. |
 | **Update** | Install a newer Enkrnett release on the same OpenWrt baseline. |
 | **Upgrade** | Move a device to a newer OpenWrt baseline. |
-| **Reset** | Erase everything the operator configured. The device becomes unclaimed. |
+| **Reset** | Erase everything the operator configured. The device becomes unclaimed. *(RFC 009: the word is now **Erase**.)* |
 
 ### 4.3 Things
 
@@ -125,7 +126,7 @@ term has one fixed translation per language, kept in `docs/src/`.
 | **Device profile** | The description of one device model and hardware revision: how to build for it, what it can do, how to install and recover it. |
 | **Device class** | `constrained` (about 8 MB flash, 64 MB RAM) or `standard` (16 MB flash and 128 MB RAM, or more). |
 | **Device tier** | The level of support a device profile receives. Defined in RFC 005. |
-| **Wi-Fi configuration** | What the operator asked the guest network to be. |
+| **Wi-Fi configuration** | What the operator asked the guest network to be. *(RFC 016 §1.1: now **Settings**; *Change*, *Status*, *Details* added.)* |
 
 ### 4.4 Words that are replaced
 
@@ -156,6 +157,9 @@ term has one fixed translation per language, kept in `docs/src/`.
 
 Working drafts written before this RFC are inputs. They are not normative and are not part of
 the repository.
+
+RFC 016 ENK-SCOPE-006 adds the rule for amending an accepted RFC (**Amended by** lines and
+pointer notes).
 
 ### 5.2 Keywords
 
@@ -208,6 +212,9 @@ Areas used by the baseline RFCs:
 | `BASE` | OpenWrt baseline, update, upgrade | 005 |
 | `INST` | Installation | 005 |
 | `RF` | Radio regulation | 005 |
+
+Areas added by later RFCs, and the reserved areas of the draft set that are never reused, are
+listed in RFC 016 §1.2.
 
 ### 5.5 Traceability
 

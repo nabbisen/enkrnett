@@ -5,6 +5,7 @@
 M-5, RFC 005 open question 3 (the gap analysis proposed it as "ENK-REL-006"; that identifier is not used).
 **Touches.** The daemon (configuration owner, transaction engine, start-up); firmware profiles
 (ubusd ACL, file ownership); the management API (apply, confirm); the management UI.
+**Amended by.** RFC 015 (what counts as confirmation); RFC 016 (ENK-CFG-008: no country, 600 s; §3 `enk_setup`; §8).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
 [RFC 009](./009-vocabulary-amendment-operator-words.md). Networks:
@@ -65,9 +66,9 @@ hostapd detail are chosen by the daemon from the device profile and the country.
 | Configuration | Sections the daemon owns | Named |
 |---|---|---|
 | `wireless` | every `wifi-device`; the `wifi-iface` sections for the guest, management, and setup networks | `enk_radio*`, `enk_guest`, `enk_mgmt`, `enk_setup` |
-| `network` | the interfaces and bridges of the guest and management networks | `enk_guest`, `enk_mgmt` |
+| `network` | the interfaces and bridges of the guest and management networks | `enk_guest`, `enk_mgmt` *(RFC 016 §7: and `enk_setup`)* |
 | `firewall` | the zones, forwardings, and rules of RFC 002 | `enk_*` |
-| `dhcp` | the DHCP and DNS settings of the two networks | `enk_guest`, `enk_mgmt` |
+| `dhcp` | the DHCP and DNS settings of the two networks | `enk_guest`, `enk_mgmt` *(RFC 016 §7: and `enk_setup`)* |
 
 | ID | Requirement | Verification |
 |---|---|---|
@@ -95,7 +96,7 @@ hostapd detail are chosen by the daemon from the device profile and the country.
 | ENK-CFG-005 | A change shall be validated completely (syntax, limits of §6, consistency with the device profile and the country) before anything persistent is written. | Test with every invalid input |
 | ENK-CFG-006 | Before writing the owned sections the daemon shall persist a snapshot of their previous content and a pending marker, both on flash, each written to a temporary file and renamed into place. | Inspection; power-loss test |
 | ENK-CFG-007 | After reloading, the daemon shall verify the effective state through ubus (`network.wireless status`, `hostapd.* get_status`, `network.interface.* status`) against the desired document within 60 s. A difference is a failed health check. | Test with a change the platform cannot apply |
-| ENK-CFG-008 | A change that alters the management network's name or key, or the country, shall additionally require the owner's confirmation through the management network within 180 s of a passed health check. No other change requires confirmation. *What counts as confirmation is defined by RFC 015 ENK-API-021 and 022: the device disconnects the management stations, and the first authenticated request after that confirms. There is no button.* | Test |
+| ENK-CFG-008 | A change that alters the management network's name or key, or the country, shall additionally require the owner's confirmation through the management network within 180 s of a passed health check. No other change requires confirmation. *What counts as confirmation is defined by RFC 015 ENK-API-021 and 022: the device disconnects the management stations, and the first authenticated request after that confirms. There is no button. RFC 016 §7: "or the country" withdrawn; 180 s reads 600 s.* | Test |
 | ENK-CFG-009 | On a failed health check, on a missing confirmation, or at start-up with a pending marker present, the daemon shall restore the snapshot, reload, verify, remove the marker, and report the undone change with its reason. | Test, including power loss at every step |
 | ENK-CFG-010 | The daemon shall report success only after the health check has passed and, where required, the confirmation has arrived. Until then the API reports the change as *pending*. | Test |
 | ENK-CFG-011 | One transaction at a time. A second change while one is pending shall be refused with the state of the pending one. | Test |
@@ -144,7 +145,7 @@ is recorded in the internal design, not here.
 |---|---|
 | validating | "Checking…" |
 | applying, health check running | "Saving… The Wi-Fi restarts for a few seconds." |
-| waiting for confirmation | "Saved. Join the new management Wi-Fi within 3 minutes, or the change is undone." with the new name and key and a countdown. *(Amended by RFC 015: the earlier text asked the operator to press *Keep*; there is no button.)* |
+| waiting for confirmation | "Saved. Join the new management Wi-Fi within 3 minutes, or the change is undone." with the new name and key and a countdown. *(Amended by RFC 015: the earlier text asked the operator to press *Keep*; there is no button. RFC 016: 10 minutes.)* |
 | settled | "Saved." |
 | undone, health check failed | "Not saved: the device could not start the network this way. Your previous settings are back." + the reason in plain words |
 | undone, no confirmation | "Undone: you did not confirm in time. Your previous settings are back." |

@@ -4,6 +4,7 @@
 **Tracks.** Decision D-10 and amendment A-7, with the numbers of measurement M-2.
 **Touches.** The daemon's dependency policy; the UI build; firmware profiles; the release
 checklist; CI.
+**Amended by.** RFC 016 (ENK-FOOT-013 wording).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) and
 [RFC 005](./005-devices-baseline-installation.md) (device classes and tiers).
@@ -64,7 +65,7 @@ removes (RFC 002 ENK-HARD-004).
 | ID | Constraint | Reason |
 |---|---|---|
 | ENK-FOOT-012 | The daemon shall use no asynchronous runtime and no web framework. One blocking HTTP/1.1 server with a bounded number of worker threads is sufficient for one operator. | M-2: 352 KiB versus 240 KiB; a single operator never produces concurrency |
-| ENK-FOOT-013 | The daemon shall carry no TLS implementation on the device. | RFC 003; M-2 dependency analysis |
+| ENK-FOOT-013 | The daemon shall carry no TLS implementation on the device. *(RFC 016 §6: in the daemon and on the management channel; the platform's downloader may use the platform's TLS for the release index.)* | RFC 003; M-2 dependency analysis |
 | ENK-FOOT-014 | The daemon should reach ubus through its own client on the unix socket rather than by spawning processes. | M-2: `std::process::Command` costs 66 KB raw; spawning is also slower and harder to confine |
 | ENK-FOOT-015 | The daemon shall be dynamically linked against the platform's musl, as OpenWrt packages are. | Shares libc pages with the rest of the system; M-2 |
 | ENK-FOOT-016 | Every dependency shall be listed with its purpose and its measured size contribution in the daemon's documentation; adding one requires the budget check to pass. | Keeps the list honest over time |

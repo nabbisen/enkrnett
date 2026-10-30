@@ -7,6 +7,7 @@ names the save operation"; gap analysis GAP-007, GAP-015, GAP-050, GAP-092.
 **Touches.** The daemon (HTTP service, every resource); the management UI (its only data source);
 the browser harness; the consolidated specification; RFC 004 §7 and RFC 011 ENK-CFG-008 / §8
 (amended, see Consequences).
+**Amended by.** RFC 016 (`connection.security`; 10 minutes; `stale_index`).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
 [RFC 009](./009-vocabulary-amendment-operator-words.md). Channel and request security:
@@ -132,6 +133,7 @@ the UI treats an unknown value as an error, never as "probably fine".
 The status screen shows the first two as "Enkrnett 0.2 on OpenWrt 25.12" (RFC 013 ENK-RLS-003).
 
 **`connection`**: `network` (`setup` | `management`), `encrypted` (`true` | `false` | `null`).
+*(RFC 016 §10: `encrypted` is replaced by `security`: `none` | `owe` | `wpa2` | `wpa3` | `null`.)*
 
 **`limits`**: `guest_name_max_bytes` `{ "open_to_all": 29, "encrypted_only": 32 }`,
 `management_name_max_bytes` (32), `password` `{ "min": 10, "max": 64 }`. One source for every
@@ -233,7 +235,7 @@ When `state` is `none`, every field other than `id` and `state` is `null`. The w
 |---|---|
 | `installed` | `{ "version", "baseline" }` |
 | `checks_enabled` | boolean (ENK-UPD-008) |
-| `last_check` | `{ "checked_ago", "result": "ok" \| "unreachable" \| "bad_signature" \| "bad_index" }` or `null` |
+| `last_check` | `{ "checked_ago", "result": "ok" \| "unreachable" \| "bad_signature" \| "bad_index" }` or `null` *(RFC 016: and `stale_index`)* |
 | `available` | `null` or `{ "version", "baseline", "changes_baseline", "size_kib", "notes_url", "install_seconds" }` |
 | `state` | `idle` \| `downloading` \| `verifying` \| `installing` — an attempt in progress, nothing else |
 | `last_result` | `null` or `{ "result": "done" \| "failed", "reason": null \| "bad_signature" \| "wrong_device" \| "wrong_baseline" \| "not_enough_memory" \| "download_failed" \| "health_check_failed" }` — the outcome of the latest attempt, kept across the restart (ENK-UPD-005) |
@@ -303,7 +305,7 @@ change of the management network's name or key. This RFC defines what counts as 
 | ENK-API-022 | The change shall be confirmed by the first request with a valid owner session that arrives on a connection accepted after the disconnection of ENK-API-021 completed, while the change is `waiting_confirmation`. There is no separate confirmation action. | Test: a request received before the disconnection does not settle the change; the first one after it does |
 | ENK-API-023 | `POST management-key` shall answer with the `change` shape and, beside it, a `management_key` field holding the new key, because the operator needs the key before the reload and cannot read it afterwards. This is the only compound response. | Inspection |
 
-What the operator sees: "Saved. Join the new management Wi-Fi within 3 minutes, or the change is
+What the operator sees: "Saved. Join the new management Wi-Fi within 3 minutes *(RFC 016: 10 minutes)*, or the change is
 undone." with the new name and key and a countdown (`confirm_in`). When they join and the UI's
 next poll arrives, the screen says "Saved." No button. The act that proves the owner can still
 reach the device is joining the network; a button would add a step and prove nothing.
@@ -379,7 +381,7 @@ with `management_key` beside it → the UI shows the new key and the countdown �
 passes, the daemon disconnects the management stations → the operator joins again with the new
 key; the session is still valid (sessions survive a reload) → the UI's next poll of `change`
 arrives from the fresh association and settles the change → `settled`. If no such request arrives
-within 180 s: `undone`, `reason: not_confirmed`, and the old key works again.
+within 180 s *(RFC 016: 600 s)*: `undone`, `reason: not_confirmed`, and the old key works again.
 
 ## Consequences
 

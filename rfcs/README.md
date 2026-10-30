@@ -19,9 +19,7 @@ index change in the same commit. A folder is created when its first file arrives
 
 ## Proposed
 
-| ID | Title | Priority | Handoff |
-|---|---|---|---|
-| 016 | [Amendments from the review of RFC 001 to 015](./proposed/016-amendments-review-001-015.md) | High | — |
+None.
 
 ## Accepted
 
@@ -42,6 +40,7 @@ index change in the same commit. A folder is created when its first file arrives
 | 013 | [Build, release, update, and upgrade](./accepted/013-build-release-update.md) | 2026-10-31 | — |
 | 014 | [Platform findings that Enkrnett must handle itself](./accepted/014-platform-findings-carried.md) | 2026-10-31 | — |
 | 015 | [Management API](./accepted/015-management-api.md) | 2026-10-31 | — |
+| 016 | [Amendments from the review of RFC 001 to 015](./accepted/016-amendments-review-001-015.md) | 2026-10-31 | — |
 
 ## Implemented
 
@@ -59,4 +58,4 @@ Not yet written. A number is assigned when the file is created.
 
 | Subject | Depends on | State |
 |---|---|---|
-| Operator UI | RFC 009, 011, 012, 015, 016; measurements M-4a, M-7 | Next, after 016 |
+| Operator UI | RFC 009, 011, 012, 015, 016; measurements M-4a, M-7 | Next |

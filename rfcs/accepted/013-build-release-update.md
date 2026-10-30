@@ -8,6 +8,7 @@ and RFC 001 §5.4 forbids reuse. Nothing else changed.
 owner on 2026-10-29; RFC 005 ENK-BASE-003 to 007; RFC 008 (infrastructure platform).
 **Touches.** Repository layout; CI; the release checklist; the daemon (update check, update
 flow, first boot after an update); the management UI; the project's hosting.
+**Amended by.** RFC 016 (ENK-UPD-001 transport; ENK-UPD-009 downgrade protection; ENK-RLS-006 sequence).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
 [RFC 009](./009-vocabulary-amendment-operator-words.md). Devices and tiers:
@@ -51,7 +52,7 @@ Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
 |---|---|---|
 | ENK-RLS-004 | Every published image shall be accompanied by a detached signature made with the project's release key; the release index shall be signed with the same key. | Release checklist |
 | ENK-RLS-005 | The image shall embed the public keys that may sign its successor: the current key and one designated next key. A release signed by the next key makes it current and designates a further next key. | Test: rotate once in CI |
-| ENK-RLS-006 | The release index shall be one small signed document listing, per device profile and baseline, the latest release: version, file name, size, hash, minimum free memory, release notes URL, and whether it changes the baseline. | Inspection |
+| ENK-RLS-006 | The release index shall be one small signed document listing, per device profile and baseline, the latest release: version, file name, size, hash, minimum free memory, release notes URL, and whether it changes the baseline. *(RFC 016 §9: and a sequence number.)* | Inspection |
 | ENK-RLS-007 | The signing key shall never be on a CI runner. Signing is a manual step on the project's signing host (RFC 008). | Release checklist |
 
 Tool: OpenBSD `signify` (Ed25519, one-line format, portable implementations exist for Linux and in
@@ -69,7 +70,7 @@ Rust). Its format is small enough to verify on an 8 MB device.
 
 | ID | Requirement | Verification |
 |---|---|---|
-| ENK-UPD-001 | The device shall check the release index at most once a day by itself and on request. The check shall send no identifier of the device, the operator, or the configuration; the request is the same for every device of the same profile. | Network capture |
+| ENK-UPD-001 | The device shall check the release index at most once a day by itself and on request. The check shall send no identifier of the device, the operator, or the configuration; the request is the same for every device of the same profile. *(RFC 016 §9: fetched through the platform's downloader over HTTPS; authenticity rests on the signatures.)* | Network capture |
 | ENK-UPD-002 | The device shall start an update only when the owner presses *Update* in the management UI, after a screen that states the version, the baseline change if any, the duration, and that the Wi-Fi stops meanwhile. | Inspection; M-7 |
 | ENK-UPD-003 | Before writing, the device shall verify: the signature of the index and of the image against an embedded key; that the image is for this device profile; that the baseline is the same or the designated next; that free memory exceeds the image size plus 16 MB; and that no transaction (RFC 011) is pending. Any failure shall stop the update with one sentence of reason, writing nothing. | Test for each condition |
 | ENK-UPD-004 | The update shall carry over the owner, the management key, the desired document, and the device identifier (ENK-BASE-004), and shall not carry over logs, sessions, or snapshots. | Test |
@@ -77,6 +78,7 @@ Rust). Its format is small enough to verify on an 8 MB device.
 | ENK-UPD-006 | The device shall not promise a firmware rollback it cannot perform. On single-slot devices the only way back is a new update or the recovery of the device profile; the UI shall say "this cannot be undone from here" before the update starts. | Inspection |
 | ENK-UPD-007 | *Update* and *Upgrade* are the project's words (RFC 001 §4.2). The operator sees *Update* for both; when the baseline changes, the confirmation screen adds "This one takes longer and restarts the Wi-Fi twice." | Inspection |
 | ENK-UPD-008 | A development build or an image installed by other means shall not be offered updates from the project's index unless the owner enables it in the details screen. | Test |
+| ENK-UPD-009 | *Added by RFC 016 §9: the index carries a sequence number; the device refuses a lower sequence and offers only releases newer than the installed one.* | RFC 016 |
 
 Automatic updates (option C of D-11) are not in this RFC; they need their own RFC with a
 failure analysis for unattended devices.

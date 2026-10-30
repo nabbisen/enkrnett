@@ -5,6 +5,7 @@
 ownership ends. Startup decisions D-06 and D-07.
 **Touches.** The daemon (state, credentials, sessions); the setup flow of the management UI;
 device profiles (button, light); operator guides.
+**Amended by.** RFC 007 (ENK-OWN-022); RFC 009 (Reset → Erase); RFC 015 (greeting; how a key replacement becomes final); RFC 016 (step 5; 600 s; label address; *settings*).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md). Networks are defined in
 [RFC 002](./002-network-topology-and-separation.md). The channel is defined in
@@ -76,7 +77,7 @@ starts in `UNCLAIMED` and opens the setup window, whatever its state was before.
 | ENK-OWN-001 | A device without an owner shall open the setup window when it finishes starting. Nothing else shall open it. | Test |
 | ENK-OWN-002 | The setup window shall stay open for 30 minutes. Time spent in `PENDING` does not count. If a claim session exists when the 30 minutes end, or the device has returned from `PENDING`, the window shall stay open for 15 minutes more, once. | Test |
 | ENK-OWN-003 | When the window closes, the device shall stop offering any Wi-Fi network. | Test |
-| ENK-OWN-004 | The setup network's name shall end with the last four characters of the hardware address printed on the device's label. | Test per device profile |
+| ENK-OWN-004 | The setup network's name shall end with the last four characters of the hardware address printed on the device's label. *(RFC 016 §3.2: the device profile names which address the label prints.)* | Test per device profile |
 
 Opening the window needs a physical act: connecting power. To open it again, the operator
 disconnects and reconnects power. A return from `PENDING` does not open a window; it continues
@@ -90,7 +91,7 @@ the one that was open.
 | 2 | Operator | Opens the management UI. |
 | 3 | Device | Grants this client the claim session. Any other client is told that setup is in progress elsewhere. |
 | 4 | Operator | Asks the device to identify itself. The device's light blinks. The operator confirms seeing it. |
-| 5 | Operator | Chooses the country, the guest network's name, and the owner password. |
+| 5 | Operator | Chooses the country, the guest network's name, and the owner password. *(RFC 016 §3.3: and the guest network's mode.)* |
 | 6 | Device | Checks every value. Shows the management network's name, the management key, and the address of the management UI. |
 | 7 | Operator | Keeps them, then confirms. |
 | 8 | Device | State `PENDING`. Ends the setup network. Starts the management network. |
@@ -126,7 +127,7 @@ without ambiguity.
 |---|---|---|
 | ENK-OWN-014 | The device shall generate the management key. The operator does not choose it. | Inspection |
 | ENK-OWN-015 | The management key shall carry at least 80 bits of randomness, shall have at most 24 characters, and shall use no characters that are easily mistaken for one another. | Inspection of the generator; statistical test |
-| ENK-OWN-016 | The owner shall be able to display the management key and to replace it with a new one. A replacement becomes final as in ENK-OWN-008; otherwise the previous key returns. | Test |
+| ENK-OWN-016 | The owner shall be able to display the management key and to replace it with a new one. A replacement becomes final as in ENK-OWN-008; otherwise the previous key returns. *(RFC 015 ENK-API-021 and 022 define how; RFC 016 §3.1: within 600 s.)* | Test |
 
 A generated key cannot be guessed from a recording of the network, even with WPA2.
 
@@ -157,12 +158,12 @@ There is one role: the owner.
 | ENK-AUTH-007 | Without a session the device shall disclose nothing beyond the greeting. In particular it shall not disclose versions of the firmware or its components, the device identifier, or any configuration. | Test of every resource without a session |
 | ENK-AUTH-008 | Authorization shall be decided on the device for every request. | Test with a modified client |
 
-### 8. Reset
+### 8. Reset *(RFC 009: Erase)*
 
 | ID | Requirement | Verification |
 |---|---|---|
 | ENK-OWN-017 | Reset shall be started by holding the reset button as the platform defines, or by the owner in the management UI after entering the owner password again. | Test per device profile |
-| ENK-OWN-018 | Reset shall erase the owner password, the management key, the Wi-Fi configuration, every session, the device identifier, and every log. Nothing that the operator or the device created shall remain. | Inspection after reset |
+| ENK-OWN-018 | Reset shall erase the owner password, the management key, the Wi-Fi configuration *(RFC 016: the settings)*, every session, the device identifier, and every log. Nothing that the operator or the device created shall remain. | Inspection after reset |
 | ENK-OWN-019 | Reset shall be the only way to end ownership. | Inspection |
 | ENK-OWN-020 | The device shall create a new random device identifier when it has none. The identifier is not a secret. | Test |
 | ENK-OWN-021 | Enkrnett shall keep the platform's meaning of each button and shall assign no further meaning to the duration of a press. | Test per device profile |
@@ -233,8 +234,8 @@ give each device its own secret at installation.
 
 | # | Question |
 |---|---|
-| 1 | The function for ENK-OWN-011 must run within about half a second on the slowest supported device. Its choice belongs to the internal design and is measured in RFC 006, M-2. |
-| 2 | The size of the list in ENK-OWN-010 is bounded by the footprint budget (decision D-10). |
+| 1 | The function for ENK-OWN-011 must run within about half a second on the slowest supported device. Its choice belongs to the internal design and is measured in RFC 006, M-2. *Closed by RFC 010 ENK-FOOT-017.* |
+| 2 | The size of the list in ENK-OWN-010 is bounded by the footprint budget (decision D-10). *Closed by RFC 010 ENK-FOOT-003.* |
 
 ## References
 

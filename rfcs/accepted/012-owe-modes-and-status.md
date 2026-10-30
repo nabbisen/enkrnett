@@ -5,6 +5,7 @@
 proposed ENK-OWE-007 / ENK-GUEST-001 of the gap analysis.
 **Touches.** The desired document (RFC 011 `guest.mode`); the effective state; the management UI;
 the guest notice; the OWE policy in the firmware.
+**Amended by.** RFC 016 (§4 gains a last paragraph).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
 [RFC 009](./009-vocabulary-amendment-operator-words.md). Facts about OWE are in the gap analysis
@@ -105,6 +106,9 @@ show them.
 >
 > Devices on this Wi-Fi are kept apart from each other and from the shop's own network by the
 > access point. This reduces, but does not remove, what another guest could attempt.
+>
+> *(RFC 016 §8 adds the last paragraph:)* **This access point keeps no record of the devices that
+> connect to it.**
 
 | ID | Requirement | Verification |
 |---|---|---|

@@ -5,6 +5,7 @@
 Startup decisions D-03 and D-04.
 **Touches.** Firmware defaults (network, firewall, wireless, services); the daemon's
 configuration model; status shown in the management UI; operator guides.
+**Amended by.** RFC 007 (ENK-HARD-008); RFC 016 (ENK-TOPO-006; ENK-HARD-006; open question 1).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md).
 
@@ -93,6 +94,7 @@ Anything else that answers is a defect.
 | ENK-TOPO-003 | The device shall choose subnets for its Wi-Fi networks that do not overlap the uplink's subnet, and shall choose again by itself when the uplink's subnet changes. | Test with a colliding uplink subnet |
 | ENK-TOPO-004 | The device shall accept the uplink on the Ethernet port named by the device profile. Every other Ethernet port shall carry no network. | Test per device profile |
 | ENK-TOPO-005 | Where the hardware reports link state per port, the device should detect a cable in a port that is not the uplink port and tell the operator. | Test per device profile |
+| ENK-TOPO-006 | *Added by RFC 016 §2.1: only the colliding network is renumbered; the management subnet comes from a range that consumer routers do not use by default.* | RFC 016 |
 
 #### Isolation
 
@@ -124,7 +126,7 @@ These apply to every release image.
 | ENK-HARD-003 | Failsafe mode shall give no network access to the device. | Test: trigger failsafe, scan |
 | ENK-HARD-004 | No general-purpose administration interface shall be installed. | Inspection of the package list |
 | ENK-HARD-005 | The image shall contain no network service that section 3 does not list. | Comparison of listening sockets with section 3 |
-| ENK-HARD-006 | The device shall report, for each of ENK-HARD-001 to 005, whether it is met. | Test on a modified device |
+| ENK-HARD-006 | The device shall report, for each of ENK-HARD-001 to 005, whether it is met. *(RFC 016 §2.2: and 008.)* | Test on a modified device |
 | ENK-HARD-007 | A development build may deviate from this section. It shall identify itself as a development build on every page of the management UI and shall not be published as a release. | Inspection |
 
 ### 5. What separation does not do
@@ -137,7 +139,7 @@ Enkrnett states these limits to the operator (ENK-SCOPE-004).
 | Clients without OWE on a Transition Mode network are not encrypted. | By design of Transition Mode. | [Wi-Fi Alliance][wfa-guide] §2.11 |
 | A fake access point with the same name is not prevented. | OWE has no authentication. | [RFC 8110][rfc8110] §7 |
 | Traffic is protected on the radio link only. | Same. | [RFC 8110][rfc8110] §7 |
-| Anyone who can touch the device can reset it. | Physical access. | RFC 004 |
+| Anyone who can touch the device can reset it *(RFC 009: erase)*. | Physical access. | RFC 004 |
 
 The status shown to the operator says "blocked by this device" for what ENK-ISO requires and
 lists these limits. It never says "isolated" or "secure" without qualification.
@@ -186,7 +188,7 @@ separation in this RFC rests on the firewall and the bridges alone. Device profi
 
 | # | Question | Proposal |
 |---|---|---|
-| 1 | Is the bridge topology offered at all in the first release? | **No.** One topology means fewer states to explain and to test. A later RFC may add it for sites that already have a guest segment. |
+| 1 | Is the bridge topology offered at all in the first release? | **No.** One topology means fewer states to explain and to test. A later RFC may add it for sites that already have a guest segment. *Closed: RFC 011 §2 configures nothing else (RFC 016 F-15).* |
 | 2 | May the owner allow management from the uplink side? | **Not in the first release.** |
 | 3 | May an expert enable a remote shell? | **Not through Enkrnett.** A device modified by other means reports ENK-HARD-002 as not met. |
 
