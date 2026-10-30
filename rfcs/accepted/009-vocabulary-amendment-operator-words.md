@@ -1,9 +1,9 @@
 # RFC 009 — Vocabulary amendment: Erase, Restart, and operator-facing words
 
-**Status.** Proposed
+**Status.** Accepted (2026-10-29)
 **Tracks.** Amendments A-1 and A-2 of the self-review of 2026-10-29, accepted by the owner.
-**Touches.** [RFC 001](../accepted/001-scope-people-vocabulary.md) §4 (vocabulary);
-[RFC 004](../accepted/004-ownership-credentials-authorization.md) §8 (the action formerly called
+**Touches.** [RFC 001](./001-scope-people-vocabulary.md) §4 (vocabulary);
+[RFC 004](./004-ownership-credentials-authorization.md) §8 (the action formerly called
 Reset); every operator-facing text: UI, guides, status.
 
 ## Summary

@@ -1,12 +1,12 @@
 # RFC 010 — Footprint budgets
 
-**Status.** Proposed
+**Status.** Accepted (2026-10-29)
 **Tracks.** Decision D-10 and amendment A-7, with the numbers of measurement M-2.
 **Touches.** The daemon's dependency policy; the UI build; firmware profiles; the release
 checklist; CI.
 
-Terms are defined in [RFC 001](../accepted/001-scope-people-vocabulary.md) and
-[RFC 005](../accepted/005-devices-baseline-installation.md) (device classes and tiers).
+Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) and
+[RFC 005](./005-devices-baseline-installation.md) (device classes and tiers).
 
 ## Summary
 

@@ -1,15 +1,15 @@
 # RFC 011 — Configuration model and transactions
 
-**Status.** Proposed
+**Status.** Accepted (2026-10-29)
 **Tracks.** Decision D-12 (revised by the self-review, amendment A-3), amendment A-6, measurement
 M-5, RFC 005 open question 3 (the gap analysis proposed it as "ENK-REL-006"; that identifier is not used).
 **Touches.** The daemon (configuration owner, transaction engine, start-up); firmware profiles
 (ubusd ACL, file ownership); the management API (apply, confirm); the management UI.
 
-Terms are defined in [RFC 001](../accepted/001-scope-people-vocabulary.md) as amended by
+Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
 [RFC 009](./009-vocabulary-amendment-operator-words.md). Networks:
-[RFC 002](../accepted/002-network-topology-and-separation.md). Ownership:
-[RFC 004](../accepted/004-ownership-credentials-authorization.md).
+[RFC 002](./002-network-topology-and-separation.md). Ownership:
+[RFC 004](./004-ownership-credentials-authorization.md).
 
 ## Summary
 

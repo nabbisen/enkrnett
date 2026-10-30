@@ -1,12 +1,12 @@
 # RFC 012 — Guest network modes and protection status
 
-**Status.** Proposed
+**Status.** Accepted (2026-10-29)
 **Tracks.** Decision D-08 (accepted direction), amendment A-2, requirements ENK-SCOPE-004 and the
 proposed ENK-OWE-007 / ENK-GUEST-001 of the gap analysis.
 **Touches.** The desired document (RFC 011 `guest.mode`); the effective state; the management UI;
 the guest notice; the OWE policy in the firmware.
 
-Terms are defined in [RFC 001](../accepted/001-scope-people-vocabulary.md) as amended by
+Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
 [RFC 009](./009-vocabulary-amendment-operator-words.md). Facts about OWE are in the gap analysis
 ledger (F-OWE-01 to 13) and in measurement M-6.
 
