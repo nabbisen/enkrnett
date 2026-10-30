@@ -40,9 +40,9 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 12 | RFC 013 (build, release, update) and 014 (platform findings) | Architect; owner | Accepted 2026-10-31 |
 | 12a | RFC 015 Management API | Architect; owner | Accepted 2026-10-31 |
 | 12c | Review of RFC 001–015 against the owner's philosophy; RFC 016 (amendments) | Architect; owner | Done; 016 accepted 2026-10-31 |
-| 12b | RFC Operator UI | Architect; owner | **Next** |
-| 13 | Consolidated specification in `docs/src/` | Architect | After 12a and 12b |
-| 14 | Repository layout (RFC 013 §5); handoffs for M1 | Architect | Layout may start now; handoffs after 12a |
+| 12b | RFC 017 Operator UI | Architect; owner | Proposed 2026-10-31, **waiting** |
+| 13 | Consolidated specification in `docs/src/` | Architect | After 017 |
+| 14 | Repository layout (RFC 013 §5); handoffs for M1 | Architect | After 017 |
 
 ## RFC order
 
@@ -63,7 +63,7 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 13 | 014 Platform findings that Enkrnett must handle itself | Accepted | M2 |
 | 14 | 015 Management API | Accepted | M1 |
 | 15 | 016 Amendments from the review of 001–015 | Accepted | Everything |
-| 16 | Operator UI | **Next** | M1 |
+| 16 | 017 Operator UI | Proposed | M1 |
 
 ## Release cycle
 

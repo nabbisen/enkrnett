@@ -19,7 +19,9 @@ index change in the same commit. A folder is created when its first file arrives
 
 ## Proposed
 
-None.
+| ID | Title | Priority | Handoff |
+|---|---|---|---|
+| 017 | [Operator UI](./proposed/017-operator-ui.md) | High | — |
 
 ## Accepted
 
@@ -58,4 +60,5 @@ Not yet written. A number is assigned when the file is created.
 
 | Subject | Depends on | State |
 |---|---|---|
-| Operator UI | RFC 009, 011, 012, 015, 016; measurements M-4a, M-7 | Next |
+| Automatic updates (option C of D-11) | RFC 013; a failure analysis for unattended devices | Later |
+| Site controller for several access points | A later milestone | Later |
