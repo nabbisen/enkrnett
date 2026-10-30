@@ -11,7 +11,7 @@ Consequences); RFC 011 §8 (one sentence).
 
 Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
 [RFC 009](./009-vocabulary-amendment-operator-words.md) and
-[RFC 016](./016-amendments-review-001-015.md). The API the UI speaks is
+[RFC 016](../done/016-amendments-review-001-015.md). The API the UI speaks is
 [RFC 015](./015-management-api.md). Delivery and request security:
 [RFC 003](./003-management-channel-and-ui-delivery.md). The claim:
 [RFC 004](./004-ownership-credentials-authorization.md). Changes:

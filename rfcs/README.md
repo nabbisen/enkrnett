@@ -32,7 +32,6 @@ None.
 | 005 | [Devices, OpenWrt baseline, and installation](./accepted/005-devices-baseline-installation.md) | 2026-09-29 | — |
 | 006 | [Feasibility measurements](./accepted/006-feasibility-measurements.md) | 2026-09-29 | [Handoff](./handoffs/006-feasibility-measurements/README.md) |
 | 007 | [Threat model](./accepted/007-threat-model.md) | 2026-09-30 | — |
-| 008 | [Where OpenBSD fits](./accepted/008-openbsd-position.md) | 2026-09-30 | — |
 | 009 | [Vocabulary amendment: Erase, Restart, and operator-facing words](./accepted/009-vocabulary-amendment-operator-words.md) | 2026-10-29 | — |
 | 010 | [Footprint budgets](./accepted/010-footprint-budgets.md) | 2026-10-29 | — |
 | 011 | [Configuration model and transactions](./accepted/011-configuration-model-and-transactions.md) | 2026-10-29 | — |
@@ -40,14 +39,18 @@ None.
 | 013 | [Build, release, update, and upgrade](./accepted/013-build-release-update.md) | 2026-10-31 | — |
 | 014 | [Platform findings that Enkrnett must handle itself](./accepted/014-platform-findings-carried.md) | 2026-10-31 | — |
 | 015 | [Management API](./accepted/015-management-api.md) | 2026-10-31 | — |
-| 016 | [Amendments from the review of RFC 001 to 015](./accepted/016-amendments-review-001-015.md) | 2026-10-31 | — |
 | 017 | [Operator UI](./accepted/017-operator-ui.md) | 2026-10-31 | — |
 
 ## Implemented
 
+An RFC moves here when its work has shipped on `main` (RFC 000). Accepted RFCs whose requirements
+need the daemon, the UI, or a device stay in `accepted/` until the release that meets them.
+
 | ID | Title | Shipped in |
 |---|---|---|
 | 000 | [RFC lifecycle policy](./done/000-rfc-lifecycle-policy.md) | Adopted at project start |
+| 008 | [Where OpenBSD fits](./done/008-openbsd-position.md) | main, 2026-10-31 (decision recorded; applied in RFC 013 §6) |
+| 016 | [Amendments from the review of RFC 001 to 015](./done/016-amendments-review-001-015.md) | main, 2026-10-31 (pointer notes and consolidated specification) |
 
 ## Archive
 

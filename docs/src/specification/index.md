@@ -34,6 +34,7 @@ accepted RFC wins (RFC 001 §5.1); the difference is a defect of this book and i
 | 11 | [Build, release, update](./11-build-release-update.md) | RLS, UPD, BUILD, REPO | 013, 016 |
 | 12 | [Threat model](./12-threat-model.md) | — | 007, 016 |
 | 13 | [Requirements index](./13-requirements-index.md) | all | — |
+| 14 | [Verification plan](./14-verification-plan.md) | all | project rules; RFC 001 §5.5 |
 
 ## Counts
 

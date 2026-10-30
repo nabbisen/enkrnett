@@ -18,6 +18,7 @@
   - [11. Build, release, update](./specification/11-build-release-update.md)
   - [12. Threat model](./specification/12-threat-model.md)
   - [13. Requirements index](./specification/13-requirements-index.md)
+  - [14. Verification plan](./specification/14-verification-plan.md)
 
 # Maintainers and contributors
 

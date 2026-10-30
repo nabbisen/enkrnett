@@ -1,7 +1,7 @@
 # Roadmap
 
-**State.** M0 complete on 2026-10-31 (every M0 RFC accepted; specification baseline published). Dates for M1 to be set by the owner.
-**Updated.** 2026-10-31 (M0 closed)
+**State.** The M0 design baseline is accepted (RFC 001 to 017, 2026-10-31) and the specification is published. **Nothing is implemented**: only RFC 000, 008, and 016 are in `done/`; every other RFC waits for the release that meets its requirements. RFC 006 (measurements) is part-way: M-2, M-5, M-6 done; M-3 and M-8 half done; M-1, M-4, M-7 outstanding. Dates for M1 to be set by the owner.
+**Updated.** 2026-10-31 (fourth update)
 
 Order of work, not a calendar. Dates are set when milestone M0 ends, because its measurements
 decide how much work the later milestones contain.
@@ -10,7 +10,7 @@ decide how much work the later milestones contain.
 
 | Milestone | Version | Goal | Ends when |
 |---|---|---|---|
-| **M0 Foundations** | — | Decisions, measurements, and the specification baseline | All RFCs listed under M0 are accepted |
+| **M0 Foundations** | — | Decisions, measurements, and the specification baseline | All RFCs listed under M0 are accepted and the specification is published (met 2026-10-31). **Proposed amendment, for the owner:** the outstanding measurements move to the milestone that needs them (M-1 → M1 harness and M3 guides; M-4, M-8 part 2 → M2; M-3 part 2, M-7 → M3), so that M0 does not stay open on hardware that cannot be switched on yet. RFC 006 moves to `done/` when its last report is accepted. |
 | **M1 Skeleton** | 0.1.0 | Daemon and management UI run together on the virtual machine and on the Tier 1 device. A device can be claimed and reset. First task: a browser harness in GitHub Actions (iOS Simulator, Android emulator) that loads the management UI from a private address against a mock daemon (owner decision 2026-10-29). | The tests derived from RFC 003 and RFC 004 pass |
 | **M2 Guest Wi-Fi** | 0.2.0 | The operator configures the guest network. Separation and hardening are in place. The status says what is protected and what is not. | The tests derived from RFC 002 and the OWE and configuration RFCs pass |
 | **M3 Installable** | 0.3.0 | A non-expert installs, sets up, updates, and resets a Tier 1 device with the guides. English and Japanese. | The usability test passes; update and upgrade are tested |

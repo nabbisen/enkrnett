@@ -1,13 +1,13 @@
 # RFC 016 — Amendments from the review of RFC 001 to 015
 
-**Status.** Accepted (2026-10-31)
+**Status.** Implemented (main, 2026-10-31): the Amended-by lines and pointer notes are in place and the consolidated specification (`docs/src/specification/`) restates every amendment.
 **Tracks.** The architect's review of every accepted RFC against the owner's philosophy
 (2026-10-31, on the owner's instruction), findings F-1 to F-16.
 **Touches.** RFC 001, 002, 004, 005, 007, 010, 011, 012, 013, 015. Identifiers keep their
 numbers; new requirements continue each area's numbering.
 
-Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
-[RFC 009](./009-vocabulary-amendment-operator-words.md) and by this RFC.
+Terms are defined in [RFC 001](../accepted/001-scope-people-vocabulary.md) as amended by
+[RFC 009](../accepted/009-vocabulary-amendment-operator-words.md) and by this RFC.
 
 ## Summary
 

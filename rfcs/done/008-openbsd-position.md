@@ -1,11 +1,11 @@
 # RFC 008 — Where OpenBSD fits
 
-**Status.** Accepted (2026-09-30)
+**Status.** Implemented (main, 2026-10-31). Nothing to build: the decision is recorded here and applied in RFC 013 §6.
 **Tracks.** The owner's question of 2026-09-30: is there room for OpenBSD in Enkrnett?
 **Touches.** Nothing in the first release. The RFC on build, release, and update; a later RFC on
 a site controller.
 
-Terms are defined in [RFC 001](./001-scope-people-vocabulary.md).
+Terms are defined in [RFC 001](../accepted/001-scope-people-vocabulary.md).
 
 ## Summary
 
