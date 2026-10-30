@@ -148,7 +148,7 @@ There is one role: the owner.
 | Resource | No session | Claim session | Owner session |
 |---|---|---|---|
 | Files of the management UI | ✓ | ✓ | ✓ |
-| Greeting: product name, API version, state (section 1), languages | ✓ | ✓ | ✓ |
+| Greeting: product name, API version, state (section 1), languages; *RFC 015 adds `development` and `connection`* | ✓ | ✓ | ✓ |
 | Claim (section 3) | ✗ | ✓ | ✗ |
 | Everything else | ✗ | ✗ | ✓ |
 

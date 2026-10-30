@@ -1,6 +1,6 @@
 # RFC 015 — Management API
 
-**Status.** Proposed (amended 2026-10-31 after the architect's self-review 12)
+**Status.** Accepted (2026-10-31, in the form amended after self-review 12)
 **Tracks.** The interface between the management UI and the daemon. RFC 003 open question 2
 (request limits); RFC 004 §7 (authorization); RFC 007 threat 23; RFC 011 consequence "the API RFC
 names the save operation"; gap analysis GAP-007, GAP-015, GAP-050, GAP-092.
@@ -8,14 +8,14 @@ names the save operation"; gap analysis GAP-007, GAP-015, GAP-050, GAP-092.
 the browser harness; the consolidated specification; RFC 004 §7 and RFC 011 ENK-CFG-008 / §8
 (amended, see Consequences).
 
-Terms are defined in [RFC 001](../accepted/001-scope-people-vocabulary.md) as amended by
-[RFC 009](../accepted/009-vocabulary-amendment-operator-words.md). Channel and request security:
-[RFC 003](../accepted/003-management-channel-and-ui-delivery.md). States, sessions, and
-authorization: [RFC 004](../accepted/004-ownership-credentials-authorization.md). Configuration
-and transactions: [RFC 011](../accepted/011-configuration-model-and-transactions.md). Guest modes
-and counts: [RFC 012](../accepted/012-owe-modes-and-status.md). Update:
-[RFC 013](../accepted/013-build-release-update.md). Health check:
-[RFC 014](../accepted/014-platform-findings-carried.md).
+Terms are defined in [RFC 001](./001-scope-people-vocabulary.md) as amended by
+[RFC 009](./009-vocabulary-amendment-operator-words.md). Channel and request security:
+[RFC 003](./003-management-channel-and-ui-delivery.md). States, sessions, and
+authorization: [RFC 004](./004-ownership-credentials-authorization.md). Configuration
+and transactions: [RFC 011](./011-configuration-model-and-transactions.md). Guest modes
+and counts: [RFC 012](./012-owe-modes-and-status.md). Update:
+[RFC 013](./013-build-release-update.md). Health check:
+[RFC 014](./014-platform-findings-carried.md).
 
 ## Summary
 

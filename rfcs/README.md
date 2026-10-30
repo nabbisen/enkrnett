@@ -19,9 +19,7 @@ index change in the same commit. A folder is created when its first file arrives
 
 ## Proposed
 
-| ID | Title | Priority | Handoff |
-|---|---|---|---|
-| 015 | [Management API](./proposed/015-management-api.md) | High | — |
+None.
 
 ## Accepted
 
@@ -41,6 +39,7 @@ index change in the same commit. A folder is created when its first file arrives
 | 012 | [Guest network modes and protection status](./accepted/012-owe-modes-and-status.md) | 2026-10-29 | — |
 | 013 | [Build, release, update, and upgrade](./accepted/013-build-release-update.md) | 2026-10-31 | — |
 | 014 | [Platform findings that Enkrnett must handle itself](./accepted/014-platform-findings-carried.md) | 2026-10-31 | — |
+| 015 | [Management API](./accepted/015-management-api.md) | 2026-10-31 | — |
 
 ## Implemented
 
