@@ -1,0 +1,8 @@
+| ID | Requirement | Verification | RFC | Release |
+|---|---|---|---|---|
+| ENK-TOPO-001 | The device shall route between its Wi-Fi networks and the uplink, translating addresses. It shall not bridge a Wi-Fi network to the uplink. | Inspection; test | 002 | 0.2.0 |
+| ENK-TOPO-002 | The device shall obtain its uplink address by DHCP and shall require no change on the site router. | Test behind three different consumer routers | 002 | 0.2.0 |
+| ENK-TOPO-003 | The device shall choose subnets for its Wi-Fi networks that do not overlap the uplink's subnet, and shall choose again by itself when the uplink's subnet changes. | Test with a colliding uplink subnet | 002 | 0.2.0 |
+| ENK-TOPO-004 | The device shall accept the uplink on the Ethernet port named by the device profile. Every other Ethernet port shall carry no network. | Test per device profile | 002 | 0.2.0 |
+| ENK-TOPO-005 | Where the hardware reports link state per port, the device should detect a cable in a port that is not the uplink port and tell the operator. | Test per device profile | 002 | 0.2.0 |
+| ENK-TOPO-006 | When the uplink's subnet collides with one of the device's Wi-Fi subnets, the device shall renumber only the colliding network. The management subnet shall be chosen from a range that the common site routers of the target markets do not use by default, so that it is the colliding one only by exception. When the management address does change, the status screen shall show the new address on the next visit, and the guide shall name the one fallback: Erase and set up again. | Test with an uplink that collides with the guest subnet (management address unchanged) and with the management subnet | 016 | 0.2.0 |

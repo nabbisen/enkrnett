@@ -10,10 +10,12 @@ It is a deployment and management layer on OpenWrt. It is not a router operating
 
 ## State of the project
 
-Design phase. No release exists.
+Design baseline complete (RFC 001 to 017 accepted, 2026-10-31). No release exists. Milestone M1
+(skeleton) is next.
 
 | Where | What |
 |---|---|
-| `rfcs/` | Decisions and their design |
+| `rfcs/` | Decisions and their design, with the reasons and the alternatives |
+| [Specification](./specification/index.md) | The accepted RFCs restated with every amendment applied: 241 requirements, the threat model, the requirements index |
+| [Measurements](./measurements/index.md) | What was measured, how, and what it changed |
 | `ROADMAP.md` | Milestones and order of work |
-| This book | Documentation. It grows as RFCs are accepted. |

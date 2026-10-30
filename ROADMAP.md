@@ -1,7 +1,7 @@
 # Roadmap
 
-**State.** Draft, waiting for the owner's authorization.
-**Updated.** 2026-10-31
+**State.** M0 complete on 2026-10-31 (every M0 RFC accepted; specification baseline published). Dates for M1 to be set by the owner.
+**Updated.** 2026-10-31 (M0 closed)
 
 Order of work, not a calendar. Dates are set when milestone M0 ends, because its measurements
 decide how much work the later milestones contain.
@@ -41,8 +41,8 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 12a | RFC 015 Management API | Architect; owner | Accepted 2026-10-31 |
 | 12c | Review of RFC 001–015 against the owner's philosophy; RFC 016 (amendments) | Architect; owner | Done; 016 accepted 2026-10-31 |
 | 12b | RFC 017 Operator UI | Architect; owner | Accepted 2026-10-31 |
-| 13 | Consolidated specification in `docs/src/` | Architect | **In progress** |
-| 14 | Repository layout (RFC 013 §5); handoffs for M1 | Architect | After 017 |
+| 13 | Consolidated specification in `docs/src/specification/` (13 chapters, 241 requirements, threat model, index) | Architect | Done 2026-10-31 |
+| 14 | Repository layout (RFC 013 §5); handoffs for M1 | Architect | **Next.** M0 is complete; the owner's role and workflow documents (withheld during startup) are needed before the M1 handoffs are written |
 
 ## RFC order
 
