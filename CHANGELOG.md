@@ -5,6 +5,16 @@ release, the history of decisions is in `rfcs/`.
 
 ## Unreleased
 
+### Milestone M1, stage 1 (2026-10-31)
+
+- Workspace of RFC 013 §5: `enkrnett-model`, `enkrnett-ubus`, `enkrnettd`.
+- `enkrnettd`: every resource of the management API against a mock platform; HTTP/1.1 server
+  with the limits and headers of chapter 9; ownership state machine; sessions; argon2id; login
+  delay; persistence with format version; Erase; static files.
+- Tests: unit tests per module, API contract tests over TCP (chapters 3, 4, 9).
+- Docs: daemon internal design; building and testing. Example: `claim-flow.sh`.
+- Not yet: the UI, the OpenWrt platform, update install, MIPS build.
+
 ### Design baseline, 2026-10-31
 
 - RFC 001 to 017 accepted: scope and vocabulary, topology and separation, management channel,

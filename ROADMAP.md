@@ -42,7 +42,16 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 12c | Review of RFC 001–015 against the owner's philosophy; RFC 016 (amendments) | Architect; owner | Done; 016 accepted 2026-10-31 |
 | 12b | RFC 017 Operator UI | Architect; owner | Accepted 2026-10-31 |
 | 13 | Consolidated specification in `docs/src/specification/` (13 chapters, 241 requirements, threat model, index) | Architect | Done 2026-10-31 |
-| 14 | Repository layout (RFC 013 §5); handoffs for M1 | Architect | **Next.** M0 is complete; the owner's role and workflow documents (withheld during startup) are needed before the M1 handoffs are written |
+| 14 | Repository layout (RFC 013 §5) | Architect | Done 2026-10-31 (first structural commit of M1) |
+
+## M1 in detail (owner's instruction 2026-10-31: implement the first stage carefully, with tests, documentation, examples)
+
+| Stage | Content | State |
+|---|---|---|
+| 1 | Workspace; `enkrnett-model`; `enkrnett-ubus` codec; `enkrnettd` with every API resource against a mock platform; contract tests; internal design; CI | Done 2026-10-31 |
+| 2 | `ui/` (chapter 10) in both languages with the word check; the browser harness in GitHub Actions against `enkrnettd --mock` | Next |
+| 3 | MIPS build with the OpenWrt SDK; squashfs size check against ENK-FOOT-001 to 003 in CI; the OpenWrt package skeleton; first device profile | After 2 |
+| 4 | The OpenWrt platform: UCI and ubus, setup and management networks, the claim end to end on the x86-64 VM (M2 brings the full transaction engine) | After 3 |
 
 ## RFC order
 

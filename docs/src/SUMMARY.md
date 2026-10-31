@@ -22,6 +22,8 @@
 
 # Maintainers and contributors
 
+- [Building and testing](./contributors/building-and-testing.md)
+- [Daemon internal design (M1 stage 1)](./design/daemon.md)
 - [Measurements](./measurements/index.md)
   - [M-2 Daemon footprint](./measurements/m-2-daemon-footprint.md)
   - [M-3 Constrained image, part 1](./measurements/m-3-constrained-image.md)

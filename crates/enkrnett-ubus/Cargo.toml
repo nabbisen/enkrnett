@@ -1,0 +1,12 @@
+[package]
+name = "enkrnett-ubus"
+description = "A small ubus client for the Enkrnett daemon: the libubus wire format on the unix socket."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde_json = { workspace = true }

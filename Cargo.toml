@@ -1,6 +1,25 @@
-[package]
-name = "enkrnett"
-version = "0.0.0"
-edition = "2024"
+[workspace]
+resolver = "3"
+members = ["crates/enkrnett-model", "crates/enkrnett-ubus", "crates/enkrnettd"]
 
-[dependencies]
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "Apache-2.0"
+authors = ["nabbisen"]
+repository = "https://github.com/nabbisen/enkrnett"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+argon2 = "0.5"
+rand_core = { version = "0.6", features = ["getrandom"] }
+
+# Release profile for the device: smallest code, one unit, no unwinding (RFC 010).
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true

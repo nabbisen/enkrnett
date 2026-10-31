@@ -1,0 +1,26 @@
+[package]
+name = "enkrnettd"
+description = "The Enkrnett daemon: management API and UI files on the device."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+enkrnett-model = { path = "../enkrnett-model" }
+enkrnett-ubus = { path = "../enkrnett-ubus" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+argon2 = { workspace = true }
+rand_core = { workspace = true }
+libc = "0.2"
+
+[lib]
+name = "enkrnettd"
+path = "src/lib.rs"
+
+[[bin]]
+name = "enkrnettd"
+path = "src/main.rs"
