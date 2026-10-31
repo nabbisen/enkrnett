@@ -456,7 +456,7 @@ fn changing_the_owner_password_checks_new_first_and_ends_sessions() {
         &ts,
         "password",
         Some(&token),
-        &format!(r#"{{"current":"wrong","new":"short"}}"#),
+        r#"{"current":"wrong","new":"short"}"#,
     );
     assert_eq!(
         (r.status, r.code()),
