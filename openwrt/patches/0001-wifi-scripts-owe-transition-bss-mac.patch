@@ -1,0 +1,61 @@
+# Carried patch (ENK-CFG-004, ENK-REPO-002)
+#
+# Upstream: openwrt/openwrt commit 1789118599234ae367869c65ad6a92c6f1cbbf10 (main, 2026-07-10),
+#   "wifi-scripts: give the OWE-transition BSS its own MAC address".
+# Applies to: package/network/config/wifi-scripts in OpenWrt 25.12 (the release carries the defect:
+#   both BSSes of an automatic Transition Mode pair get the same BSSID; found in measurement M-6).
+# Remove when: the 25.12 release branch contains the commit, or the baseline moves to a release that does.
+# Release checklist item 8 reviews this header.
+#
+From 1789118599234ae367869c65ad6a92c6f1cbbf10 Mon Sep 17 00:00:00 2001
+From: Felix Fietkau <nbd@nbd.name>
+Date: Fri, 10 Jul 2026 15:02:20 +0200
+Subject: [PATCH] wifi-scripts: give the OWE-transition BSS its own MAC address
+
+The transition BSS is a copy of the main BSS with the MAC already set, so
+iface.prepare() was a no-op and both BSSes emitted the same bssid; with a
+fixed or random MAC the duplicate was never reassigned and the second
+interface failed to come up. Clear the address (and stale flags) and
+prepare a fresh one, plumbing the phy/num_global/macaddr_base through
+iface_setup().
+
+Signed-off-by: Felix Fietkau <nbd@nbd.name>
+---
+ .../files-ucode/usr/share/ucode/wifi/ap.uc             | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/package/network/config/wifi-scripts/files-ucode/usr/share/ucode/wifi/ap.uc b/package/network/config/wifi-scripts/files-ucode/usr/share/ucode/wifi/ap.uc
+index 58e9b43f304504..13f06f92f3626d 100644
+--- a/package/network/config/wifi-scripts/files-ucode/usr/share/ucode/wifi/ap.uc
++++ b/package/network/config/wifi-scripts/files-ucode/usr/share/ucode/wifi/ap.uc
+@@ -8,7 +8,7 @@ import { append, append_raw, append_value, append_vars, append_list, append_stri
+ import * as netifd from 'wifi.netifd';
+ import * as iface from 'wifi.iface';
+ 
+-function iface_setup(config) {
++function iface_setup(config, phy, num_global_macaddr, macaddr_base) {
+ 	switch(config.fixup) {
+ 	case 'owe':
+ 		config.ignore_broadcast_ssid = true;
+@@ -22,7 +22,11 @@ function iface_setup(config) {
+ 		config.owe_transition_ssid = config.ssid + 'OWE';
+ 		config.encryption = 'none';
+ 		config.ignore_broadcast_ssid = false;
+-		iface.prepare(config);
++		/* the transition BSS needs its own address, not the main BSS's */
++		config.macaddr = null;
++		delete config.default_macaddr;
++		delete config.random_macaddr;
++		iface.prepare(config, phy, num_global_macaddr, macaddr_base);
+ 		break;
+ 	}
+ 	
+@@ -555,7 +559,7 @@ export function generate(interface, data, config, vlans, stas, phy_features) {
+ 	config.ctrl_interface = '/var/run/hostapd';
+ 
+ 	config.start_disabled = data.ap_start_disabled;
+-	iface_setup(config);
++	iface_setup(config, data.phy + data.phy_suffix, data.config.num_global_macaddr, data.config.macaddr_base);
+ 
+ 	iface.parse_encryption(config, data.config, phy_features);
+ 	if (data.config.band == '6g') {

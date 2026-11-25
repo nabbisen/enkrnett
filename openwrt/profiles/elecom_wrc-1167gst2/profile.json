@@ -1,6 +1,7 @@
 {
   "format": 1,
   "id": "elecom_wrc-1167gst2",
+  "board_names": ["elecom,wrc-1167gst2"],
   "vendor": "ELECOM",
   "model": "WRC-1167GST2",
   "revision": "all",

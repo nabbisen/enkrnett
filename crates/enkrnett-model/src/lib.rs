@@ -12,9 +12,11 @@ pub mod device;
 pub mod encoding;
 pub mod key;
 pub mod password;
+pub mod plan;
 pub mod profile;
 pub mod settings;
 pub mod state;
+pub mod uci;
 
 /// The API version carried in the path prefix `/api/1/` and in the greeting (ENK-API-001).
 pub const API_VERSION: u32 = 1;

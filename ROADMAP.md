@@ -1,7 +1,7 @@
 # Roadmap
 
 **State.** The M0 design baseline is accepted (RFC 001 to 017, 2026-10-31) and the specification is published. **Nothing is implemented**: only RFC 000, 008, and 016 are in `done/`; every other RFC waits for the release that meets its requirements. RFC 006 (measurements) is part-way: M-2, M-5, M-6 done; M-3 and M-8 half done; M-1, M-4, M-7 outstanding. Dates for M1 to be set by the owner.
-**Updated.** 2026-11-25
+**Updated.** 2026-11-26
 
 Order of work, not a calendar. Dates are set when milestone M0 ends, because its measurements
 decide how much work the later milestones contain.
@@ -51,7 +51,8 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 1 | Workspace; `enkrnett-model`; `enkrnett-ubus` codec; `enkrnettd` with every API resource against a mock platform; contract tests; internal design; CI | Done 2026-10-31 |
 | 2 | `ui/` (chapter 10) in both languages with the word check; the browser harness in GitHub Actions against `enkrnettd --mock` | Done 2026-11-25 |
 | 3 | MIPS build with the OpenWrt SDK; squashfs size check against ENK-FOOT-001 to 003 in CI; the OpenWrt package skeleton; first device profile | Done 2026-11-25 |
-| 4 | The OpenWrt platform: UCI and ubus, setup and management networks, the claim end to end on the x86-64 VM (M2 brings the full transaction engine) | Next |
+| 4 | The OpenWrt platform: UCI and ubus, setup and management networks, the claim end to end on the x86-64 VM (M2 brings the full transaction engine) | Done 2026-11-26 |
+| 5 | The package on the VM through `procd` (capabilities, LED hand-over, the erase marker through a boot); the tests derived from RFC 003 and 004 run against the real platform; the 0.1.0 release checklist | Next |
 
 ## RFC order
 

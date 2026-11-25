@@ -1,0 +1,40 @@
+{
+  "format": 1,
+  "id": "x86_64_generic",
+  "board_names": [ "generic", "qemu-standard-pc-i440fx-piix-1996", "qemu-standard-pc-q35-ich9-2009" ],
+  "vendor": "QEMU",
+  "model": "x86-64 virtual machine (measurement and integration tests)",
+  "revision": "virtual",
+  "tier": 3,
+  "device_class": "standard",
+  "target": "x86/64",
+  "package_arch": "x86_64",
+  "image_builder_profile": "generic",
+  "install": {
+    "class": "expert_install",
+    "vendor_image_kind": "none",
+    "tested_vendor_firmware": []
+  },
+  "flash_image_limit_kib": 131072,
+  "ram_mib": 256,
+  "uplink_port": "eth1",
+  "reset_button": "none",
+  "light": null,
+  "radios": [
+    { "band": "2g", "chip": "mac80211_hwsim", "interface_limit": 8 }
+  ],
+  "platform_hardening_complete": true,
+  "label_address": {
+    "printed": "eth0_mac",
+    "source": "/sys/class/net/eth0/address",
+    "comment": "A virtual machine has no label; the first Ethernet address stands in."
+  },
+  "country": { "fixed": "JP" },
+  "argon2": { "memory_kib": 8192, "iterations": 3, "parallelism": 1 },
+  "image": { "packages_remove": [], "packages_add": [ "enkrnett", "kmod-mac80211-hwsim", "wpad-basic-mbedtls" ] },
+  "verified": {
+    "on_hardware": false,
+    "by": [ "tests/vm" ],
+    "comment": "Not a product device: the test vehicle of chapter 14 §2 (VM integration)."
+  }
+}

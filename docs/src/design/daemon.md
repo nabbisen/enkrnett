@@ -9,7 +9,7 @@ the specification (chapters 3, 4, 6, 9); this document follows it and adds nothi
 | Delivered | Not yet (stage, milestone) |
 |---|---|
 | The workspace of chapter 11 §4: `enkrnett-model`, `enkrnett-ubus`, `enkrnettd` | The UI (`ui/`, M1 stage 2) and the browser harness (`tests/browser/`) |
-| Every resource of chapter 9 §3, against the mock platform | The OpenWrt platform: UCI, ubus, sysfs, the transaction engine with the pending marker and confirmation by join (chapter 6; M2) |
+| Every resource of chapter 9 §3, against the mock platform; since stage 4 also against OpenWrt (`docs/src/design/platform.md`) | The transaction engine with the pending marker and confirmation by join (chapter 6; M2) |
 | HTTP/1.1 server with the limits and headers of chapter 9 | Update download, verification, install (chapter 11; M3) |
 | Ownership state machine with timers; sessions; login delay; argon2id | The OpenWrt package, init script, ACL (`openwrt/package`; M1 stage 3) |
 | Persistence with format version; Erase | MIPS build and the squashfs size check in CI (M1 stage 3) |

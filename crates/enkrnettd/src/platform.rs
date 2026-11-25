@@ -12,7 +12,9 @@ use enkrnett_model::settings::Settings;
 use enkrnett_model::state::OwnershipState;
 
 mod mock;
+pub mod openwrt;
 pub use mock::MockPlatform;
+pub use openwrt::OpenWrtPlatform;
 
 /// A platform operation that did not succeed. The message is for the log, never for the
 /// operator.

@@ -139,6 +139,8 @@ if [ "$PACKAGE" = 1 ]; then
   rm -rf "$PRE"; mkdir -p "$PRE/ui"
   cp "$OUT/enkrnettd" "$PRE/"
   cp -r "$ROOT/ui/dist/." "$PRE/ui/"
+  mkdir -p "$PRE/profiles"
+  for d in "$ROOT"/openwrt/profiles/*/; do cp "$d/profile.json" "$PRE/profiles/$(basename "$d").json"; done
   rm -rf "$SDK_DIR/package/enkrnett"
   cp -r "$ROOT/openwrt/package/enkrnett" "$SDK_DIR/package/enkrnett"
   ( cd "$SDK_DIR" && { [ -f .config ] || make defconfig >/dev/null; } && make package/enkrnett/compile ENKRNETT_PREBUILT="$PRE" >"$OUT/package.log" 2>&1 ) \

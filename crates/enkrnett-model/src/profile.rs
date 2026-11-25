@@ -91,6 +91,9 @@ pub struct Verified {
 pub struct DeviceProfile {
     pub format: u32,
     pub id: String,
+    /// `board_name` values of `ubus call system board` that select this profile.
+    #[serde(default)]
+    pub board_names: Vec<String>,
     pub vendor: String,
     pub model: String,
     pub revision: String,
@@ -171,6 +174,11 @@ impl DeviceProfile {
             || self.argon2.parallelism == 0
         {
             errors.push(err("argon2 parameters must be positive".into()));
+        }
+        if self.board_names.is_empty() {
+            errors.push(err(
+                "board_names must name the board(s) this profile is for".into(),
+            ));
         }
         if self.label_address.printed.is_empty() || self.label_address.source.is_empty() {
             errors.push(err(

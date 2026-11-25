@@ -72,6 +72,19 @@ the real squashfs figure (without it the script estimates with xz and says so). 
 100 MB) is cached in `openwrt/.cache/`; `ENKRNETT_SDK_DIR` points at an existing one. Output:
 `openwrt/out/enkrnettd`, `openwrt/out/sizes.json`, and the `.apk`.
 
+## The claim on the OpenWrt virtual machine
+
+```sh
+rustup target add x86_64-unknown-linux-musl
+RUSTFLAGS="-C target-feature=+crt-static" cargo build --release -p enkrnettd --target x86_64-unknown-linux-musl
+tests/vm/prepare.sh /path/to/vm    # user, ACL, ownership, base configuration; reboots the VM
+tests/vm/claim.sh   /path/to/vm    # the claim end to end through an SSH tunnel
+```
+
+The VM directory is the measurement VM of RFC 006 (`vm.sh`, `vmssh`, `vmscp`, the disk image);
+it is private material under `.git-exclude/tmp/m/vm/`. What the test checks is in
+`docs/src/design/platform.md` §6.
+
 ## Validate a settings document
 
 ```sh

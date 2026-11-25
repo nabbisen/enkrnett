@@ -95,6 +95,7 @@ version = "0.1.0"
 dependencies = [
  "argon2",
  "enkrnett-model",
+ "enkrnett-ubus",
  "libc",
  "rand_core",
  "serde",

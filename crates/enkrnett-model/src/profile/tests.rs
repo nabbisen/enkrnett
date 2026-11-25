@@ -6,6 +6,7 @@ const WRC_1167GST2: &str =
     include_str!("../../../../openwrt/profiles/elecom_wrc-1167gst2/profile.json");
 const WCR_1166DS: &str =
     include_str!("../../../../openwrt/profiles/buffalo_wcr-1166ds/profile.json");
+const X86_64: &str = include_str!("../../../../openwrt/profiles/x86_64_generic/profile.json");
 
 #[test]
 fn the_shipped_profiles_parse_and_pass() {
@@ -13,6 +14,7 @@ fn the_shipped_profiles_parse_and_pass() {
         let p = DeviceProfile::parse(json).unwrap_or_else(|e| panic!("{name}: {e}"));
         assert_eq!(p.check(), vec![], "{name}");
         assert_eq!(p.tier, 2, "{name}: unverified profiles are Tier 2");
+        assert!(!p.board_names.is_empty());
         assert!(!p.verified.on_hardware);
         assert_eq!(p.country.fixed.as_deref(), Some("JP"));
         assert_eq!(p.package_arch, "mipsel_24kc");
@@ -62,4 +64,13 @@ fn rules_catch_impossible_values() {
     p.id = "Bad Id".into();
     let errors = p.check();
     assert!(errors.len() >= 4, "{errors:?}");
+}
+
+#[test]
+fn the_virtual_machine_profile_is_tier_three_and_passes() {
+    let p = DeviceProfile::parse(X86_64).unwrap();
+    assert_eq!(p.check(), vec![]);
+    assert_eq!(p.tier, 3);
+    assert!(p.light.is_none());
+    assert!(p.board_names.iter().any(|b| b == "generic"));
 }

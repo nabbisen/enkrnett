@@ -42,11 +42,13 @@ pub fn start(
     platform: Arc<dyn Platform>,
     clock: Arc<dyn Clock>,
 ) -> std::io::Result<Running> {
-    let listener = TcpListener::bind(config.listen)?;
+    let config = Arc::new(config);
+    // The platform first: it creates the management interface that carries the listen address
+    // (ENK-CFG-025), so the bind comes after it and may have to wait for netifd.
+    let app = App::new(Arc::clone(&config), platform, clock)?;
+    let listener = bind_with_patience(config.listen)?;
     http::set_backlog(&listener, http::LISTEN_BACKLOG);
     let addr = listener.local_addr()?;
-    let config = Arc::new(config);
-    let app = App::new(Arc::clone(&config), platform, clock)?;
     app.start_ticking();
     let handler = api::Api::new(app.clone(), Arc::clone(&config));
     let worker_config = Arc::clone(&config);
@@ -55,4 +57,23 @@ pub fn start(
         .spawn(move || http::serve(listener, Arc::new(handler), &worker_config))?;
     log::event("started", &[("listen", &addr)]);
     Ok(Running { addr, app })
+}
+
+/// Binds the listen address, retrying for up to 30 seconds while the address is not yet
+/// assigned (the management bridge comes up asynchronously after a reload).
+fn bind_with_patience(addr: SocketAddr) -> std::io::Result<TcpListener> {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    loop {
+        match TcpListener::bind(addr) {
+            Ok(l) => return Ok(l),
+            Err(e)
+                if e.raw_os_error() == Some(libc::EADDRNOTAVAIL)
+                    && std::time::Instant::now() < deadline =>
+            {
+                log::event("bind_waiting", &[("listen", &addr)]);
+                std::thread::sleep(std::time::Duration::from_secs(1));
+            }
+            Err(e) => return Err(e),
+        }
+    }
 }

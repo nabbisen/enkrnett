@@ -55,6 +55,8 @@ define Package/enkrnett/install
 	$(INSTALL_BIN) $(ENKRNETT_PREBUILT)/enkrnettd $(1)/usr/sbin/enkrnettd
 	$(INSTALL_DIR) $(1)/usr/share/enkrnett/ui
 	$(CP) $(ENKRNETT_PREBUILT)/ui/. $(1)/usr/share/enkrnett/ui/
+	$(INSTALL_DIR) $(1)/usr/share/enkrnett/profiles
+	$(CP) $(ENKRNETT_PREBUILT)/profiles/*.json $(1)/usr/share/enkrnett/profiles/
 	$(INSTALL_DIR) $(1)/usr/share/acl.d
 	$(INSTALL_DATA) ./files/enkrnett.acl.json $(1)/usr/share/acl.d/enkrnett.json
 	$(INSTALL_DIR) $(1)/etc/capabilities

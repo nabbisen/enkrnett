@@ -5,6 +5,42 @@ START=95
 STOP=10
 USE_PROCD=1
 PROG=/usr/sbin/enkrnettd
+STATE=/etc/enkrnett
+PROFILES=/usr/share/enkrnett/profiles
+
+# Erase (ENK-OWN-018): the daemon can only ask; this root-run step acts at the next boot. On an
+# image install the overlay is reset to the image; on a package install only Enkrnett's own
+# state and sections go, because firstboot would remove Enkrnett itself.
+boot() {
+	if [ -f "$STATE/ERASE" ]; then
+		if [ -x /rom/usr/sbin/enkrnettd ]; then
+			logger -t enkrnett "erase requested: resetting the overlay to the image"
+			firstboot -y && reboot
+			return
+		fi
+		logger -t enkrnett "erase requested: removing Enkrnett's state and sections"
+		rm -rf "$STATE"
+		for f in wireless network dhcp firewall; do
+			for s in $(uci -q show "$f" | sed -n "s/^$f\.\(enk_[a-z0-9_]*\)=.*/\1/p" | sort -u); do uci -q delete "$f.$s"; done
+			uci -q commit "$f"
+		done
+		mkdir -p "$STATE" && chown enkrnett:enkrnett "$STATE" && chmod 0750 "$STATE"
+	fi
+	start "$@"
+}
+
+prepare_light() {
+	# The identify step blinks a LED (ENK-OWN-006); sysfs attributes are root's, so hand them over.
+	local board led
+	board=$(ubus call system board 2>/dev/null | jsonfilter -e '@.board_name')
+	for p in "$PROFILES"/*.json; do
+		[ -f "$p" ] || continue
+		if jsonfilter -i "$p" -e '@.board_names[*]' 2>/dev/null | grep -qx "$board"; then
+			led=$(jsonfilter -i "$p" -e '@.light.led' 2>/dev/null)
+			[ -n "$led" ] && [ -d "/sys/class/leds/$led" ] && chown enkrnett "/sys/class/leds/$led/brightness" 2>/dev/null
+		fi
+	done
+}
 
 start_service() {
 	config_load enkrnett
@@ -12,8 +48,10 @@ start_service() {
 	config_get listen main listen "192.168.207.1:80"
 	config_get_bool development main development 0
 
+	prepare_light
+
 	procd_open_instance
-	procd_set_param command "$PROG" --listen "$listen" --state-dir /etc/enkrnett --ui-dir /usr/share/enkrnett/ui
+	procd_set_param command "$PROG" --listen "$listen" --state-dir "$STATE" --ui-dir /usr/share/enkrnett/ui --profiles-dir "$PROFILES"
 	[ "$development" = 1 ] && procd_append_param command --development
 	procd_set_param user enkrnett
 	procd_set_param group enkrnett

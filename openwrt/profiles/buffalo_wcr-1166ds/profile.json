@@ -1,6 +1,7 @@
 {
   "format": 1,
   "id": "buffalo_wcr-1166ds",
+  "board_names": ["buffalo,wcr-1166ds"],
   "vendor": "Buffalo",
   "model": "WCR-1166DS",
   "revision": "all",

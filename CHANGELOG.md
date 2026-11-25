@@ -5,6 +5,19 @@ release, the history of decisions is in `rfcs/`.
 
 ## Unreleased
 
+### Milestone M1, stage 4 (2026-11-26)
+
+- Measurement M-5b: the daemon's own user commits the owned configuration directly; no root
+  helper for configuration (`docs/src/measurements/m-5b-non-root-commit.md`).
+- `enkrnett-model`: the UCI file format (`uci`), the translation from state to owned sections
+  (`plan`), `board_names` in device profiles; the `x86_64_generic` VM profile.
+- `enkrnettd`: the OpenWrt platform (UCI files 0600 by temp-and-rename, ubus reload and events,
+  health check by SSID, readings, hardening report, erase marker, reboot); profile selection by
+  board name; the listener binds after the platform is up.
+- Package: `boot()` acts on the erase marker; LED attribute hand-over; profiles installed.
+- `openwrt/patches/0001-…`: the carried Transition Mode fix with its header (ENK-REPO-002).
+- `tests/vm/`: the claim end to end on the OpenWrt VM, observed green on 2026-11-26.
+
 ### Milestone M1, stage 3 (2026-11-25)
 
 - `openwrt/build-mips.sh`: the daemon for `mipsel_24kc` from the pinned SDK toolchain and

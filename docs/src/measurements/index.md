@@ -11,11 +11,12 @@ Measurements answer questions that no source could settle. They are defined by R
 | M-3 | Does a complete image fit and run on a `constrained` device? | Part 1 ready for review (image fits: 5,696 KB); part 2 blocked: no router | [report](./m-3-constrained-image.md) | — |
 | M-4 | How do OWE and Transition Mode behave on the candidate devices with real clients? | Blocked: no router; lawful basis pending | — | — |
 | M-5 | Can configuration be applied with confirm-or-revert through OpenWrt's own interfaces, by a process that is not `root`? | Ready for review | [report](./m-5-confirm-or-revert.md) | — |
+| M-5b | Can the daemon's own user commit the owned configuration files directly and reload, touching nothing else? | Ready for review (yes; the sticky directory allows new files) | [report](./m-5b-non-root-commit.md) | — |
 | M-6 | Does OpenWrt in a virtual machine with simulated radios run OWE from association to traffic? | Ready for review | [report](./m-6-simulated-radios.md) | — |
 | M-7 | Can non-experts install a candidate device, and recover it, with a written guide alone? | Blocked: no router; lawful basis pending | — | — |
 | M-8 | Does the separation of RFC 002 hold against a client that tries to break it? | Part 1 ready for review (13 of 14 hold; `bridge_isolate` gap found); part 2 blocked: no router | [report](./m-8-separation.md) | — |
 
 States: Not started · Blocked · In progress · Ready for review · Accepted · Returned · Superseded.
 
-Reports dated 2026-10-04 and 2026-10-29 were carried out by the architect at the owner's instruction; the
+Reports dated 2026-10-04, 2026-10-29, and 2026-11-26 were carried out by the architect at the owner's instruction; the
 development team's role is noted in each report.
