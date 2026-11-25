@@ -10,7 +10,6 @@ repository.workspace = true
 
 [dependencies]
 enkrnett-model = { path = "../enkrnett-model" }
-enkrnett-ubus = { path = "../enkrnett-ubus" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 argon2 = { workspace = true }

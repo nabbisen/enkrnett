@@ -5,6 +5,16 @@ release, the history of decisions is in `rfcs/`.
 
 ## Unreleased
 
+### Milestone M1, stage 2 (2026-11-25)
+
+- `ui/`: the management UI, every screen of chapter 10 in English and Japanese; catalogues as
+  JSON; the word check and the size check in the build (44 KiB compressed against 150 KiB).
+- `tests/browser/`: the Playwright harness, 14 tests at phone size against `enkrnettd --mock`.
+- `enkrnettd`: UI files are no longer bounded by the 64 KiB API body limit; `enkrnett-ubus` is
+  not a dependency of the daemon until the OpenWrt platform uses it.
+- One Japanese sentence of RFC 017 §5.6 corrected by the word check (see `docs/src/design/ui.md` §5).
+- CI: UI and browser-harness jobs.
+
 ### Milestone M1, stage 1 (2026-10-31)
 
 - Workspace of RFC 013 §5: `enkrnett-model`, `enkrnett-ubus`, `enkrnettd`.

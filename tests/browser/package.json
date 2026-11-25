@@ -1,0 +1,19 @@
+{
+  "name": "enkrnett-browser-harness",
+  "private": true,
+  "version": "0.1.0",
+  "description": "The browser harness (specification chapter 14 §2): the management UI loaded from a private address against enkrnettd --mock.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed --project=chromium-phone",
+    "install-browsers": "playwright install --with-deps chromium webkit"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3"
+  }
+}

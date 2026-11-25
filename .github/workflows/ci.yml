@@ -30,6 +30,61 @@ jobs:
           ls -l target/release/enkrnettd
           size target/release/enkrnettd || true
 
+  ui:
+    name: UI word check, types, unit tests, build, size
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci
+      - run: npm run wordcheck
+      - run: npm run check
+      - run: npm test
+      - name: Build with the size check (ENK-FOOT-002)
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-dist
+          path: ui/dist
+
+  browser:
+    name: Browser harness (Chromium and WebKit at phone size)
+    runs-on: ubuntu-latest
+    needs: [ui]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui-dist
+          path: ui/dist
+      - name: Build the daemon
+        run: cargo build -p enkrnettd
+      - name: Install the harness and the browsers
+        working-directory: tests/browser
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium webkit
+      - name: Run the harness
+        working-directory: tests/browser
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: tests/browser/test-results
+
   book:
     name: mdBook builds
     runs-on: ubuntu-latest

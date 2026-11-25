@@ -6,7 +6,8 @@ use std::io::Write;
 use enkrnett_model::api::{ErrorBody, ErrorCode, ErrorDetail};
 use serde::Serialize;
 
-/// Largest response body (ENK-SEC-022).
+/// Largest API response body (ENK-SEC-022). UI files are bounded by the bundle budget
+/// (ENK-FOOT-002) instead and are not subject to this limit.
 pub const MAX_BODY: usize = 64 * 1024;
 
 pub const CONTENT_SECURITY_POLICY: &str = "default-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
@@ -26,6 +27,8 @@ pub struct Response {
     pub status: u16,
     pub headers: Vec<(String, String)>,
     pub body: Vec<u8>,
+    /// Whether ENK-SEC-022 bounds this body (every API response; not a UI file).
+    pub limited: bool,
 }
 
 impl Response {
@@ -34,6 +37,7 @@ impl Response {
             status,
             headers: Vec::new(),
             body: Vec::new(),
+            limited: true,
         }
     }
 
@@ -79,10 +83,12 @@ impl Response {
 
     /// A file body with the given cache policy.
     pub fn file(status: u16, content_type: &str, cache_control: &str, body: Vec<u8>) -> Response {
-        Response::new(status)
+        let mut response = Response::new(status)
             .header("Content-Type", content_type)
             .header("Cache-Control", cache_control)
-            .with_body(body)
+            .with_body(body);
+        response.limited = false;
+        response
     }
 
     pub fn with_body(mut self, body: Vec<u8>) -> Response {
@@ -113,7 +119,7 @@ impl Response {
 
     /// Serialises the response with the fixed headers added.
     pub fn to_bytes(&self) -> Vec<u8> {
-        let body: &[u8] = if self.body.len() > MAX_BODY {
+        let body: &[u8] = if self.limited && self.body.len() > MAX_BODY {
             crate::log::event("response_too_large", &[("bytes", &self.body.len())]);
             b"{\"error\":{\"code\":\"internal\",\"message\":\"response too large\"}}"
         } else {
@@ -162,6 +168,14 @@ mod tests {
         assert!(text.contains("Connection: close\r\n"));
         assert!(text.contains("Cache-Control: no-store\r\n"));
         assert!(text.ends_with("\r\n\r\n{}"));
+    }
+
+    #[test]
+    fn files_are_not_bounded_by_the_api_limit() {
+        let r = Response::file(200, "text/javascript", "no-cache", vec![b'x'; MAX_BODY + 1]);
+        let bytes = r.to_bytes();
+        assert!(bytes.len() > MAX_BODY);
+        assert!(!String::from_utf8_lossy(&bytes[..300]).contains("too large"));
     }
 
     #[test]
