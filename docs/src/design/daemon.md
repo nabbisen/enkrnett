@@ -67,7 +67,7 @@ Actions that end the client's own network (confirm, restart, erase) answer first
 
 | Fact | Where | Survives a restart |
 |---|---|---|
-| Owner record (password hash, management name and key, settings) | `state.json` | Yes: a device with an owner starts `CLAIMED` |
+| Owner record (password hash, management name and key, settings) | `state.json` in `/etc/enkrnett` (the overlay) | Yes: a device with an owner starts `CLAIMED` |
 | Pending claim (confirmed, not final) | Memory | No: a restart in `PENDING` returns to `SETUP` (ENK-OWN-008) |
 | Held proposal (checked, not confirmed) | Memory, with the claim session | No (ENK-OWN-007: nothing persists before confirm) |
 | Sessions, login delay | Memory | No (ENK-AUTH-003, ENK-OWN-012) |

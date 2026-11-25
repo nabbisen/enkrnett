@@ -1,0 +1,43 @@
+{
+  "format": 1,
+  "id": "elecom_wrc-1167gst2",
+  "vendor": "ELECOM",
+  "model": "WRC-1167GST2",
+  "revision": "all",
+  "tier": 2,
+  "device_class": "standard",
+  "target": "ramips/mt7621",
+  "package_arch": "mipsel_24kc",
+  "image_builder_profile": "elecom_wrc-1167gst2",
+  "install": {
+    "class": "self_install",
+    "vendor_image_kind": "factory",
+    "tested_vendor_firmware": []
+  },
+  "flash_image_limit_kib": 24576,
+  "ram_mib": 256,
+  "uplink_port": "wan",
+  "reset_button": "reset",
+  "light": { "led": "white:power" },
+  "radios": [
+    { "band": "2g", "chip": "MT7615D", "interface_limit": 16 },
+    { "band": "5g", "chip": "MT7615D", "interface_limit": 16 }
+  ],
+  "platform_hardening_complete": true,
+  "label_address": {
+    "printed": "wan_mac",
+    "source": "/sys/class/net/wan/address",
+    "comment": "ENK-TIER-002 as amended by RFC 016: which address the label prints. To be confirmed against a physical unit (M-7); the setup Wi-Fi's name ends in its last four characters (ENK-OWN-004)."
+  },
+  "country": { "fixed": "JP" },
+  "argon2": { "memory_kib": 8192, "iterations": 3, "parallelism": 1 },
+  "image": {
+    "packages_remove": [ "ppp", "ppp-mod-pppoe", "odhcp6c", "odhcpd-ipv6only", "dropbear" ],
+    "packages_add": [ "enkrnett" ]
+  },
+  "verified": {
+    "on_hardware": false,
+    "by": [ "M-3", "M-4", "M-7" ],
+    "comment": "Hardware fields come from OpenWrt's device support and the vendor's specification, not from a unit in hand. A profile is Tier 2 until section 2 of chapter 5 is met and the owner accepts it (ENK-TIER-004)."
+  }
+}

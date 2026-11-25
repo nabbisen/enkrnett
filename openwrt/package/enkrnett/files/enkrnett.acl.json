@@ -1,0 +1,15 @@
+{
+  "user": "enkrnett",
+  "access": {
+    "network": { "methods": [ "reload" ] },
+    "network.wireless": { "methods": [ "status", "reload", "up", "down" ] },
+    "network.interface.*": { "methods": [ "status" ] },
+    "network.device": { "methods": [ "status" ] },
+    "hostapd.*": { "methods": [ "get_status", "get_clients", "del_client" ] },
+    "service": { "methods": [ "list" ] },
+    "system": { "methods": [ "board", "info", "reboot" ] },
+    "led": { "methods": [ "set" ] }
+  },
+  "send": [],
+  "comment": "ENK-CFG-020: exactly the objects and methods the daemon uses (chapters 6, 9). ubusd reads this file at its next start."
+}

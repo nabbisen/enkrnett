@@ -1,0 +1,46 @@
+{
+  "format": 1,
+  "comment": "Pinned inputs of a release (ENK-BUILD-007, ENK-BUILD-008). Every file is fetched by URL and checked against its SHA-256 before use; a mismatch stops the build.",
+  "openwrt": {
+    "baseline": "25.12",
+    "release": "25.12.5",
+    "package_arch": "mipsel_24kc",
+    "targets": {
+      "ramips/mt7621": {
+        "sdk": {
+          "url": "https://downloads.openwrt.org/releases/25.12.5/targets/ramips/mt7621/openwrt-sdk-25.12.5-ramips-mt7621_gcc-14.3.0_musl.Linux-x86_64.tar.zst",
+          "sha256": "9962084f4131610e90e48bc864c6ceade0b238f15f335de5f672910532b20e9c"
+        },
+        "image_builder": {
+          "url": "https://downloads.openwrt.org/releases/25.12.5/targets/ramips/mt7621/openwrt-imagebuilder-25.12.5-ramips-mt7621.Linux-x86_64.tar.zst",
+          "sha256": "e825abe3659d510320ca7e5daf3b9471ca214208fe7bb90c4c6e2ed0a708fa07"
+        }
+      },
+      "ramips/mt76x8": {
+        "sdk": {
+          "url": "https://downloads.openwrt.org/releases/25.12.5/targets/ramips/mt76x8/openwrt-sdk-25.12.5-ramips-mt76x8_gcc-14.3.0_musl.Linux-x86_64.tar.zst",
+          "sha256": "b44636e0a53f0d769cbce64edb9ca3831e1a9ecdc8c53a5caf128884be6c490e"
+        },
+        "image_builder": {
+          "url": "https://downloads.openwrt.org/releases/25.12.5/targets/ramips/mt76x8/openwrt-imagebuilder-25.12.5-ramips-mt76x8.Linux-x86_64.tar.zst",
+          "sha256": "eb62a030c42fa8d0c3d922dc15a05e8410166389ab1c818fd2e4ff875c0ba453"
+        }
+      }
+    },
+    "toolchain_dir_glob": "toolchain-mipsel_24kc_gcc-14.3.0_musl",
+    "daemon_build_target": "ramips/mt7621",
+    "comment_targets": "Both targets share mipsel_24kc and the same gcc 14.3.0 musl toolchain; the daemon is built once with the mt7621 SDK and packaged for both."
+  },
+  "rust": {
+    "nightly": "nightly-2026-11-21",
+    "target": "mipsel-unknown-linux-musl",
+    "build_std": "std,panic_abort",
+    "rustflags": "-C target-feature=-crt-static",
+    "comment": "Tier 3 target: no prebuilt std, built with -Zbuild-std (M-2). Dynamic musl as OpenWrt packages are built (ENK-FOOT-015)."
+  },
+  "squashfs": {
+    "mksquashfs_args": ["-comp", "xz", "-Xdict-size", "100%", "-b", "256K", "-no-xattrs", "-noappend"],
+    "comment": "OpenWrt's squashfs settings; the size of a squashfs holding only the measured files is the budget figure of RFC 010."
+  },
+  "budgets_kib": { "daemon": 300, "ui": 150, "extras": 50 }
+}

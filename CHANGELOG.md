@@ -5,6 +5,20 @@ release, the history of decisions is in `rfcs/`.
 
 ## Unreleased
 
+### Milestone M1, stage 3 (2026-11-25)
+
+- `openwrt/build-mips.sh`: the daemon for `mipsel_24kc` from the pinned SDK toolchain and
+  `nightly-2026-11-21`; the budgets of chapter 8 measured and enforced (daemon 256 KiB of 300,
+  UI 49 of 150, extras 7 of 50, xz estimate; CI measures the real squashfs figure).
+- `openwrt/lock/inputs.json`: pinned SDK and Image Builder inputs with checksums, the nightly,
+  the squashfs settings.
+- `openwrt/package/enkrnett/`: the OpenWrt package (`procd`, non-root user, one capability,
+  `ubusd` ACL, UCI config, first-boot script); built as `enkrnett-0.1.0-r1.apk` in the SDK.
+- `openwrt/profiles/`: device profiles for ELECOM WRC-1167GST2 and Buffalo WCR-1166DS, schema
+  and rules in `enkrnett_model::profile` with tests.
+- `enkrnettd`: default state directory `/etc/enkrnett` (the overlay).
+- CI: the `mips` job.
+
 ### Milestone M1, stage 2 (2026-11-25)
 
 - `ui/`: the management UI, every screen of chapter 10 in English and Japanese; catalogues as

@@ -37,7 +37,7 @@ impl Default for Config {
     fn default() -> Config {
         Config {
             listen: "127.0.0.1:8080".parse().expect("literal"),
-            state_dir: PathBuf::from("/var/lib/enkrnett"),
+            state_dir: PathBuf::from("/etc/enkrnett"),
             ui_dir: None,
             development: false,
             act_delay: Duration::from_secs(2),

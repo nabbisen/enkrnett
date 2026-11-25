@@ -25,8 +25,8 @@ says exactly what is encrypted and what is not, and a notice for guests that say
 ## State
 
 Design baseline accepted on 2026-10-31 (RFC 001 to 017). Milestone M1 is under way: the daemon
-runs the whole management API against a mock platform, and the management UI runs against it in
-English and Japanese, with tests in both. **No release exists yet.**
+runs the whole management API against a mock platform, the management UI runs against it in
+English and Japanese, and both build for the router within their size budgets, with tests. **No release exists yet.**
 Nothing is installable on a router. See [ROADMAP.md](./ROADMAP.md).
 
 ## Quick start

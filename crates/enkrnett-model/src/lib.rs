@@ -12,6 +12,7 @@ pub mod device;
 pub mod encoding;
 pub mod key;
 pub mod password;
+pub mod profile;
 pub mod settings;
 pub mod state;
 

@@ -1,0 +1,43 @@
+{
+  "format": 1,
+  "id": "buffalo_wcr-1166ds",
+  "vendor": "Buffalo",
+  "model": "WCR-1166DS",
+  "revision": "all",
+  "tier": 2,
+  "device_class": "constrained",
+  "target": "ramips/mt76x8",
+  "package_arch": "mipsel_24kc",
+  "image_builder_profile": "buffalo_wcr-1166ds",
+  "install": {
+    "class": "self_install",
+    "vendor_image_kind": "factory",
+    "tested_vendor_firmware": []
+  },
+  "flash_image_limit_kib": 7936,
+  "ram_mib": 64,
+  "uplink_port": "wan",
+  "reset_button": "reset",
+  "light": { "led": "green:power" },
+  "radios": [
+    { "band": "2g", "chip": "MT7628AN", "interface_limit": 4 },
+    { "band": "5g", "chip": "MT7612E", "interface_limit": 8 }
+  ],
+  "platform_hardening_complete": false,
+  "label_address": {
+    "printed": "wan_mac",
+    "source": "/sys/class/net/wan/address",
+    "comment": "To be confirmed against a physical unit (M-7)."
+  },
+  "country": { "fixed": "JP" },
+  "argon2": { "memory_kib": 8192, "iterations": 3, "parallelism": 1 },
+  "image": {
+    "packages_remove": [ "ppp", "ppp-mod-pppoe", "odhcp6c", "odhcpd-ipv6only", "dropbear" ],
+    "packages_add": [ "enkrnett" ]
+  },
+  "verified": {
+    "on_hardware": false,
+    "by": [ "M-3", "M-4", "M-7" ],
+    "comment": "Measured in M-3 part 1 as an image of 5,696 KB against the stock 5,888 KB (headroom 2,240 KB). Reduced platform hardening on mt76x8 (no ujail, no PIE): Tier 1 only by a separate owner decision (ENK-TIER-005)."
+  }
+}

@@ -8,7 +8,7 @@ For contributors. The operator never does any of this.
 |---|---|
 | Rust | 1.85 or later (edition 2024); the workspace pins nothing newer |
 | mdBook | any recent, for this book |
-| OpenWrt SDK and Image Builder | Milestone M1 stage 3 onwards, for MIPS builds and images |
+| OpenWrt SDK 25.12.5 | Fetched and verified by `openwrt/build-mips.sh` from the lock; the Image Builder follows in stage 4 |
 
 ## Build and test
 
@@ -59,6 +59,19 @@ npm test                                 # starts enkrnettd --mock itself on por
 The UI must be built first (`ui/dist`). `ENKRNETTD=/path/to/enkrnettd` points at a prebuilt
 daemon; otherwise `cargo build -p enkrnettd` runs.
 
+## Build for the device (MIPS)
+
+```sh
+openwrt/build-mips.sh             # fetch and verify the SDK, build enkrnettd for mipsel_24kc, check the budgets
+openwrt/build-mips.sh --package   # also build the OpenWrt package (.apk) from the daemon and ui/dist
+```
+
+Needs the pinned nightly with `rust-src` (`rustup toolchain install nightly-2026-11-21 --component
+rust-src`, the date is in `openwrt/lock/inputs.json`), `zstd`, `xz`, and `squashfs-tools` for
+the real squashfs figure (without it the script estimates with xz and says so). The SDK (about
+100 MB) is cached in `openwrt/.cache/`; `ENKRNETT_SDK_DIR` points at an existing one. Output:
+`openwrt/out/enkrnettd`, `openwrt/out/sizes.json`, and the `.apk`.
+
 ## Validate a settings document
 
 ```sh
@@ -80,7 +93,7 @@ cd docs && mdbook serve
 | `crates/enkrnett-ubus` | ubus wire format and client |
 | `crates/enkrnettd` | The daemon; `tests/` are the API contract tests |
 | `ui/` | The management UI: Svelte 5 + TypeScript, two catalogues, the word check |
-| `openwrt/` | Package, device profiles, carried patches, the lock (M1 stage 3 onwards) |
+| `openwrt/` | `build-mips.sh`, the package, the device profiles, the lock; `patches/` arrives with M2 |
 | `tests/browser` | The Playwright harness against `enkrnettd --mock` |
 | `tests/vm` | The VM integration tests (M2) |
 | `docs/src/specification` | What is built; `docs/src/design` how |

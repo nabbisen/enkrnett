@@ -22,3 +22,7 @@ target
 
 # mdBook output
 docs/book/
+
+# OpenWrt SDK cache and MIPS build output
+openwrt/.cache/
+openwrt/out/

@@ -1,0 +1,8 @@
+#!/bin/sh
+# First boot after installation: the state directory belongs to the daemon's user
+# (ENK-CFG-019, ENK-CFG-021). The owned configuration sections and their file arrangement follow
+# measurement M-5b and arrive with the OpenWrt platform (M1 stage 4).
+[ -d /etc/enkrnett ] || mkdir -p /etc/enkrnett
+chown enkrnett:enkrnett /etc/enkrnett
+chmod 0750 /etc/enkrnett
+exit 0

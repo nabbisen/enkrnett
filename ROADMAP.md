@@ -50,8 +50,8 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 |---|---|---|
 | 1 | Workspace; `enkrnett-model`; `enkrnett-ubus` codec; `enkrnettd` with every API resource against a mock platform; contract tests; internal design; CI | Done 2026-10-31 |
 | 2 | `ui/` (chapter 10) in both languages with the word check; the browser harness in GitHub Actions against `enkrnettd --mock` | Done 2026-11-25 |
-| 3 | MIPS build with the OpenWrt SDK; squashfs size check against ENK-FOOT-001 to 003 in CI; the OpenWrt package skeleton; first device profile | Next |
-| 4 | The OpenWrt platform: UCI and ubus, setup and management networks, the claim end to end on the x86-64 VM (M2 brings the full transaction engine) | After 3 |
+| 3 | MIPS build with the OpenWrt SDK; squashfs size check against ENK-FOOT-001 to 003 in CI; the OpenWrt package skeleton; first device profile | Done 2026-11-25 |
+| 4 | The OpenWrt platform: UCI and ubus, setup and management networks, the claim end to end on the x86-64 VM (M2 brings the full transaction engine) | Next |
 
 ## RFC order
 

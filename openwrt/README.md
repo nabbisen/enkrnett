@@ -1,8 +1,11 @@
 # openwrt
 
-| Folder | Content | Arrives |
-|---|---|---|
-| `package/enkrnett/` | OpenWrt package: Makefile, init script, ubusd ACL, defaults, conffiles | M1 stage 3 |
-| `profiles/<device>/` | Device profiles and Image Builder definitions (chapter 5) | M1 stage 3 |
-| `patches/` | Carried fixes, each with its upstream reference and removal condition (ENK-REPO-002); the first is commit 1789118599 for Transition Mode (ENK-CFG-004) | M2 |
-| `lock/` | The pinned inputs of a release (ENK-BUILD-007) | M3 |
+| Path | Content |
+|---|---|
+| `build-mips.sh` | Builds `enkrnettd` for `mipsel_24kc` with the pinned SDK toolchain and Rust nightly, measures the budgets of chapter 8, and (with `--package`) builds the OpenWrt package |
+| `lock/inputs.json` | The pinned inputs: SDK and Image Builder URLs with SHA-256 per target, the Rust nightly, the squashfs settings, the budgets (ENK-BUILD-007) |
+| `package/enkrnett/` | The OpenWrt package: Makefile, `procd` init script, `ubusd` ACL, capabilities, UCI config, first-boot script |
+| `profiles/<device>/profile.json` | Device profiles (chapter 5); schema and rules in `enkrnett_model::profile` |
+| `patches/` | Carried fixes, each with its upstream reference and removal condition (ENK-REPO-002); the first is commit 1789118599 for Transition Mode (ENK-CFG-004), arriving with M2 |
+
+Design: `docs/src/design/build.md`.
