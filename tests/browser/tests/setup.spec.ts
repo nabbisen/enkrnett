@@ -66,7 +66,7 @@ test('setup from start to the status screen, in English', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Guest Wi-Fi "Cafe Example"' })).toBeVisible();
   await expect(page.getByText('running').first()).toBeVisible();
   await expect(page.getByText('No devices connected')).toBeVisible();
-  await expect(page.getByText(/Enkrnett 0\.1\.0 on OpenWrt 25\.12/)).toBeVisible();
+  await expect(page.getByText(/Enkrnett \d+\.\d+\.\d+ on OpenWrt 25\.12/)).toBeVisible();
   await expectNoForbiddenWords(page);
 });
 
@@ -103,4 +103,9 @@ test('the Japanese catalogue renders the setup screens', async ({ page }) => {
   await expect(page.getByText('すべての端末が接続できる')).toBeVisible();
   await expectNoForbiddenWords(page);
   expect(await page.evaluate(() => document.documentElement.lang)).toBe('ja');
+  // Do not leave the claim session behind: the next project's first test would be refused for
+  // five minutes (seen in CI, where WebKit follows Chromium).
+  const token = await page.evaluate(() => sessionStorage.getItem('enkrnett-session'));
+  expect(token).not.toBeNull();
+  await finishClaim(token as string);
 });

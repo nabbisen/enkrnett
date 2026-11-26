@@ -67,7 +67,7 @@ test('management Wi-Fi: password on request, QR code, replace on its own step', 
 test('details: version, hardening report, restart on its own step, log out', async ({ page }) => {
   await loginInBrowser(page);
   await page.getByRole('button', { name: 'Details' }).click();
-  await expect(page.getByText(/Enkrnett 0\.1\.0 on OpenWrt 25\.12/)).toBeVisible();
+  await expect(page.getByText(/Enkrnett \d+\.\d+\.\d+ on OpenWrt 25\.12/)).toBeVisible();
   await expect(page.getByText('ENK-HARD-001: in place')).toBeVisible();
   await expect(page.getByText('Installed from an image')).toBeVisible();
   await page.getByRole('button', { name: 'Check for updates' }).click();

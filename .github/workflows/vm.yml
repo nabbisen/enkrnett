@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   vm:
-    name: OpenWrt VM: chapters 2, 6, 7 and the contract on the real platform
+    name: "OpenWrt VM: chapters 2, 6, 7 and the contract on the real platform"
     runs-on: ubuntu-latest
     timeout-minutes: 75
     steps:
@@ -61,7 +61,7 @@ jobs:
         run: tests/vm/run-all.sh "$RUNNER_TEMP/vm" "$RUNNER_TEMP/vm-logs"
       - name: Stop the VM
         if: always()
-        run: "$RUNNER_TEMP/vm/vm.sh" stop || true
+        run: "$RUNNER_TEMP/vm/vm.sh stop || true"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

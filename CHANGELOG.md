@@ -24,6 +24,8 @@ is the owner's step, after the device checks; release notes: `docs/src/releases/
 - The daemon asks procd for its restart with a `config.change` event for its own package (the init
   script's reload trigger), not through the `rc` object, which belongs to rpcd and is absent on a
   minimal image; the ACL lost its `rc` entry.
+- The browser harness in CI: the Japanese setup test left a claim session open, which failed every
+  WebKit test that followed since stage 2; it finishes its claim now.
 - Version 0.2.0 in the workspace, the UI, the package.
 
 ### Milestone M2, stage 3 (2026-11-26)
