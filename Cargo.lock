@@ -64,6 +64,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "ct-codecs"
+version = "1.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fd9f3db6f2cfef61c10613071955154ffdc9e515daebff26de4b54e35038fdd"
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -75,10 +81,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "ed25519-compact"
+version = "2.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9547879431a90e352a35863a54416d92898a787b9af09e6ae2e09a96bd78be80"
+
+[[package]]
 name = "enkrnett-model"
 version = "0.2.0"
 dependencies = [
+ "ct-codecs",
+ "ed25519-compact",
  "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "enkrnett-release"
+version = "0.2.0"
+dependencies = [
+ "enkrnett-model",
+ "rand_core",
  "serde_json",
 ]
 

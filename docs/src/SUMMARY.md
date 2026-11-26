@@ -26,6 +26,7 @@
   - [Traceability](./verification/traceability.md)
   - [Milestone M1](./verification/m1.md)
   - [Milestone M2](./verification/m2.md)
+  - [Milestone M3](./verification/m3.md)
 
 # Releases
 
@@ -40,6 +41,7 @@
 - [UI internal design (M1 stage 2)](./design/ui.md)
 - [Build for the device (M1 stage 3)](./design/build.md)
 - [OpenWrt platform (M1 stage 4)](./design/platform.md)
+- [Release tooling and the index (M3 stage 1)](./design/release.md)
 - [Measurements](./measurements/index.md)
   - [M-2 Daemon footprint](./measurements/m-2-daemon-footprint.md)
   - [M-3 Constrained image, part 1](./measurements/m-3-constrained-image.md)

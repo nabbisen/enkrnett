@@ -64,6 +64,18 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 3 | Effective state and drift (ENK-CFG-013, 014): the 2 s status cache, the drift check every 10 minutes with *restore*; the device adopted at start-up without overwriting; the guest notice page (ENK-GUEST-001, done in M1 stage 2); renumbering on an uplink collision (ENK-TOPO-003, 006) | Done 2026-11-26 |
 | 4 | VM integration for chapters 2, 6, 7 in CI; the 0.2.0 wrap: changelog, verification record, release notes | Done 2026-11-26 (`.github/workflows/vm.yml`; `docs/src/releases/0.2.0.md`). 0.2.0 tagged 2026-11-26 on the owner's authorization; the device checks carry into M3 |
 
+## M3 in detail
+
+The exit condition needs the Tier 1 device (the guides' usability test, M-7; the install from the
+vendor firmware) and the legal basis (ENK-RF-005); what does not is built first.
+
+| Stage | Content | State |
+|---|---|---|
+| 1 | The release index and the keys (chapter 11 §1–2): signify-format Ed25519 verification in the daemon, the index format with its sequence, the current and the designated next key in the image (ENK-RLS-005), the check through the platform's downloader over HTTPS, daily and on request, the switch of ENK-UPD-008, the highest accepted sequence on flash (ENK-UPD-009); the release tool (`crates/enkrnett-release`); a signed index served to the VM over HTTPS | Done 2026-11-26 (`docs/src/design/release.md`; `tests/vm/update-check.sh`) |
+| 2 | Installing (chapter 11 §3, ENK-UPD-002 to 007): download to RAM, the checks of ENK-UPD-003 one by one, `sysupgrade` keeping the owner, the key, the settings and the identifier (ENK-UPD-004), the marker and the first boot's verification, health check and report (ENK-UPD-005), the screens of RFC 017 §5.6; on the VM: an image updated to the next through the daemon with settings kept, and a deliberately broken successor | Next |
+| 3 | Reproducible build and the release steps (chapter 11 §4, ENK-BUILD-007 to 012): the package set with versions and hashes in the lock and used by the image build, the double build compared in CI, the image comparison stated, images named per ENK-RLS-002, hashes, the signed index, the source offer; the stored-data test with the documents of 0.1.0 and 0.2.0 (ENK-BASE-005) | |
+| 4 | The guides in English and Japanese (ENK-INST-001 to 005: install per Tier 1 device, set up, update, reset, recover; the expert install), the usability test plan for M-7, the 0.3.0 wrap. What needs the device or the legal basis is stated as open | |
+
 ## RFC order
 
 | Order | RFC | State | Needed for |

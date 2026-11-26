@@ -57,6 +57,8 @@ define Package/enkrnett/install
 	$(CP) $(ENKRNETT_PREBUILT)/ui/. $(1)/usr/share/enkrnett/ui/
 	$(INSTALL_DIR) $(1)/usr/share/enkrnett/profiles
 	$(CP) $(ENKRNETT_PREBUILT)/profiles/*.json $(1)/usr/share/enkrnett/profiles/
+	$(INSTALL_DIR) $(1)/usr/share/enkrnett/keys
+	[ ! -d $(ENKRNETT_PREBUILT)/keys ] || $(CP) $(ENKRNETT_PREBUILT)/keys/. $(1)/usr/share/enkrnett/keys/
 	$(INSTALL_DIR) $(1)/usr/share/acl.d
 	$(INSTALL_DATA) ./files/enkrnett.acl.json $(1)/usr/share/acl.d/enkrnett.json
 	$(INSTALL_DIR) $(1)/etc/init.d

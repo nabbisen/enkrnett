@@ -46,6 +46,19 @@
     }
   }
 
+  // ENK-UPD-008: a device not installed from a published image looks for updates only once
+  // the owner says so; the first check follows in the same request.
+  async function enableChecks() {
+    checking = true;
+    try {
+      update = await api.updateEnable();
+    } catch (e) {
+      if (!app.handle(e)) error = errorSentence(e);
+    } finally {
+      checking = false;
+    }
+  }
+
   async function changePassword(e: Event) {
     e.preventDefault();
     passwordError = '';
@@ -114,6 +127,7 @@
     <h2>{i18n.t('details.update')}</h2>
     {#if !update.checks_enabled}
       <p>{i18n.t('update.disabled')}</p>
+      <button onclick={enableChecks} disabled={checking}>{checking ? i18n.t('update.checking') : i18n.t('update.enable')}</button>
     {:else}
       {#if update.state === 'downloading'}<p>{i18n.t('update.downloading')}</p>
       {:else if update.state === 'verifying'}<p>{i18n.t('update.verifying')}</p>

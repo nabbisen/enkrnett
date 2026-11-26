@@ -48,6 +48,14 @@ pub struct Stored {
     /// Highest release-index sequence accepted so far (ENK-UPD-009).
     #[serde(default)]
     pub index_sequence: u64,
+    /// The owner's switch for update checks (ENK-UPD-008); `None` leaves it to how the daemon
+    /// was installed.
+    #[serde(default)]
+    pub update_checks: Option<bool>,
+    /// When the daemon last checked the index by itself, Unix seconds (ENK-UPD-001: at most
+    /// once a day).
+    #[serde(default)]
+    pub last_auto_check: Option<u64>,
 }
 
 impl Stored {
@@ -57,6 +65,8 @@ impl Stored {
             device_id,
             owner: None,
             index_sequence: 0,
+            update_checks: None,
+            last_auto_check: None,
         }
     }
 }

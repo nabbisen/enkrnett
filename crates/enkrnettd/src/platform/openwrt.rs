@@ -1,7 +1,8 @@
 //! The OpenWrt platform (chapter 6; RFC 014): the daemon's user owns the four configuration
 //! files it writes (measurement M-5b), replaces its own sections through `enkrnett_model::uci`,
 //! asks `netifd` to reload through ubus, and reads the effective state back through ubus and
-//! `/proc`. Nothing here runs as root and nothing spawns a process.
+//! `/proc`. Nothing here runs as root; the one process spawned is the platform's downloader,
+//! `uclient-fetch`, for the release index (ENK-UPD-001).
 //!
 //! The health check treats the platform's options as requests and the kernel's and the services'
 //! reported state as the truth (ENK-CFG-026): interfaces and BSSes through ubus, bridge-port
@@ -16,8 +17,8 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use enkrnett_model::api::{
-    CheckResult, Connection, GuestStatus, HardeningItem, HealthDetail, InstalledAs,
-    ManagementStatus, Memory, Radio, Storage, UplinkStatus,
+    Connection, GuestStatus, HardeningItem, HealthDetail, InstalledAs, ManagementStatus, Memory,
+    Radio, Storage, UplinkStatus,
 };
 use enkrnett_model::plan::{
     self, BssRole, ExpectedBss, LISTEN_PORT, OWNED_PREFIX, Phase, Plan, owned_sections,
@@ -30,8 +31,16 @@ use enkrnett_model::uci::{File as UciFile, Section};
 use enkrnett_ubus::client::Client;
 use serde_json::{Map, Value, json};
 
-use super::{Adopted, DeviceInfo, Effective, Platform, PlatformError};
+use super::{Adopted, DeviceInfo, Effective, FetchError, Platform, PlatformError};
 use crate::log;
+
+/// Where the package installs the release public keys (ENK-RLS-005).
+pub const KEYS_DIR: &str = "/usr/share/enkrnett/keys";
+/// The platform's downloader (RFC 016 §9), by its path: the daemon's environment has no PATH
+/// to speak of under procd.
+const DOWNLOADER: &str = "/bin/uclient-fetch";
+/// How long the downloader may take for one file.
+const FETCH_TIMEOUT: &str = "--timeout=15";
 
 /// The health check waits this long for the networks to come up (ENK-CFG-007).
 pub const HEALTH_TIMEOUT: Duration = Duration::from_secs(60);
@@ -55,6 +64,9 @@ pub struct OpenWrtPlatform {
     /// the management network (ENK-TOPO-006), so that the health check does not count the
     /// daemon's own listener there as exposed while the restart is pending.
     leaving: Mutex<Option<Ipv4Addr>>,
+    /// The release index URL the init script read from `/etc/config/enkrnett` (a root-owned
+    /// file the daemon does not read itself).
+    update_index: Option<String>,
 }
 
 impl OpenWrtPlatform {
@@ -63,6 +75,7 @@ impl OpenWrtPlatform {
         config_dir: PathBuf,
         state_dir: PathBuf,
         ubus_socket: Option<String>,
+        update_index: Option<String>,
     ) -> OpenWrtPlatform {
         OpenWrtPlatform {
             profile,
@@ -71,6 +84,7 @@ impl OpenWrtPlatform {
             ubus_socket,
             current: Mutex::new(None),
             leaving: Mutex::new(None),
+            update_index,
         }
     }
 
@@ -901,6 +915,7 @@ impl Platform for OpenWrtPlatform {
     fn device_info(&self) -> DeviceInfo {
         let p = &self.profile;
         DeviceInfo {
+            profile: p.id.clone(),
             model: format!("{} {}", p.vendor, p.model),
             revision: p.revision.clone(),
             tier: p.tier,
@@ -929,8 +944,47 @@ impl Platform for OpenWrtPlatform {
         }
     }
 
-    fn check_update_index(&self) -> CheckResult {
-        CheckResult::Unreachable
+    fn update_index_url(&self) -> Option<String> {
+        self.update_index.clone().filter(|u| !u.is_empty())
+    }
+
+    /// `uclient-fetch` over HTTPS (RFC 016 §9): the platform's downloader verifies the server's
+    /// certificate against the image's CA bundle; authenticity of what arrives rests on the
+    /// signatures, so a plain `http://` URL is refused rather than tried. The downloader's own
+    /// words go to the daemon's standard error, which procd logs.
+    fn fetch(&self, url: &str, max_bytes: usize) -> Result<Vec<u8>, FetchError> {
+        if !url.starts_with("https://") {
+            return Err(FetchError::Unreachable("not an https URL".into()));
+        }
+        let out = super::spawn::run(
+            DOWNLOADER,
+            &["-q", "-O", "-", FETCH_TIMEOUT, url],
+            max_bytes,
+        )
+        .map_err(|e| FetchError::Unreachable(format!("uclient-fetch: {e}")))?;
+        if out.stdout.len() > max_bytes {
+            return Err(FetchError::TooLarge);
+        }
+        if !out.success {
+            return Err(FetchError::Unreachable("uclient-fetch failed".into()));
+        }
+        Ok(out.stdout)
+    }
+
+    fn release_keys(&self) -> Vec<String> {
+        let Ok(entries) = fs::read_dir(KEYS_DIR) else {
+            return Vec::new();
+        };
+        let mut paths: Vec<PathBuf> = entries
+            .filter_map(|e| e.ok().map(|e| e.path()))
+            .filter(|p| p.extension().is_some_and(|x| x == "pub"))
+            .collect();
+        paths.sort();
+        paths
+            .iter()
+            .filter_map(|p| fs::read_to_string(p).ok())
+            .filter(|t| t.len() <= enkrnett_model::signify::MAX_TEXT)
+            .collect()
     }
 
     /// Erase: the marker the init script acts on at the next boot, and no Wi-Fi meanwhile.

@@ -126,6 +126,7 @@
   "update.failed.not_enough_memory": "空きメモリが足りません。本体を再起動してからお試しください。",
   "update.failed.download_failed": "アップデートをダウンロードできませんでした。インターネット接続を確認して、もう一度お試しください。",
   "update.disabled": "この本体は公開イメージからインストールされていないため、アップデートを確認しません。",
+  "update.enable": "アップデートの確認をオンにしますか？",
   "update.last_checked": "最終確認：{s}秒前",
 
   "settings.title": "設定",

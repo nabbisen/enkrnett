@@ -5,14 +5,15 @@
 use std::net::IpAddr;
 
 use enkrnett_model::api::{
-    CheckResult, Connection, GuestStatus, HardeningItem, HealthDetail, InstalledAs,
-    ManagementStatus, Memory, Radio, Storage, UplinkStatus,
+    Connection, GuestStatus, HardeningItem, HealthDetail, InstalledAs, ManagementStatus, Memory,
+    Radio, Storage, UplinkStatus,
 };
 use enkrnett_model::settings::Settings;
 use enkrnett_model::state::OwnershipState;
 
 mod mock;
 pub mod openwrt;
+pub mod spawn;
 pub use mock::MockPlatform;
 pub use openwrt::OpenWrtPlatform;
 
@@ -52,9 +53,30 @@ pub struct Effective {
     pub uplink: UplinkStatus,
 }
 
+/// Why the platform's downloader could not deliver a file (ENK-UPD-001).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum FetchError {
+    /// No answer, an error status, a certificate that does not verify, a URL that is not
+    /// `https://`: the message is for the log.
+    Unreachable(String),
+    /// More bytes than the caller allowed.
+    TooLarge,
+}
+
+impl std::fmt::Display for FetchError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FetchError::Unreachable(m) => write!(f, "unreachable: {m}"),
+            FetchError::TooLarge => write!(f, "too large"),
+        }
+    }
+}
+
 /// Facts about the device for the details screen and the version line.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DeviceInfo {
+    /// The device profile identifier, as the release index names it.
+    pub profile: String,
     pub model: String,
     pub revision: String,
     pub tier: u8,
@@ -148,8 +170,15 @@ pub trait Platform: Send + Sync {
 
     fn device_info(&self) -> DeviceInfo;
 
-    /// Fetches the release index (ENK-UPD-001) and reports the outcome.
-    fn check_update_index(&self) -> CheckResult;
+    /// Where the release index is (ENK-UPD-001); `None` when the platform configures none.
+    fn update_index_url(&self) -> Option<String>;
+
+    /// Fetches `url` through the platform's downloader over HTTPS, at most `max_bytes`.
+    fn fetch(&self, url: &str, max_bytes: usize) -> Result<Vec<u8>, FetchError>;
+
+    /// The signify public keys the image carries (ENK-RLS-005: the current key and the
+    /// designated next one), as the texts of their files.
+    fn release_keys(&self) -> Vec<String>;
 
     /// Remove every platform setting Enkrnett owns (ENK-OWN-018).
     fn erase(&self) -> Result<(), PlatformError>;

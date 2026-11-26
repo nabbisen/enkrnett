@@ -9,3 +9,4 @@ the runs they describe.
 | [Traceability](./traceability.md) | Every requirement with the tests that name it and the inspection or measurement that covers it |
 | [Milestone M1](./m1.md) | The exit condition of M1: the tests derived from RFC 003 and RFC 004 against the mock and against the real platform |
 | [Milestone M2](./m2.md) | M2 stage by stage, beginning with the transaction of chapter 6 |
+| [Milestone M3](./m3.md) | M3 stage by stage, beginning with the release index and the keys of chapter 11 |

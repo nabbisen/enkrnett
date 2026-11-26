@@ -109,6 +109,8 @@ export const api = {
   device: () => call<Device>('GET', 'device'),
   update: () => call<Update>('GET', 'update'),
   updateCheck: () => call<Update>('POST', 'update/check'),
+  // The owner's switch of ENK-UPD-008 rides on update/check (no resource of its own).
+  updateEnable: () => call<Update>('POST', 'update/check', { enable_checks: true }),
   updateInstall: () => call<Update>('POST', 'update/install'),
   restart: () => call<Record<string, never>>('POST', 'restart'),
   erase: (password: string) => call<Record<string, never>>('POST', 'erase', { password }),

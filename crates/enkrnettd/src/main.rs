@@ -1,7 +1,7 @@
 //! `enkrnettd` command line.
 //!
 //! ```text
-//! enkrnettd [--listen ADDR] [--state-dir DIR] [--ui-dir DIR] [--development] [--act-delay-ms N] [--host NAME]...
+//! enkrnettd [--listen ADDR] [--state-dir DIR] [--ui-dir DIR] [--development] [--act-delay-ms N] [--host NAME]... [--update-index URL]
 //!           (--mock | --profile FILE | --profiles-dir DIR [--config-dir DIR] [--ubus-socket PATH])
 //! ```
 //!
@@ -21,7 +21,7 @@ use enkrnettd::platform::{MockPlatform, OpenWrtPlatform, Platform};
 
 fn usage() -> ! {
     eprintln!(
-        "usage: enkrnettd [--listen ADDR] [--state-dir DIR] [--ui-dir DIR] [--development] [--act-delay-ms N] [--host NAME]...\n       (--mock | --profile FILE | --profiles-dir DIR [--config-dir DIR] [--ubus-socket PATH])"
+        "usage: enkrnettd [--listen ADDR] [--state-dir DIR] [--ui-dir DIR] [--development] [--act-delay-ms N] [--host NAME]... [--update-index URL]\n       (--mock | --profile FILE | --profiles-dir DIR [--config-dir DIR] [--ubus-socket PATH])"
     );
     std::process::exit(2)
 }
@@ -119,6 +119,7 @@ fn main() {
                 config.act_delay = Duration::from_millis(ms);
             }
             "--host" => config.hosts.push(args.next().unwrap_or_else(|| usage())),
+            "--update-index" => config.update_index = Some(args.next().unwrap_or_else(|| usage())),
             "--profile" => {
                 profile_path = Some(PathBuf::from(args.next().unwrap_or_else(|| usage())))
             }
@@ -158,6 +159,7 @@ fn main() {
             config_dir,
             config.state_dir.clone(),
             ubus_socket,
+            config.update_index.clone(),
         ))
     };
     match enkrnettd::start(config, platform, Arc::new(SystemClock)) {

@@ -119,6 +119,17 @@ after `del_client` returned. Strictly later wins. Every request already closes i
 | A hand edit through `uci commit` hands the file back to root, mode 0600 | The daemon's next read or write fails with `PlatformError::NotOurs`; it logs `files_not_ours` and asks `procd` to restart its service (a `config.change` event for the package `enkrnett`, which the init script's reload trigger turns into `restart`), because a plain exit would only be respawned with the same command line and the same unreadable file. The init script's `start_service` restores ownership; the new process adopts the device and reports the drift. Sessions are lost with the restart, so the owner logs in again. Were a write to fail the same way during a restore, the start-up apply with the restore marker on flash completes it. If the restart request fails, the daemon stays up and logs it. |
 | The uplink's subnet collides with a Wi-Fi network (ENK-TOPO-003, 006) | `subnet::renumber` moves only the colliding network to the next free candidate (management: 192.168.207 to 254, then 172.31.x; guest: 10.207.0 to 254, then 172.16.x) and never moves a network back. Checked at start-up and every 10 s (one ubus call), because the uplink's lease often arrives after the daemon started, and until the colliding network has moved the device has two interfaces on one subnet. The platform re-applies the stored document with the new addresses; no owner-visible change. The daemon binds the management address the platform reports (`App::listen_address`; the configured `--listen` gives the port and the address before any network exists), so when that address moved it asks for a service restart and the new process binds the new one. The `Host` check accepts the bound address. Two paths, both seen on the VM: the lease was there before the listener (start-up check), so the process binds the new address at once; or it came later, then the order is networks moved, health check of that apply, `listen_address_changed`, restart, and between the move and the new process the UI answers on neither address, the same gap as after any restart. The health check does not count the daemon's own listener on the address it is leaving as exposed (before that, the move waited the full 60 s). |
 
+## 6b. The update check (`app/update.rs`, M3 stage 1)
+
+| Rule | How |
+|---|---|
+| The device checks the release index at most once a day by itself and on request; the request is the same for every device of the profile and carries no identifier (ENK-UPD-001) | `check_update_if_due` on the tick thread: claimed, checks on, nothing else running, two minutes after start, and a day since `last_auto_check` by the wall clock (kept on flash; a clock before 2025 is "not set" and the automatic check waits for one). `update/check` runs the same check now. Both fetch `<url>` and `<url>.sig` through `Platform::fetch`, the platform's downloader over HTTPS (RFC 016 §9); the URL comes from the init script (`--update-index`, read from `/etc/config/enkrnett`), so the daemon sends nothing but a fixed GET. |
+| The signature is verified before the index is read (ENK-UPD-003 for the index; ENK-RLS-004) | `enkrnett_model::signify`: the signify file formats, Ed25519 through `ed25519-compact`. The keys are the files the image carries (`Platform::release_keys`, `/usr/share/enkrnett/keys/*.pub`): the current key and the designated next one (ENK-RLS-005), so a signature by either verifies; a file that is not a key is skipped. |
+| An index older than one already accepted is refused; only a release newer than the installed one is offered (ENK-UPD-009; threat 43) | `Stored::index_sequence` is the highest sequence accepted, written when a higher one arrives and read back after a restart. `ReleaseIndex::offer` picks the highest version listed for this profile whose `from_baseline` is the installed baseline and whose version is greater than the installed. The outcomes are those of chapter 9 §4: `ok`, `unreachable`, `bad_signature`, `bad_index`, `stale_index`; a refused index changes nothing but `last_check`. |
+| A development build or a package an expert installed does not look for updates unless the owner says so (ENK-UPD-008) | `checks_enabled`: the stored switch `update_checks` when set, else "installed from an image (`/rom/usr/sbin/enkrnettd` exists) and not `--development`". The switch rides on `update/check` as `{"enable_checks": true}`, since the accepted API has no resource for it (a deviation for the next amendment RFC); the details screen offers "Turn on update checks?" and the first check follows in the same request. With checks off nothing is fetched and no offer is shown. |
+| One log line per check (ENK-API-029) | `update_checked by=request|daily result=… available=…`; before it, `index_verified key=… sequence=…` or `update_check_failed result=… why=…` with the reason for the log, never for the operator. |
+| Installing | Not yet: `update/install` answers `nothing_to_install` until stage 2 (download to RAM, the checks of ENK-UPD-003, `sysupgrade`, the first boot). |
+
 ## 7. Dependencies (ENK-FOOT-016)
 
 | Crate | Purpose | Why not written here |
@@ -126,11 +137,15 @@ after `del_client` returned. Strictly later wins. Every request already closes i
 | `serde`, `serde_json` | Shapes to and from JSON | Correctness and size are better than anything hand-written; measured in M-2 |
 | `argon2` (brings `password-hash`, `blake2`) | argon2id | A password hash is not something to write oneself |
 | `rand_core` with `getrandom` | OS randomness | Thin wrapper over `getrandom(2)` |
-| `libc` | `listen(2)` to set the backlog | Already in the tree through `getrandom` |
+| `libc` | `listen(2)` to set the backlog; `posix_spawn` for the downloader (`platform/spawn.rs`) | Already in the tree through `getrandom` |
+| `ed25519-compact` (no default features, `opt_size`) | Ed25519 verification of signify signatures; SHA-512 | A signature scheme is not something to write oneself; about 12 KB raw |
+| `ct-codecs` | Base64 of the signify files | Constant-time and tiny; the base64url in `std` terms here is for tokens |
 
-Everything else is `std`: the HTTP server, base64url, hex, the ubus codec. The x86-64 release
-binary is recorded by CI for the trend; the budget is the MIPS squashfs figure (ENK-FOOT-001),
-measured when the MIPS build joins CI.
+Everything else is `std`: the HTTP server, base64url, hex, the ubus codec. The one program the
+daemon runs, `/bin/uclient-fetch`, is started with `posix_spawn` through `libc` rather than
+`std::process::Command`, whose environment map and builder cost about 25 KB raw on the device.
+The x86-64 release binary is recorded by CI for the trend; the budget is the MIPS squashfs figure
+(ENK-FOOT-001): 274 KiB of 300 after M3 stage 1 (240 at 0.2.0).
 
 ## 8. Tests
 
@@ -140,6 +155,7 @@ measured when the MIPS build joins CI.
 | `crates/enkrnettd/tests/api_contract.rs` | Conventions, headers, `Host`, strict JSON, authorization order, error shape |
 | `crates/enkrnettd/tests/claim_flow.rs` | The claim end to end, timers with a mock clock, sessions, settings changes, key replacement, password change, Erase, restart |
 | `crates/enkrnettd/tests/limits.rs` | Oversized requests, HTTP version and features, connection close, slow client, a burst of 24 connections |
+| `crates/enkrnettd/tests/update.rs` | The update check against signed indexes: the offer, the installed or an older release not offered, the sequence and its refusal, every refusal of chapter 9 §4, the next key, the owner's switch, a development build |
 
 Every test names the requirements it verifies in its file header or function name (chapter 14
 rule 1).

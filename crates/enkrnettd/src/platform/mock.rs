@@ -1,16 +1,18 @@
 //! The in-memory platform. It applies settings instantly and healthily, reports effective
 //! values derived from what it was given, and records every call for tests.
 
+use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::{Condvar, Mutex};
 
 use enkrnett_model::api::{
-    CheckResult, Connection, GuestStatus, HardeningItem, HealthDetail, InstalledAs,
-    ManagementStatus, Memory, Radio, Storage, UplinkStatus,
+    Connection, GuestStatus, HardeningItem, HealthDetail, InstalledAs, ManagementStatus, Memory,
+    Radio, Storage, UplinkStatus,
 };
 use enkrnett_model::settings::Settings;
 use enkrnett_model::state::{ConnectionNetwork, ConnectionSecurity, OwnershipState};
 
+use super::FetchError;
 use super::{Adopted, DeviceInfo, Effective, Platform, PlatformError};
 
 #[derive(Clone, Debug)]
@@ -26,7 +28,10 @@ struct State {
     hardening_met: bool,
     installed_as: InstalledAs,
     fail_apply_with: Option<HealthDetail>,
-    index_result: CheckResult,
+    update_index_url: Option<String>,
+    /// What `fetch` answers per URL; an unknown URL is unreachable.
+    fetches: HashMap<String, Result<Vec<u8>, FetchError>>,
+    release_keys: Vec<String>,
     /// While true, `apply_settings` waits (tests observe the change while it is applying).
     hold_apply: bool,
     /// The owned sections differ from what was last written (ENK-CFG-014).
@@ -61,7 +66,9 @@ impl MockPlatform {
                 hardening_met: true,
                 installed_as: InstalledAs::Image,
                 fail_apply_with: None,
-                index_result: CheckResult::Unreachable,
+                update_index_url: Some("https://updates.example/index.json".into()),
+                fetches: HashMap::new(),
+                release_keys: Vec::new(),
                 hold_apply: false,
                 drift: false,
                 uplink_collides: false,
@@ -132,8 +139,22 @@ impl MockPlatform {
         self.state.lock().expect("mock").fail_apply_with = Some(detail);
     }
 
-    pub fn set_index_result(&self, result: CheckResult) {
-        self.state.lock().expect("mock").index_result = result;
+    pub fn set_update_index_url(&self, url: Option<&str>) {
+        self.state.lock().expect("mock").update_index_url = url.map(str::to_string);
+    }
+
+    /// What the next `fetch` of `url` returns.
+    pub fn set_fetch(&self, url: &str, result: Result<Vec<u8>, FetchError>) {
+        self.state
+            .lock()
+            .expect("mock")
+            .fetches
+            .insert(url.to_string(), result);
+    }
+
+    /// The signify public keys the "image" carries, as file texts.
+    pub fn set_release_keys(&self, keys: Vec<String>) {
+        self.state.lock().expect("mock").release_keys = keys;
     }
 
     /// The settings last applied, if any.
@@ -345,6 +366,7 @@ impl Platform for MockPlatform {
             "ENK-HARD-008",
         ];
         DeviceInfo {
+            profile: "mock".into(),
             model: "Mock device".into(),
             revision: "1".into(),
             tier: 2,
@@ -380,9 +402,22 @@ impl Platform for MockPlatform {
         }
     }
 
-    fn check_update_index(&self) -> CheckResult {
-        self.record("check_update_index()");
-        self.state.lock().expect("mock").index_result
+    fn update_index_url(&self) -> Option<String> {
+        self.state.lock().expect("mock").update_index_url.clone()
+    }
+
+    fn fetch(&self, url: &str, max_bytes: usize) -> Result<Vec<u8>, FetchError> {
+        self.record(&format!("fetch({url})"));
+        let s = self.state.lock().expect("mock");
+        match s.fetches.get(url) {
+            Some(Ok(bytes)) if bytes.len() > max_bytes => Err(FetchError::TooLarge),
+            Some(r) => r.clone(),
+            None => Err(FetchError::Unreachable("mock: no such url".into())),
+        }
+    }
+
+    fn release_keys(&self) -> Vec<String> {
+        self.state.lock().expect("mock").release_keys.clone()
     }
 
     fn erase(&self) -> Result<(), PlatformError> {

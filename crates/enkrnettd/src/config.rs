@@ -31,6 +31,9 @@ pub struct Config {
     pub languages: Vec<String>,
     /// argon2id parameters `(memory KiB, iterations, parallelism)` (ENK-FOOT-017).
     pub argon2: (u32, u32, u32),
+    /// Where the signed release index is fetched from (ENK-UPD-001), `https://` only. Given by
+    /// the init script from the platform's configuration; `None` means no checks can succeed.
+    pub update_index: Option<String>,
 }
 
 impl Default for Config {
@@ -47,6 +50,7 @@ impl Default for Config {
             version: env!("CARGO_PKG_VERSION").to_string(),
             languages: vec!["en".to_string(), "ja".to_string()],
             argon2: (8 * 1024, 3, 1),
+            update_index: None,
         }
     }
 }

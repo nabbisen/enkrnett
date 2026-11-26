@@ -52,6 +52,8 @@ pub fn config_for_tests(dir: &Path) -> Config {
         languages: vec!["en".into(), "ja".into()],
         // Small argon2 parameters keep the tests fast; the device uses the profile's.
         argon2: (64, 1, 1),
+        // The mock platform brings its own index URL.
+        update_index: None,
     }
 }
 
@@ -75,16 +77,30 @@ pub fn start_on_with(dir: &Path, setup: impl FnOnce(&MockPlatform)) -> TestServe
     start_in(dir.to_path_buf(), setup)
 }
 
+/// A daemon whose configuration the test adjusts first (a development build, another version).
+pub fn start_with_config(
+    adjust: impl FnOnce(&mut Config),
+    setup: impl FnOnce(&MockPlatform),
+) -> TestServer {
+    let n = COUNTER.fetch_add(1, Ordering::Relaxed);
+    let dir = std::env::temp_dir().join(format!("enkrnettd-it-{}-{n}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let mut config = config_for_tests(&dir);
+    adjust(&mut config);
+    start_configured(dir, config, setup)
+}
+
 fn start_in(dir: PathBuf, setup: impl FnOnce(&MockPlatform)) -> TestServer {
+    let config = config_for_tests(&dir);
+    start_configured(dir, config, setup)
+}
+
+fn start_configured(dir: PathBuf, config: Config, setup: impl FnOnce(&MockPlatform)) -> TestServer {
     let platform = Arc::new(MockPlatform::new());
     setup(&platform);
     let clock = MockClock::new();
-    let running = enkrnettd::start(
-        config_for_tests(&dir),
-        platform.clone(),
-        Arc::new(clock.clone()),
-    )
-    .expect("start");
+    let running =
+        enkrnettd::start(config, platform.clone(), Arc::new(clock.clone())).expect("start");
     TestServer {
         addr: running.addr,
         app: running.app,
@@ -225,6 +241,18 @@ pub fn claim(ts: &TestServer) -> (String, Value) {
     let token = login.json()["token"].as_str().unwrap().to_string();
     assert_eq!(login.json()["state"], "CLAIMED");
     (token, proposal)
+}
+
+/// An owner session on a claimed device (after a restart, say).
+pub fn login(ts: &TestServer) -> String {
+    let login = post(
+        ts,
+        "login",
+        None,
+        &format!(r#"{{"password":"{PASSWORD}"}}"#),
+    );
+    assert_eq!(login.status, 200, "{}", login.body);
+    login.json()["token"].as_str().unwrap().to_string()
 }
 
 pub fn wait_for_state(ts: &TestServer, state: &str) {

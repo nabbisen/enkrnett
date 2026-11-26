@@ -155,8 +155,8 @@ impl Api {
             ("device", Method::Get) => app.device_get(token),
             ("update", Method::Get) => app.update_get(token),
             ("update/check", Method::Post) => {
-                parse::<enkrnett_model::api::Empty>(req)?;
-                app.update_check(token)
+                let body = parse::<enkrnett_model::api::UpdateCheckRequest>(req)?;
+                app.update_check(token, body)
             }
             ("update/install", Method::Post) => {
                 parse::<enkrnett_model::api::Empty>(req)?;

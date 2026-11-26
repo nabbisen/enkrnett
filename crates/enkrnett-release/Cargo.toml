@@ -1,0 +1,18 @@
+[package]
+name = "enkrnett-release"
+description = "The release tool: signify-compatible keys and signatures, the signed release index (chapter 11). Runs on the signing host and on a workstation, never on the device."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+enkrnett-model = { path = "../enkrnett-model" }
+serde_json = { workspace = true }
+rand_core = { workspace = true }
+
+[[bin]]
+name = "enkrnett-release"
+path = "src/main.rs"

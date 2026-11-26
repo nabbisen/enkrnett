@@ -94,6 +94,24 @@ fn erase_removes_everything_and_makes_a_new_identifier() {
 }
 
 #[test]
+fn a_document_from_release_0_2_0_without_the_update_fields_is_read() {
+    // ENK-BASE-005: fields added after 0.2.0 default; the format number did not change because
+    // a 0.2.0 daemon would read a newer document correctly too (it ignores what it does not know).
+    let dir = TempDir::new();
+    fs::create_dir_all(&dir.0).unwrap();
+    fs::write(
+        dir.0.join(FILE_NAME),
+        br#"{"format":1,"device_id":"ABCD-1234","owner":null}"#,
+    )
+    .unwrap();
+    let store = Store::open(&dir.0, || "X".into()).unwrap();
+    assert_eq!(store.data.device_id, "ABCD-1234");
+    assert_eq!(store.data.index_sequence, 0);
+    assert_eq!(store.data.update_checks, None);
+    assert_eq!(store.data.last_auto_check, None);
+}
+
+#[test]
 fn a_newer_format_is_refused() {
     let dir = TempDir::new();
     fs::create_dir_all(&dir.0).unwrap();

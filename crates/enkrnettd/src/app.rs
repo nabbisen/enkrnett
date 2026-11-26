@@ -10,8 +10,9 @@ use std::time::{Duration, Instant};
 use enkrnett_model::api::{
     Available, ChangeKind, CheckResult, Claim, ClaimCheck, ClaimGuest, CountryChoice, Device,
     Empty, EraseRequest, ErrorCode, ErrorDetail, FieldCode, FieldError, Greeting, Installed,
-    LastCheck, LoginRequest, ManagementKey, ManagementProposal, PasswordChange, Proposal, Session,
-    SessionKind, SettingsShape, Status, Update, UpdateState, Version,
+    InstalledAs, LastCheck, LoginRequest, ManagementKey, ManagementProposal, PasswordChange,
+    Proposal, Session, SessionKind, SettingsShape, Status, Update, UpdateCheckRequest, UpdateState,
+    Version,
 };
 use enkrnett_model::password::{PasswordContext, check_new_password};
 use enkrnett_model::settings::{
@@ -32,10 +33,12 @@ use crate::{log, random};
 
 mod change;
 mod readings;
+mod update;
 pub use change::CONFIRMATION_LIMIT;
 use change::ChangeRecord;
 use readings::Readings;
 pub use readings::{DRIFT_INTERVAL, READINGS_MAX_AGE, STATUS_DRIFT_INTERVAL, UPLINK_INTERVAL};
+pub use update::{AUTO_CHECK_FIRST_DELAY, AUTO_CHECK_INTERVAL_SECS, auto_check_due};
 
 /// A successful reply: status and JSON body.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -93,6 +96,15 @@ struct UpdateRecord {
     state: UpdateState,
     last_check: Option<(Instant, CheckResult)>,
     available: Option<Available>,
+    /// A check is running (by request or the daily one); a second one waits for the shape.
+    checking: bool,
+}
+
+/// What the platform said about itself at start-up and will not change while running.
+struct DeviceStatic {
+    profile: String,
+    installed_as: InstalledAs,
+    baseline: String,
 }
 
 struct Inner {
@@ -118,6 +130,7 @@ struct Shared {
     clock: Arc<dyn Clock>,
     config: Arc<Config>,
     hasher: Hasher,
+    device: DeviceStatic,
     started: Instant,
     /// The address the HTTP listener is bound to, once it is (`App::set_bound`).
     bound: Mutex<Option<std::net::SocketAddr>>,
@@ -168,6 +181,12 @@ impl App {
             store.remove_pending()?;
         }
         let (m, t, p) = config.argon2;
+        let info = platform.device_info();
+        let device = DeviceStatic {
+            profile: info.profile,
+            installed_as: info.installed_as,
+            baseline: info.baseline,
+        };
         let app = App(Arc::new(Shared {
             inner: Mutex::new(Inner {
                 ownership,
@@ -181,6 +200,7 @@ impl App {
                     state: UpdateState::Idle,
                     last_check: None,
                     available: None,
+                    checking: false,
                 },
                 readings: None,
                 drift: false,
@@ -191,6 +211,7 @@ impl App {
             clock,
             config,
             hasher: Hasher::new(m, t, p),
+            device,
             started: now,
             bound: Mutex::new(None),
         }));
@@ -262,6 +283,7 @@ impl App {
                     app.tick();
                     app.check_drift_if_due(DRIFT_INTERVAL);
                     app.check_uplink_if_due(UPLINK_INTERVAL);
+                    app.check_update_if_due();
                 }
             })
             .expect("spawn tick");
@@ -417,18 +439,23 @@ impl App {
     }
 
     fn update_shape(&self, inner: &Inner, now: Instant) -> Update {
-        let info = self.0.platform.device_info();
+        let checks_enabled = self.checks_enabled(inner);
         Update {
             installed: Installed {
                 version: self.0.config.version.clone(),
-                baseline: info.baseline,
+                baseline: self.0.device.baseline.clone(),
             },
-            checks_enabled: matches!(info.installed_as, enkrnett_model::api::InstalledAs::Image),
+            checks_enabled,
             last_check: inner.update.last_check.map(|(at, result)| LastCheck {
                 checked_ago: seconds_since(at, now),
                 result,
             }),
-            available: inner.update.available.clone(),
+            // ENK-UPD-008: a device that does not look for updates is offered none.
+            available: if checks_enabled {
+                inner.update.available.clone()
+            } else {
+                None
+            },
             state: inner.update.state,
             last_result: None,
             can_undo: false,
@@ -920,16 +947,30 @@ impl App {
         Ok(Reply::ok(&self.update_shape(&inner, now)))
     }
 
-    pub fn update_check(&self, token: Option<&str>) -> Result<Reply> {
+    /// `update/check`: fetches the index now (ENK-UPD-001). With `enable_checks`, first sets
+    /// the owner's switch (ENK-UPD-008). While checks are off nothing is fetched and the shape
+    /// says so; while another check runs, the shape as it stands is answered.
+    pub fn update_check(&self, token: Option<&str>, body: UpdateCheckRequest) -> Result<Reply> {
         {
             let mut inner = self.0.inner.lock().expect("app");
             self.owner(&mut inner, token)?;
+            if let Some(on) = body.enable_checks
+                && inner.store.data.update_checks != Some(on)
+            {
+                inner.store.data.update_checks = Some(on);
+                self.save_store(&mut inner, "update_checks");
+                log::event("update_checks_set", &[("enabled", &on)]);
+            }
+            let now = self.0.clock.now();
+            if !self.checks_enabled(&inner) || inner.update.checking {
+                return Ok(Reply::ok(&self.update_shape(&inner, now)));
+            }
+            inner.update.checking = true;
         }
-        let result = self.0.platform.check_update_index();
+        let checked = self.run_update_check();
         let mut inner = self.0.inner.lock().expect("app");
+        self.record_check(&mut inner, checked, "request");
         let now = self.0.clock.now();
-        inner.update.last_check = Some((now, result));
-        log::event("update_checked", &[("result", &format!("{result:?}"))]);
         Ok(Reply::ok(&self.update_shape(&inner, now)))
     }
 

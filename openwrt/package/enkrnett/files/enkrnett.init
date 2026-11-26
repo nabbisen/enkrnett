@@ -65,9 +65,11 @@ prepare_light() {
 
 start_service() {
 	config_load enkrnett
-	local listen development
+	local listen development update_index
 	config_get listen main listen "192.168.207.1:8080"
 	config_get_bool development main development 0
+	# The release index (chapter 11 §3); this file is root's, so the URL travels on the command line.
+	config_get update_index main update_index ""
 	# On this platform the daemon binds the management address it has itself written (ENK-TOPO-006:
 	# renumbered only when the uplink collides with its subnet); `listen` gives the port and the
 	# address before any network exists.
@@ -79,6 +81,7 @@ start_service() {
 	procd_open_instance
 	procd_set_param command "$PROG" --listen "$listen" --state-dir "$STATE" --ui-dir /usr/share/enkrnett/ui --profiles-dir "$PROFILES"
 	[ "$development" = 1 ] && procd_append_param command --development
+	[ -n "$update_index" ] && procd_append_param command --update-index "$update_index"
 	procd_set_param user enkrnett
 	procd_set_param group enkrnett
 	# Port 80 on the management interface is redirected to this port by the firewall sections the

@@ -143,6 +143,9 @@ if [ "$PACKAGE" = 1 ]; then
   cp -r "$ROOT/ui/dist/." "$PRE/ui/"
   mkdir -p "$PRE/profiles"
   for d in "$ROOT"/openwrt/profiles/*/; do cp "$d/profile.json" "$PRE/profiles/$(basename "$d").json"; done
+  # The release public keys (ENK-RLS-005); none yet, see openwrt/release-keys/README.md.
+  mkdir -p "$PRE/keys"
+  for k in "$ROOT"/openwrt/release-keys/*.pub; do [ -f "$k" ] && cp "$k" "$PRE/keys/"; done
   rm -rf "$SDK_DIR/package/enkrnett"
   cp -r "$ROOT/openwrt/package/enkrnett" "$SDK_DIR/package/enkrnett"
   # STAGING_DIR is exported above for the toolchain wrapper; the SDK's make derives its host

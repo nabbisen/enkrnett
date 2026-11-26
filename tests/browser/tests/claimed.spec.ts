@@ -1,6 +1,6 @@
 // The claimed device in the browser: Status, Settings, Management Wi-Fi, Details, Erase
 // (ENK-UI-013, 016, 017, 021, 024, 027; ENK-OWE-011 the count of devices that lose the network
-// before saving; ENK-OWE-016 mode and counts on the first screen; ENK-OWE-018 and ENK-GUEST-001
+// before saving; ENK-OWE-016 mode and counts on the first screen; ENK-UPD-008 the switch; ENK-OWE-018 and ENK-GUEST-001
 // "What this protects" and the printable notice carry the same text).
 import { expect, test } from '@playwright/test';
 import { PASSWORD, claimViaApi, expectNoForbiddenWords, loginInBrowser } from './helpers';
@@ -70,6 +70,12 @@ test('details: version, hardening report, restart on its own step, log out', asy
   await expect(page.getByText(/Enkrnett \d+\.\d+\.\d+ on OpenWrt 25\.12/)).toBeVisible();
   await expect(page.getByText('ENK-HARD-001: in place')).toBeVisible();
   await expect(page.getByText('Installed from an image')).toBeVisible();
+  // ENK-UPD-008: the harness runs a development build, which does not look for updates until the
+  // owner says so; the switch runs the first check in the same request.
+  await expect(page.getByText(/not installed from a published image/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Check for updates' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Turn on update checks?' }).click();
+  await expect(page.getByText('Could not reach the update server.')).toBeVisible();
   await page.getByRole('button', { name: 'Check for updates' }).click();
   await expect(page.getByText('Could not reach the update server.')).toBeVisible();
   await page.getByRole('button', { name: 'Restart', exact: true }).first().click();

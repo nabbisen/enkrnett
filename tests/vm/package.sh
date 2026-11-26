@@ -35,6 +35,8 @@ rm -rf "$PRE"; mkdir -p "$PRE/ui" "$PRE/profiles"
 cp "$DAEMON" "$PRE/enkrnettd"
 cp -r "$ROOT/ui/dist/." "$PRE/ui/"
 for d in "$ROOT"/openwrt/profiles/*/; do cp "$d/profile.json" "$PRE/profiles/$(basename "$d").json"; done
+# The release public keys the image would carry (ENK-RLS-005); none yet (openwrt/release-keys/README.md).
+mkdir -p "$PRE/keys"; for k in "$ROOT"/openwrt/release-keys/*.pub; do [ -f "$k" ] && cp "$k" "$PRE/keys/"; done
 rm -rf "$SDK_DIR/package/enkrnett"
 cp -r "$ROOT/openwrt/package/enkrnett" "$SDK_DIR/package/enkrnett"
 ( cd "$SDK_DIR" && { [ -f .config ] || make defconfig >/dev/null; } && make package/enkrnett/compile ENKRNETT_PREBUILT="$PRE" >"$OUT/package.log" 2>&1 ) \

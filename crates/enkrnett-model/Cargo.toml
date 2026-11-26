@@ -11,3 +11,6 @@ repository.workspace = true
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
+# Ed25519 and Base64 for signify-format release signatures (chapter 11); no randomness, no I/O.
+ed25519-compact = { workspace = true }
+ct-codecs = { workspace = true }

@@ -5,6 +5,33 @@ decisions is in `rfcs/`.
 
 ## Unreleased
 
+### Milestone M3, stage 1 (2026-11-26)
+
+- The release index and its signature (chapter 11 §1–2): `enkrnett_model::signify` reads and
+  verifies OpenBSD signify's key and signature formats with Ed25519 (`ed25519-compact`);
+  `enkrnett_model::release` is the index: format, sequence, one entry per profile and baseline,
+  the file name of ENK-RLS-002, and the offer rule (the highest newer release for this profile
+  from the installed baseline).
+- The daemon checks the index by itself at most once a day and on `update/check`, through
+  `/bin/uclient-fetch` over HTTPS (RFC 016 §9), verifies the signature against the keys the image
+  carries (`/usr/share/enkrnett/keys`, the current and the designated next, ENK-RLS-005), keeps
+  the highest accepted sequence on flash and refuses a lower one (ENK-UPD-009), and offers only a
+  release newer than the installed one. A package install or a development build does not look
+  for updates until the owner turns the checks on (ENK-UPD-008); the switch rides on
+  `update/check` as `{"enable_checks": true}`, a deviation to record (no resource for it in the
+  accepted API). The details screen offers it.
+- The index URL is `option update_index` of `/etc/config/enkrnett`, passed by the init script;
+  the shipped default is a provisional GitHub releases path until the owner decides the host.
+- `crates/enkrnett-release`: the release tool (`keygen`, `sign`, `verify`, `sha512`, `index`),
+  signify-compatible; `openwrt/release-keys/` holds the public keys an image carries (none yet).
+- The downloader is started with `posix_spawn` through `libc` rather than `std::process`, which
+  kept 13 KiB of the budget: the MIPS daemon is 274 KiB of 300 (240 at 0.2.0).
+- `tests/vm/update-check.sh`: a signed index served from the host over HTTPS with a test
+  authority; the offer, every refusal, the sequence on flash, on the real platform. In the chain.
+- `docs/src/design/release.md`; `docs/src/design/daemon.md` §6b; `docs/src/verification/m3.md`.
+
+### After 0.2.0
+
 - The VM launcher pins the SMBIOS vendor and product string: Ubuntu's QEMU build names the machine
   after the Ubuntu release, which gave OpenWrt another board name on the GitHub runner and left the
   daemon without a profile (the first `vm` run in CI). `tests/vm/claim.sh` says so plainly when

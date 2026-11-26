@@ -1,7 +1,8 @@
 #!/bin/bash
 # The whole VM chain (chapter 14 §2, VM integration): prepare, package, claim, then chapters 2, 6
 # and 7 on the real platform, then the RFC 003/004 contract with Erase through a boot. Each
-# script's output goes to LOG_DIR; the summary names what passed and what did not.
+# script's output goes to LOG_DIR; the summary names what passed and what did not. The host needs
+# openssl and python3 for the update check.
 #
 #   tests/vm/run-all.sh VM_DIR [LOG_DIR]     VM_DIR from tests/vm/image.sh (or the measurement VM)
 #
@@ -35,6 +36,8 @@ foundation claim claim.sh
 # claim.sh leaves a CLAIMED device; isolation.sh and drift.sh work on it.
 step isolation isolation.sh || true
 step drift drift.sh || true
+# update-check.sh serves a signed index from the host; the device stays CLAIMED and is left as it was.
+step update-check update-check.sh || true
 # renumber.sh restarts the VM twice with colliding uplinks and ends with Erase: SETUP again.
 step renumber renumber.sh || true
 # contract.sh starts from SETUP (it erases first otherwise) and ends with Erase through a boot.

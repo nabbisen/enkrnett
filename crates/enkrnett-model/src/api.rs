@@ -288,6 +288,19 @@ pub enum CheckResult {
     StaleIndex,
 }
 
+impl CheckResult {
+    /// The wire word, for the log.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            CheckResult::Ok => "ok",
+            CheckResult::Unreachable => "unreachable",
+            CheckResult::BadSignature => "bad_signature",
+            CheckResult::BadIndex => "bad_index",
+            CheckResult::StaleIndex => "stale_index",
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LastCheck {
     pub checked_ago: u64,
@@ -375,6 +388,16 @@ pub struct LoginRequest {
 pub struct PasswordChange {
     pub current: String,
     pub new: String,
+}
+
+/// `update/check` body: `{}`, or the owner's switch of ENK-UPD-008. The accepted API has no
+/// resource for that switch, so it rides on this request (a deviation recorded for the next
+/// amendment RFC).
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UpdateCheckRequest {
+    #[serde(default)]
+    pub enable_checks: Option<bool>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

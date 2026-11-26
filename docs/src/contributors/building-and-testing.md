@@ -107,6 +107,7 @@ tests/vm/package.sh  /path/to/vm   # x86/64 SDK from the lock, enkrnett-*.apk, a
 tests/vm/contract.sh /path/to/vm   # the RFC 003 and 004 checks against the procd-started service, Erase through a boot
 tests/vm/isolation.sh /path/to/vm   # chapter 2 with four simulated stations in network namespaces (after claim.sh)
 tests/vm/drift.sh /path/to/vm       # a hand edit with uci: drift reported, restored through a respawn (after claim.sh)
+tests/vm/update-check.sh /path/to/vm # a release index signed with a test key, served from the host over HTTPS: the daemon's check and every refusal (after claim.sh; needs openssl and python3)
 tests/vm/renumber.sh /path/to/vm    # colliding uplinks (VM_WAN_NET in the VM launcher): only the colliding network moves; ends with Erase
 tests/vm/run-all.sh /path/to/vm [logs]  # the whole chain in the order CI runs it (about 25 minutes with KVM)
 python3 tests/traceability.py --release 0.2.0   # the requirement-to-test table; fails on an uncovered 0.2.0 requirement
@@ -115,6 +116,20 @@ python3 tests/traceability.py --release 0.2.0   # the requirement-to-test table;
 CI runs the chain in `.github/workflows/vm.yml` on every push to `main`, on request, and weekly
 (the Image Builder reads the live 25.12.5 feeds, so a feed change shows up there first). The
 standard GitHub-hosted Linux runners offer KVM once the workflow makes `/dev/kvm` writable.
+
+## The release tool
+
+```sh
+cargo build --release -p enkrnett-release
+target/release/enkrnett-release keygen -c "Enkrnett release" release      # release.sec (0600) and release.pub; on the signing host only
+target/release/enkrnett-release index --sequence 1 --out index.json \
+  --release x86_64_generic 0.3.0 25.12 25.12 path/to/enkrnett-0.3.0-25.12-x86_64_generic-sysupgrade.bin 24576 https://example.org/releases/0.3.0 180
+target/release/enkrnett-release sign release.sec index.json                 # index.json.sig
+target/release/enkrnett-release verify index.json --key release.pub
+```
+
+The formats are OpenBSD signify's; `docs/src/design/release.md` has the index fields and the
+rules the device applies. The public keys an image carries live in `openwrt/release-keys/`.
 
 ## Validate a settings document
 
