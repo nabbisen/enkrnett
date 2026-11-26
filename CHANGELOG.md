@@ -1,13 +1,13 @@
 # Changelog
 
-Releases use semantic versioning; tags carry no prefix (RFC 013 ENK-RLS-001). Until the first
-release, the history of decisions is in `rfcs/`.
+Releases use semantic versioning; tags carry no prefix (RFC 013 ENK-RLS-001). The history of
+decisions is in `rfcs/`.
 
-## 0.2.0 (prepared 2026-11-26)
+## 0.2.0 (2026-11-26)
 
-The wrap of milestone M2 (ROADMAP). No 0.1.0 tag was made: the exit of M1 (the Tier 1 device)
-is still open, so the first tag will be 0.2.0 and carries everything below it. The tag itself
-is the owner's step, after the device checks; release notes: `docs/src/releases/0.2.0.md`.
+The wrap of milestone M2, *Guest Wi-Fi* (ROADMAP), on top of 0.1.0. Tagged 2026-11-26 on the
+owner's authorization, with the Tier 1 device checks (the exit of M1) still open; they carry into
+M3. Release notes: `docs/src/releases/0.2.0.md`.
 
 ### Milestone M2, stage 4 (2026-11-26)
 
@@ -70,6 +70,13 @@ is the owner's step, after the device checks; release notes: `docs/src/releases/
   request; the UI's change display polls every second until the change is decided.
 - `pending.json` in the state directory; `tests/changes.rs` (9 tests); `tests/vm/claim.sh` drives
   the packaged service and both kinds of change on the VM.
+
+## 0.1.0 (2026-11-26)
+
+Milestone M1, *Skeleton*: daemon and management UI together on the virtual machine; claim, login,
+changes, Erase. Tagged 2026-11-26 on the owner's authorization at the stage 5 commit (`f089392`),
+with the Tier 1 device part of the exit condition open. Release notes:
+`docs/src/releases/0.1.0.md`.
 
 ### Milestone M1, stage 5 (2026-11-26)
 

@@ -3,8 +3,10 @@
 One release per milestone before 1.0.0 (ROADMAP, release cycle); these are for development and
 testing, not for operators. Each page says what the release contains, how it was verified, what
 is known to be missing, and the figures of chapter 8. Tags carry no prefix (ENK-RLS-001) and are
-made by the owner after the device checks.
+made on the owner's authorization. Both tags below were authorized on 2026-11-26 with the Tier 1
+device checks still open; the device checks carry into M3.
 
 | Release | Milestone | State |
 |---|---|---|
-| [0.2.0](./0.2.0.md) | M2 Guest Wi-Fi (M1 Skeleton folded in: no 0.1.0 tag was made) | Prepared 2026-11-26; the tag waits for the Tier 1 device checks |
+| [0.2.0](./0.2.0.md) | M2 Guest Wi-Fi | Tagged 2026-11-26 at the commit that carries these notes |
+| [0.1.0](./0.1.0.md) | M1 Skeleton | Tagged 2026-11-26 at the M1 stage 5 commit (`f089392`); the notes were written after it, on `main` |

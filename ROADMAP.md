@@ -53,7 +53,7 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 3 | MIPS build with the OpenWrt SDK; squashfs size check against ENK-FOOT-001 to 003 in CI; the OpenWrt package skeleton; first device profile | Done 2026-11-25 |
 | 4 | The OpenWrt platform: UCI and ubus, setup and management networks, the claim end to end on the x86-64 VM (M2 brings the full transaction engine) | Done 2026-11-26 |
 | 5 | The package on the VM through `procd`; the erase marker through a real boot; the tests derived from RFC 003 and 004 against the real platform; requirement-to-test traceability (`tests/traceability.py`) | Done 2026-11-26 |
-| 6 | On the Tier 1 device: image build with the Image Builder, boot, claim, LED, erase by `firstboot`; the 0.1.0 release | Waits for hardware (owner); M2 proceeds meanwhile |
+| 6 | On the Tier 1 device: image build with the Image Builder, boot, claim, LED, erase by `firstboot`; the 0.1.0 release | 0.1.0 tagged 2026-11-26 on the owner's authorization at the stage 5 commit; the device checks wait for hardware and carry into M3 |
 
 ## M2 in detail
 
@@ -62,7 +62,7 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 1 | The transaction of chapter 6 §4 in the daemon: marker on flash, apply on its own thread, health check, disconnection and confirmation by the next request, undo on failure, on the deadline, and at start-up; the UI polls the change; tests against the mock and the VM | Done 2026-11-26 |
 | 2 | Separation and hardening on the platform (chapter 2): bridge-port isolation set and read back, one DNS/DHCP instance per network checked, the listener read-back, IPv6 dropped on the Wi-Fi networks, the firewall rules of ENK-ISO-001 to 006; hwsim stations in network namespaces on the VM (M-8 rows) | Done 2026-11-26 |
 | 3 | Effective state and drift (ENK-CFG-013, 014): the 2 s status cache, the drift check every 10 minutes with *restore*; the device adopted at start-up without overwriting; the guest notice page (ENK-GUEST-001, done in M1 stage 2); renumbering on an uplink collision (ENK-TOPO-003, 006) | Done 2026-11-26 |
-| 4 | VM integration for chapters 2, 6, 7 in CI; the 0.2.0 wrap: changelog, verification record, release notes | Done 2026-11-26 (`.github/workflows/vm.yml`; `docs/src/releases/0.2.0.md`). The tag is the owner's, after the device checks |
+| 4 | VM integration for chapters 2, 6, 7 in CI; the 0.2.0 wrap: changelog, verification record, release notes | Done 2026-11-26 (`.github/workflows/vm.yml`; `docs/src/releases/0.2.0.md`). 0.2.0 tagged 2026-11-26 on the owner's authorization; the device checks carry into M3 |
 
 ## RFC order
 
