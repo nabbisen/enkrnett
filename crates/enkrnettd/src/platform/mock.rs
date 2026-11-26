@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::net::IpAddr;
 use std::path::Path;
 use std::sync::{Condvar, Mutex};
+use std::time::{Duration, Instant};
 
 use enkrnett_model::api::{
     Connection, GuestStatus, HardeningItem, HealthDetail, InstalledAs, ManagementStatus, Memory,
@@ -37,8 +38,11 @@ struct State {
     file_urls: bool,
     /// What the root side answers after `install`; `None` answers nothing (the daemon waits).
     install_verdict: Option<InstallVerdict>,
-    /// The attempts `install` was asked for, by token.
-    installs: Vec<String>,
+    /// The attempts `install` was asked for, by token, with when.
+    installs: Vec<(String, Instant)>,
+    /// A mock cannot restart: when set, `Flashing` turns into `Failed` this long after the
+    /// request, so that a daemon run with `--mock` leaves the update and is usable again.
+    flash_fails_after: Option<Duration>,
     available_kib: u64,
     /// While true, `apply_settings` waits (tests observe the change while it is applying).
     hold_apply: bool,
@@ -80,6 +84,7 @@ impl MockPlatform {
                 file_urls: false,
                 install_verdict: Some(InstallVerdict::Flashing),
                 installs: Vec::new(),
+                flash_fails_after: None,
                 available_kib: 98_304,
                 hold_apply: false,
                 drift: false,
@@ -183,9 +188,21 @@ impl MockPlatform {
         self.state.lock().expect("mock").available_kib = kib;
     }
 
+    /// "Flashing", then "failed" after `after`: the mock's stand-in for a device that cannot
+    /// restart (the browser harness).
+    pub fn set_flash_fails_after(&self, after: Option<Duration>) {
+        self.state.lock().expect("mock").flash_fails_after = after;
+    }
+
     /// The tokens of the install requests so far.
     pub fn installs(&self) -> Vec<String> {
-        self.state.lock().expect("mock").installs.clone()
+        self.state
+            .lock()
+            .expect("mock")
+            .installs
+            .iter()
+            .map(|(t, _)| t.clone())
+            .collect()
     }
 
     fn bytes_of(&self, url: &str, max_bytes: u64) -> Result<Vec<u8>, FetchError> {
@@ -483,16 +500,19 @@ impl Platform for MockPlatform {
             .lock()
             .expect("mock")
             .installs
-            .push(token.to_string());
+            .push((token.to_string(), Instant::now()));
         Ok(())
     }
 
     fn install_verdict(&self, token: &str) -> Option<InstallVerdict> {
         let s = self.state.lock().expect("mock");
-        s.installs
-            .iter()
-            .any(|t| t == token)
-            .then_some(s.install_verdict)?
+        let (_, asked) = s.installs.iter().find(|(t, _)| t == token)?;
+        match (s.install_verdict, s.flash_fails_after) {
+            (Some(InstallVerdict::Flashing), Some(after)) if asked.elapsed() >= after => {
+                Some(InstallVerdict::Failed)
+            }
+            (verdict, _) => verdict,
+        }
     }
 
     fn release_keys(&self) -> Vec<String> {

@@ -155,6 +155,9 @@ fn main() {
             }
         }
         config.staging_dir = config.state_dir.join("staging");
+        // A mock cannot restart into the new release: its root side says flashing, then, five
+        // seconds later, failed, and the daemon is usable again (install_failed).
+        platform.set_flash_fails_after(Some(std::time::Duration::from_secs(5)));
         Arc::new(platform)
     } else {
         let profile = match (&profile_path, &profiles_dir) {

@@ -1,9 +1,8 @@
 // The update's own step and the install (chapter 11 §3; RFC 017 §5.6; ENK-UPD-002, 006, 007;
 // ENK-UI-013). The harness's mock daemon offers 9.9.9 from a signed index on disk and, once the
 // owner confirms, "flashes" it: the mock's root side answers flashing and the shape stays at
-// installing, as on a device until it restarts. That leaves the daemon in an update, which
-// refuses every other POST (ENK-API-012), so this file runs last (Playwright runs the files in
-// name order, one worker).
+// installing, as on a device until it restarts. A mock cannot restart, so five seconds later its
+// root side answers failed and the daemon is usable again, with the failure on the screen.
 import { test, expect } from '@playwright/test';
 import { claimViaApi, expectNoForbiddenWords, loginInBrowser } from './helpers';
 
@@ -45,5 +44,9 @@ test('confirming starts the install and the screen follows it to installing', as
   // No button offers anything else while it runs.
   await expect(page.getByRole('button', { name: 'Check for updates' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Update', exact: true })).toHaveCount(0);
+  await expectNoForbiddenWords(page);
+  // The mock's root side gives up: the outcome of the attempt, and the offer stands again.
+  await expect(page.getByText('The update could not be installed. Nothing was changed.')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeVisible();
   await expectNoForbiddenWords(page);
 });

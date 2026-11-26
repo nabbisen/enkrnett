@@ -90,9 +90,10 @@ RFC (ENK-SCOPE-006).
 built UI on port 18080 and waits for the greeting; it first makes a signed release index and a
 pretend image with `enkrnett-release` and hands them to the mock as `file://` URLs (the key
 beside the index is the one the mock's "image" carries), so that an update can be offered and
-started. `update.spec.ts` runs last: once the owner confirms, the mock's root side answers
-"flashing" and the daemon stays in the update, refusing every other POST, as a device does until
-it restarts. The tests reset the device through the API
+started. In `update.spec.ts`, once the owner confirms, the mock's root side answers "flashing"
+and, five seconds later, "failed": a mock cannot restart into the new release, so the attempt
+ends as `install_failed` and the device is usable by the next test file (both browser projects
+share the one daemon). The tests reset the device through the API
 (erase when claimed) and must never leave a claim session behind, because the device rightly
 refuses the next *Start* for five minutes.
 
