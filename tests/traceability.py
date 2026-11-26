@@ -55,7 +55,7 @@ INSPECTION = {
     "ENK-OWN-022": "tests/browser/tests/setup.spec.ts (the connection line on S-1); ui/src/components/ConnectionLine.svelte",
     "ENK-UI-018": "ui/src/lib/countdown.svelte.ts (performance.now); tests/browser setup.spec.ts shows the countdown",
     "ENK-UI-022": "ui components render API values as text; the only {@html} is the QR SVG; hostile-value test to add to the harness",
-    "ENK-FOOT-001": "openwrt/build-mips.sh measured 285 KiB (xz estimate) of 300 after M3 stage 2 (274 after stage 1, 240 at 0.2.0)",
+    "ENK-FOOT-001": "CI's mksquashfs figure (openwrt/build-mips.sh in the mips job): 300 KiB of 300 at M3 stage 3, the budget met with at most 4 KiB to spare; the workstation's xz estimate (286) runs about 14 KiB under it; docs/src/verification/m3.md stage 3",
     "ENK-FOOT-011": "browser harness: timing check to add; the bundle is 44 KiB compressed",
     "ENK-RF-003": "openwrt/profiles: every product profile fixes the country, so no radio transmits before it is set",
     "ENK-REPO-002": "openwrt/patches/0001-…: header with upstream reference and removal condition",

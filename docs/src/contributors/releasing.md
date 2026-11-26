@@ -74,7 +74,9 @@ openwrt/release-assemble.sh VERSION
 diff openwrt/out/release/VERSION/SHA256SUMS <the published SHA256SUMS>
 ```
 
-The packages come from the release's download tree by the paths the lock records, or from the
+Compare only builds of the same commit: on 2026-11-27 the workstation and the runner gave the
+same bytes for the daemon, the package and every Tier 1 image, and the two comparisons that
+said otherwise had a stale build on one side. The packages come from the release's download tree by the paths the lock records, or from the
 project's pinned mirror when `ENKRNETT_MIRROR` names it (RFC 013 §6); the SHA-256 of every file
 is checked against the lock either way, and the Image Builder is given the files and an empty
 feeds list, so it cannot read a live feed (ENK-BUILD-008). The mirror itself is the tree

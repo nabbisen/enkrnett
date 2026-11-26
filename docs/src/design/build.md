@@ -45,6 +45,11 @@ The script prefers `mksquashfs` with the settings from the lock (`-comp xz -Xdic
 `squashfs-tools` and produces the real figure. M-2 found the estimate and the real figure within
 about 1 KiB of each other.
 
+**The real figure (CI, `mksquashfs`), 2026-11-27: the daemon is 300 KiB of 300**, the UI 48, the
+extras 8; the xz estimate on a workstation without `squashfs-tools` runs about 14 KiB under the
+squashfs figure for the daemon, and the figure is padded to 4 KiB. The headroom is between
+nothing and 4 KiB; see `docs/src/verification/m3.md` stage 3.
+
 History: stage 3's daemon (the API against the mock platform only) was 790 KB raw and 256 KiB.
 Stage 4 added the OpenWrt platform and brought it to 987 KB and 303 KiB, over the budget. Stage 5
 built `std` for size and without backtraces and panic locations: 723 KB and 224 KiB, with the
@@ -127,7 +132,8 @@ openwrt/build-image.sh PROFILE --apk ENKRNETT.apk [--out DIR] [--files DIR] [--a
 | `--twice` | The same build again into a temporary directory and `cmp` of every image; the result goes into `enkrnett-VERSION-BASELINE-PROFILE.build.json` (`built_twice_identical`) with sizes and SHA-256/SHA-512. A difference is stated, not failed: ENK-BUILD-010 is a should and the release notes state the result |
 
 Measured on 2026-11-27 (the three profiles, `--twice`, from the lock): every image bit-identical
-between the two builds; `elecom_wrc-1167gst2` sysupgrade 7,668,278 bytes and factory 7,667,806
+between the two builds, and the Tier 1 images, the daemon and the package byte-identical between
+the workstation and the GitHub runner on the same commit; `elecom_wrc-1167gst2` sysupgrade 7,668,278 bytes and factory 7,667,806
 of a 24 MiB limit, `buffalo_wcr-1166ds` 5,701,922 and 5,702,164 of 7,936 KiB, `x86_64_generic`
 14,935,265 (ext4, gzip). The `elecom` image carries no `dropbear` and no `ppp`, as its profile
 removes them.

@@ -86,7 +86,7 @@ each identifier (chapter 14 rule 1). Inspection notes come from the script's tab
 | ENK-CFG-024 | 0.2.0 | `crates/enkrnett-model/src/plan.rs`<br>`crates/enkrnett-model/src/plan/tests.rs`<br>`crates/enkrnettd/src/platform/openwrt.rs`<br>`crates/enkrnettd/src/platform/tests.rs`<br>`tests/vm/isolation.sh` |  |
 | ENK-CFG-025 | 0.2.0 | `crates/enkrnettd/src/config.rs`<br>`crates/enkrnettd/src/lib.rs`<br>`crates/enkrnettd/src/platform/openwrt.rs`<br>`crates/enkrnettd/src/platform/tests.rs`<br>`tests/vm/isolation.sh` |  |
 | ENK-CFG-026 | 0.2.0 | `crates/enkrnettd/src/platform/openwrt.rs` |  |
-| ENK-FOOT-001 | 0.1.0 | `openwrt/build-mips.sh` | openwrt/build-mips.sh measured 285 KiB (xz estimate) of 300 after M3 stage 2 (274 after stage 1, 240 at 0.2.0) |
+| ENK-FOOT-001 | 0.1.0 | `openwrt/build-mips.sh` | CI's mksquashfs figure (openwrt/build-mips.sh in the mips job): 300 KiB of 300 at M3 stage 3, the budget met with at most 4 KiB to spare; the workstation's xz estimate (286) runs about 14 KiB under it; docs/src/verification/m3.md stage 3 |
 | ENK-FOOT-002 | 0.1.0 | `crates/enkrnettd/src/http/response.rs`<br>`openwrt/build-mips.sh`<br>`ui/scripts/size.mjs` |  |
 | ENK-FOOT-003 | 0.1.0 | `crates/enkrnett-model/src/password.rs`<br>`crates/enkrnett-model/src/password/tests.rs`<br>`openwrt/build-mips.sh` |  |
 | ENK-FOOT-004 | 0.3.0 |  |  |

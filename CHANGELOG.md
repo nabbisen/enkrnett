@@ -35,6 +35,9 @@ decisions is in `rfcs/`.
 - ENK-BASE-005: `crates/enkrnettd/tests/fixtures/stored/{0.1.0,0.2.0}/state.json`, written by the
   daemons of the two tags, read, served and rewritten by today's daemon in
   `tests/stored_data.rs`; a release page without a fixture fails the test.
+- Daemon, package and Tier 1 images byte-identical between the workstation and the GitHub
+  runner on the same commit. The daemon's real squashfs figure is 300 KiB of 300 (CI's
+  `mksquashfs`; the xz estimate had said 285): the budget holds with at most 4 KiB to spare.
 - `docs/src/contributors/releasing.md` (the procedure), `docs/src/design/build.md` §7;
   `docs/src/verification/m3.md` stage 3.
 
