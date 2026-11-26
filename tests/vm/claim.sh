@@ -2,8 +2,8 @@
 # The claim end to end on the x86-64 VM with the real OpenWrt platform (chapter 14 §2, VM
 # integration): copies the daemon, the UI, and the VM profile in, starts the daemon as its own
 # user, and drives the API from the host through an SSH tunnel to the management address. The
-# daemon listens on port 8080 here because `su` grants no capability; procd gives the service
-# CAP_NET_BIND_SERVICE for port 80 on a device.
+# daemon listens on port 8080, as on a device; the firewall redirects port 80 to it on the
+# management interface (a local tunnel bypasses the redirect, so it targets 8080).
 # Prints a report; exits non-zero when a step does not match the specification.
 #
 #   tests/vm/claim.sh VM_DIR [DAEMON]   DAEMON defaults to target/x86_64-unknown-linux-musl/release/enkrnettd

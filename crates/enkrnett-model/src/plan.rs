@@ -16,6 +16,11 @@ pub const OWNED_PREFIX: &str = "enk_";
 /// The management UI's address (ENK-MGMT-007), the same on the setup and the management network.
 pub const MANAGEMENT_ADDRESS: &str = "192.168.207.1";
 pub const MANAGEMENT_NETMASK: &str = "255.255.255.0";
+/// The port the daemon listens on. Port 80 on the management interface is redirected to it by the
+/// firewall, so that the operator types the address alone (ENK-MGMT-007) and the daemon needs no
+/// capability: `procd` grants capabilities only inside a `ujail`, which the constrained target
+/// lacks (chapter 2 §6).
+pub const LISTEN_PORT: u16 = 8080;
 /// The guest network's subnet; renumbered when the uplink collides (ENK-TOPO-003, 006: M2).
 pub const GUEST_ADDRESS: &str = "10.207.0.1";
 pub const GUEST_NETMASK: &str = "255.255.255.0";
@@ -321,11 +326,20 @@ fn zone_rules(zone_name: &str, prefix: &str, with_ui: bool, internet: bool) -> V
     ];
     if with_ui {
         v.push(
+            Section::named("redirect", &format!("{prefix}_redirect"))
+                .option("name", "management UI and API: port 80 to the daemon")
+                .option("src", zone_name)
+                .option("proto", "tcp")
+                .option("src_dport", "80")
+                .option("dest_port", LISTEN_PORT.to_string())
+                .option("target", "DNAT"),
+        );
+        v.push(
             Section::named("rule", &format!("{prefix}_ui"))
                 .option("name", "management UI and API")
                 .option("src", zone_name)
                 .option("proto", "tcp")
-                .option("dest_port", "80")
+                .option("dest_port", format!("80 {LISTEN_PORT}"))
                 .option("target", "ACCEPT"),
         );
     }

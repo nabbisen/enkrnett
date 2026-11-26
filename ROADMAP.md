@@ -1,6 +1,6 @@
 # Roadmap
 
-**State.** The M0 design baseline is accepted (RFC 001 to 017, 2026-10-31) and the specification is published. **Nothing is implemented**: only RFC 000, 008, and 016 are in `done/`; every other RFC waits for the release that meets its requirements. RFC 006 (measurements) is part-way: M-2, M-5, M-6 done; M-3 and M-8 half done; M-1, M-4, M-7 outstanding. Dates for M1 to be set by the owner.
+**State.** The M0 design baseline is accepted (RFC 001 to 017, 2026-10-31) and the specification is published. M1 stages 1 to 5 are implemented (2026-10-31 to 2026-11-26): daemon, UI, MIPS build and package, the OpenWrt platform, and the package through `procd` on the x86-64 VM with the RFC 003 and RFC 004 checks passing against the real platform (`docs/src/verification/m1.md`). What M1 still needs is the Tier 1 device in the owner's hands. RFC 006 (measurements) is part-way: M-2, M-5, M-5b, M-6 done; M-3 and M-8 half done; M-1, M-4, M-7 outstanding.
 **Updated.** 2026-11-26
 
 Order of work, not a calendar. Dates are set when milestone M0 ends, because its measurements
@@ -52,7 +52,8 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | 2 | `ui/` (chapter 10) in both languages with the word check; the browser harness in GitHub Actions against `enkrnettd --mock` | Done 2026-11-25 |
 | 3 | MIPS build with the OpenWrt SDK; squashfs size check against ENK-FOOT-001 to 003 in CI; the OpenWrt package skeleton; first device profile | Done 2026-11-25 |
 | 4 | The OpenWrt platform: UCI and ubus, setup and management networks, the claim end to end on the x86-64 VM (M2 brings the full transaction engine) | Done 2026-11-26 |
-| 5 | The package on the VM through `procd` (capabilities, LED hand-over, the erase marker through a boot); the tests derived from RFC 003 and 004 run against the real platform; the 0.1.0 release checklist | Next |
+| 5 | The package on the VM through `procd`; the erase marker through a real boot; the tests derived from RFC 003 and 004 against the real platform; requirement-to-test traceability (`tests/traceability.py`) | Done 2026-11-26 |
+| 6 | On the Tier 1 device: image build with the Image Builder, boot, claim, LED, erase by `firstboot`; the 0.1.0 release | Waits for hardware (owner) |
 
 ## RFC order
 

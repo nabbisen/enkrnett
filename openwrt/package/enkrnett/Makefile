@@ -59,8 +59,6 @@ define Package/enkrnett/install
 	$(CP) $(ENKRNETT_PREBUILT)/profiles/*.json $(1)/usr/share/enkrnett/profiles/
 	$(INSTALL_DIR) $(1)/usr/share/acl.d
 	$(INSTALL_DATA) ./files/enkrnett.acl.json $(1)/usr/share/acl.d/enkrnett.json
-	$(INSTALL_DIR) $(1)/etc/capabilities
-	$(INSTALL_DATA) ./files/enkrnett.capabilities.json $(1)/etc/capabilities/enkrnett.json
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/enkrnett.init $(1)/etc/init.d/enkrnett
 	$(INSTALL_DIR) $(1)/etc/config

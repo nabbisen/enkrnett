@@ -115,6 +115,14 @@ fn setup_phase_offers_the_setup_network_on_the_management_subnet_without_interne
         "no Internet during setup"
     );
     assert!(names(&owned.firewall).contains(&"enk_mgmt_ui"));
+    let redirect = owned
+        .firewall
+        .iter()
+        .find(|s| s.name.as_deref() == Some("enk_mgmt_redirect"))
+        .unwrap();
+    assert_eq!(redirect.get("src_dport"), Some("80"));
+    assert_eq!(redirect.get("dest_port"), Some("8080"));
+    assert_eq!(redirect.get("target"), Some("DNAT"));
     let bss = expected_bss(&plan.phase);
     assert_eq!(bss.len(), 2);
     assert_eq!(

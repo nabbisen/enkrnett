@@ -5,6 +5,20 @@ release, the history of decisions is in `rfcs/`.
 
 ## Unreleased
 
+### Milestone M1, stage 5 (2026-11-26)
+
+- The package installed through `apk` and started by `procd` on the x86-64 VM; the x86/64 SDK
+  pinned in the lock as the test vehicle (`tests/vm/package.sh`).
+- Port 80 reaches the daemon by an owned firewall redirect to port 8080; the capabilities file is
+  gone (`procd` grants capabilities only inside a `ujail`).
+- The init script restores ownership of the four owned files at every start.
+- `retry_in` rounds up; `Retry-After` agrees with it.
+- `tests/vm/contract.sh`: the RFC 003 and RFC 004 checks against the real platform, through Erase
+  and a real boot: 51 checks green (`docs/src/verification/m1.md`).
+- `tests/traceability.py` and `docs/src/verification/`: requirement-to-test traceability.
+- MIPS: std built with `optimize_for_size`, without backtraces, without panic locations, to keep
+  the daemon inside its 300 KiB budget with the platform code.
+
 ### Milestone M1, stage 4 (2026-11-26)
 
 - Measurement M-5b: the daemon's own user commits the owned configuration directly; no root
@@ -25,7 +39,7 @@ release, the history of decisions is in `rfcs/`.
   UI 49 of 150, extras 7 of 50, xz estimate; CI measures the real squashfs figure).
 - `openwrt/lock/inputs.json`: pinned SDK and Image Builder inputs with checksums, the nightly,
   the squashfs settings.
-- `openwrt/package/enkrnett/`: the OpenWrt package (`procd`, non-root user, one capability,
+- `openwrt/package/enkrnett/`: the OpenWrt package (`procd`, non-root user,
   `ubusd` ACL, UCI config, first-boot script); built as `enkrnett-0.1.0-r1.apk` in the SDK.
 - `openwrt/profiles/`: device profiles for ELECOM WRC-1167GST2 and Buffalo WCR-1166DS, schema
   and rules in `enkrnett_model::profile` with tests.

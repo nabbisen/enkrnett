@@ -79,7 +79,8 @@ amendment RFC (ENK-SCOPE-006).
 |---|---|
 | Creating the user, owning the files, the sticky directory | Package install (`USERID`) and the first-boot script |
 | Reading the `ubusd` ACL | `ubusd` at its start; a package install needs a reboot before the daemon runs |
-| Port 80 as a non-root user | `procd` capability `CAP_NET_BIND_SERVICE` |
+| Port 80 | Not by capability: `procd` applies a capabilities file only inside a `ujail`, which the constrained target lacks (verified on the VM: `sysntpd` wraps it in a jail; a plain instance got none). The daemon listens on port 8080 on the management address and the owned firewall sections redirect port 80 of the management interface to it (`enk_mgmt_redirect`). The operator types the address alone. |
+| Ownership of the four files after a root-side `uci commit` | The init script restores owner, mode, and the sticky directory at every start (`prepare_files`); found when the erase path's own `uci commit` handed the files back to root |
 | Blinking the LED | The init script hands the profile's LED `brightness` attribute to the user at boot |
 | Erase | The daemon writes `/etc/enkrnett/ERASE`, takes the Wi-Fi down, and asks for a reboot (`system reboot` through ubus). The init script's `boot()` sees the marker: on an image install `firstboot -y` resets the overlay to the image; on a package install it removes Enkrnett's state and sections, because `firstboot` would remove Enkrnett itself. |
 | Reboot | `ubus call system reboot` (in the ACL) |
@@ -97,8 +98,8 @@ VM's profile (Tier 3, no light, label from `eth0`).
 device (user, ACL, ownership, sticky directory, a base configuration without a stock `dnsmasq`
 instance) and reboots it. `tests/vm/claim.sh VM_DIR` installs the daemon built for
 `x86_64-unknown-linux-musl`, the UI, and the VM profile, starts the daemon as `enkrnett`, and
-drives the claim through an SSH tunnel to the management address (port 8080, because `su` grants
-no capability). Observed on 2026-11-26:
+drives the claim through an SSH tunnel to the management address (port 8080; a local tunnel does
+not pass the firewall's port-80 redirect). Observed on 2026-11-26:
 
 | Step | Observed |
 |---|---|
@@ -120,4 +121,15 @@ The pending marker on flash and the undo at start-up; the disconnection of manag
 and confirmation by the first request on a new connection (ENK-API-021, 022); the bridge-port
 `isolated` read-back (ENK-CFG-023, needs `CAP_NET_ADMIN` and netlink, or the init script); the
 listener port scan (ENK-CFG-025); drift detection every 10 minutes (ENK-CFG-014); renumbering on
-an uplink collision (ENK-TOPO-003, 006); the 5 GHz radio.
+an uplink collision (ENK-TOPO-003, 006); the 5 GHz radio. For the next amendment RFC: the port-80
+redirect (the listener port scan of ENK-CFG-025 then concerns 8080 too) and the setup network on
+the management interface (§2).
+
+## 8. Stage 5: the package through `procd`
+
+`tests/vm/package.sh` builds the package with the pinned x86/64 SDK (the test vehicle's target in
+the lock), installs it with `apk add --allow-untrusted`, and reboots. `tests/vm/contract.sh` then
+runs the checks derived from RFC 003 and RFC 004 against the service `procd` started: request
+security, authorization by state, the claim, sessions, the login delay with `Retry-After`, and
+Erase through a real boot on the package path (the init script removes Enkrnett's state and
+sections; `firstboot` is for image installs). Results: `docs/src/verification/m1.md`.

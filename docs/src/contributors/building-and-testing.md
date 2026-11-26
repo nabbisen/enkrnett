@@ -85,6 +85,14 @@ The VM directory is the measurement VM of RFC 006 (`vm.sh`, `vmssh`, `vmscp`, th
 it is private material under `.git-exclude/tmp/m/vm/`. What the test checks is in
 `docs/src/design/platform.md` §6.
 
+## The package on the virtual machine
+
+```sh
+tests/vm/package.sh  /path/to/vm   # x86/64 SDK from the lock, enkrnett-*.apk, apk add on the VM, reboot
+tests/vm/contract.sh /path/to/vm   # the RFC 003 and 004 checks against the procd-started service, Erase through a boot
+python3 tests/traceability.py --release 0.1.0   # the requirement-to-test table; fails on an uncovered 0.1.0 requirement
+```
+
 ## Validate a settings document
 
 ```sh

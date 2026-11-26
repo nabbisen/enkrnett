@@ -164,6 +164,8 @@ fn the_whole_claim() {
     assert_eq!(proposal["address"], "192.168.207.1");
     assert_eq!(proposal["state"], "SETUP");
     assert_eq!(proposal["final_in"], serde_json::Value::Null);
+    wait_for_call(&ts, "enter_pending(Enkrnett-3F2A)");
+    wait_for_call(&ts, "apply_settings(v1, Cafe Example");
     let calls = ts.platform.calls();
     assert!(
         calls[calls_before..]

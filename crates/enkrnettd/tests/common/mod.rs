@@ -217,3 +217,18 @@ pub fn wait_for_state(ts: &TestServer, state: &str) {
     }
     panic!("state did not become {state}: {}", get(ts, "", None).body);
 }
+
+/// Waits for the mock platform to record a call starting with `call`: deferred actions run on
+/// their own thread after the state has already changed.
+pub fn wait_for_call(ts: &TestServer, call: &str) {
+    for _ in 0..100 {
+        if ts.platform.calls().iter().any(|c| c.starts_with(call)) {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    panic!(
+        "platform call {call} did not happen: {:?}",
+        ts.platform.calls()
+    );
+}

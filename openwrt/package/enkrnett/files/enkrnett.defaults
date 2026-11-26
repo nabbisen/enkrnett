@@ -5,4 +5,10 @@
 [ -d /etc/enkrnett ] || mkdir -p /etc/enkrnett
 chown enkrnett:enkrnett /etc/enkrnett
 chmod 0750 /etc/enkrnett
+for f in wireless network dhcp firewall; do
+	[ -f "/etc/config/$f" ] || touch "/etc/config/$f"
+	chown enkrnett:enkrnett "/etc/config/$f"
+	chmod 0600 "/etc/config/$f"
+done
+chgrp enkrnett /etc/config && chmod 1775 /etc/config
 exit 0

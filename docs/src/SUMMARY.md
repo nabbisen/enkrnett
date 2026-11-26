@@ -20,6 +20,12 @@
   - [13. Requirements index](./specification/13-requirements-index.md)
   - [14. Verification plan](./specification/14-verification-plan.md)
 
+# Verification
+
+- [Verification](./verification/index.md)
+  - [Traceability](./verification/traceability.md)
+  - [Milestone M1](./verification/m1.md)
+
 # Maintainers and contributors
 
 - [Building and testing](./contributors/building-and-testing.md)

@@ -48,12 +48,12 @@ from this chapter and the requirement tables, before the code they test.
 
 ## 14.4 What exists today
 
-| Suite | State on 2026-10-31 |
+| Suite | State on 2026-11-26 |
 |---|---|
-| All code suites | Nothing exists: there is no code beyond the Cargo scaffold. The first M1 handoff creates the workspace, the mock daemon, the browser harness, and the first contract tests before the daemon. |
-| VM integration | The measurement scripts of M-5, M-6, M-8 (outside the repository, `.git-exclude/tmp/m/`) are the seed; they are rewritten as `tests/vm/` in M1 and M2. |
+| All code suites | Exist and run on every commit: model, ubus codec, daemon units, API contract, claim flow, limits, UI units, the browser harness (chapter 14 §2 rows 1 to 5). The record is the verification chapter of this book (`verification/`), with the generated requirement-to-test table. |
+| VM integration | `tests/vm/`: the package through `procd`, the claim end to end, the RFC 003 and RFC 004 checks against the real platform, Erase through a real boot. |
 | Device tests, usability test | Blocked with the hardware and the legal answer (chapter 5 §4). |
-| Measurements | M-2, M-5, M-6 complete; M-3 and M-8 part 1 complete; M-1 kit and M-4a kit prepared for the owner. |
+| Measurements | M-2, M-5, M-5b, M-6 complete; M-3 and M-8 part 1 complete; M-1 kit and M-4a kit prepared for the owner. |
 
 ## 14.5 Milestone exit criteria, restated as suites
 

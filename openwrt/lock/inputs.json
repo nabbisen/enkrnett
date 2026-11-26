@@ -25,6 +25,17 @@
           "url": "https://downloads.openwrt.org/releases/25.12.5/targets/ramips/mt76x8/openwrt-imagebuilder-25.12.5-ramips-mt76x8.Linux-x86_64.tar.zst",
           "sha256": "eb62a030c42fa8d0c3d922dc15a05e8410166389ab1c818fd2e4ff875c0ba453"
         }
+      },
+      "x86/64": {
+        "comment": "Test vehicle only (the measurement VM); not a product target.",
+        "sdk": {
+          "url": "https://downloads.openwrt.org/releases/25.12.5/targets/x86/64/openwrt-sdk-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst",
+          "sha256": "0c8df0151a1e88feb7c03d694d61f6a18d51872815b7c811d76e2b77504d5e9c"
+        },
+        "image_builder": {
+          "url": "https://downloads.openwrt.org/releases/25.12.5/targets/x86/64/openwrt-imagebuilder-25.12.5-x86-64.Linux-x86_64.tar.zst",
+          "sha256": "313221253d9bac534e4a4ee6492a4941b4ba0f43200eceb8d16a4785470ae9df"
+        }
       }
     },
     "toolchain_dir_glob": "toolchain-mipsel_24kc_gcc-14.3.0_musl",
@@ -35,12 +46,26 @@
     "nightly": "nightly-2026-11-21",
     "target": "mipsel-unknown-linux-musl",
     "build_std": "std,panic_abort",
-    "rustflags": "-C target-feature=-crt-static",
-    "comment": "Tier 3 target: no prebuilt std, built with -Zbuild-std (M-2). Dynamic musl as OpenWrt packages are built (ENK-FOOT-015)."
+    "rustflags": "-C target-feature=-crt-static -Zlocation-detail=none",
+    "comment": "Tier 3 target: no prebuilt std, built with -Zbuild-std (M-2). Dynamic musl as OpenWrt packages are built (ENK-FOOT-015). std built with optimize_for_size and without the default backtrace feature (panic=abort; the message still reaches the log, the file and line do not).",
+    "build_std_features": "optimize_for_size"
   },
   "squashfs": {
-    "mksquashfs_args": ["-comp", "xz", "-Xdict-size", "100%", "-b", "256K", "-no-xattrs", "-noappend"],
+    "mksquashfs_args": [
+      "-comp",
+      "xz",
+      "-Xdict-size",
+      "100%",
+      "-b",
+      "256K",
+      "-no-xattrs",
+      "-noappend"
+    ],
     "comment": "OpenWrt's squashfs settings; the size of a squashfs holding only the measured files is the budget figure of RFC 010."
   },
-  "budgets_kib": { "daemon": 300, "ui": 150, "extras": 50 }
+  "budgets_kib": {
+    "daemon": 300,
+    "ui": 150,
+    "extras": 50
+  }
 }

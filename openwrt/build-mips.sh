@@ -35,6 +35,7 @@ TC_GLOB=$(lock "['openwrt']['toolchain_dir_glob']")
 NIGHTLY="${RUST_NIGHTLY:-$(lock "['rust']['nightly']")}"
 RUST_TARGET=$(lock "['rust']['target']")
 BUILD_STD=$(lock "['rust']['build_std']")
+BUILD_STD_FEATURES=$(lock "['rust']['build_std_features']")
 RUSTFLAGS_LOCK=$(lock "['rust']['rustflags']")
 B_DAEMON=$(lock "['budgets_kib']['daemon']")
 B_UI=$(lock "['budgets_kib']['ui']")
@@ -60,9 +61,10 @@ export CARGO_TARGET_MIPSEL_UNKNOWN_LINUX_MUSL_LINKER="$TC/mipsel-openwrt-linux-m
 export CC_mipsel_unknown_linux_musl="$TC/mipsel-openwrt-linux-musl-gcc"
 export AR_mipsel_unknown_linux_musl="$TC/mipsel-openwrt-linux-musl-ar"
 
-echo "toolchain: $NIGHTLY, $RUST_TARGET, -Zbuild-std=$BUILD_STD"
+echo "toolchain: $NIGHTLY, $RUST_TARGET, -Zbuild-std=$BUILD_STD, features $BUILD_STD_FEATURES, RUSTFLAGS $RUSTFLAGS_LOCK"
 RUSTFLAGS="$RUSTFLAGS_LOCK" cargo "+$NIGHTLY" build --release -p enkrnettd \
-  --target "$RUST_TARGET" -Zbuild-std="$BUILD_STD" --target-dir "$ROOT/target/mips"
+  --target "$RUST_TARGET" -Zbuild-std="$BUILD_STD" -Zbuild-std-features="$BUILD_STD_FEATURES" \
+  --target-dir "$ROOT/target/mips"
 BIN="$ROOT/target/mips/$RUST_TARGET/release/enkrnettd"
 cp "$BIN" "$OUT/enkrnettd"
 file "$OUT/enkrnettd" | sed 's/^/binary: /'
@@ -143,7 +145,9 @@ if [ "$PACKAGE" = 1 ]; then
   for d in "$ROOT"/openwrt/profiles/*/; do cp "$d/profile.json" "$PRE/profiles/$(basename "$d").json"; done
   rm -rf "$SDK_DIR/package/enkrnett"
   cp -r "$ROOT/openwrt/package/enkrnett" "$SDK_DIR/package/enkrnett"
-  ( cd "$SDK_DIR" && { [ -f .config ] || make defconfig >/dev/null; } && make package/enkrnett/compile ENKRNETT_PREBUILT="$PRE" >"$OUT/package.log" 2>&1 ) \
+  # STAGING_DIR is exported above for the toolchain wrapper; the SDK's make derives its host
+  # directory from it and must see its own value instead.
+  ( cd "$SDK_DIR" && env -u STAGING_DIR sh -c '{ [ -f .config ] || make defconfig >/dev/null; } && make package/enkrnett/compile ENKRNETT_PREBUILT="$0"' "$PRE" >"$OUT/package.log" 2>&1 ) \
     || { echo "package build failed (see $OUT/package.log)"; tail -20 "$OUT/package.log"; exit 1; }
   APK=$(find "$SDK_DIR/bin/packages" -name 'enkrnett-*.apk' | head -1)
   cp "$APK" "$OUT/"

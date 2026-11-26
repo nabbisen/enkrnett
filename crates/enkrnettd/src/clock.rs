@@ -44,8 +44,10 @@ impl Clock for MockClock {
 }
 
 /// Whole seconds from `now` to `deadline`, zero when the deadline has passed.
+/// Rounded up, so that a client which waits exactly this long is not refused again.
 pub fn seconds_until(now: Instant, deadline: Instant) -> u64 {
-    deadline.saturating_duration_since(now).as_secs()
+    let d = deadline.saturating_duration_since(now);
+    d.as_secs() + u64::from(d.subsec_nanos() > 0)
 }
 
 /// Whole seconds from `then` to `now`.
