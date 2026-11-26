@@ -154,3 +154,30 @@ fn rewrite_replaces_named_sections_in_place() {
         "position kept"
     );
 }
+
+#[test]
+fn equivalent_sections_ignore_the_order_of_entries_but_nothing_else() {
+    let a = Section::named("wifi-device", "radio0")
+        .option("type", "mac80211")
+        .option("country", "JP")
+        .option("channel", "6");
+    let b = Section::named("wifi-device", "radio0")
+        .option("channel", "6")
+        .option("type", "mac80211")
+        .option("country", "JP");
+    assert!(a.equivalent(&b));
+    assert!(!a.equivalent(&b.clone().option("disabled", "0")));
+    assert!(
+        !a.equivalent(
+            &Section::named("wifi-device", "radio1")
+                .option("type", "mac80211")
+                .option("country", "JP")
+                .option("channel", "6")
+        )
+    );
+    let changed = Section::named("wifi-device", "radio0")
+        .option("type", "mac80211")
+        .option("country", "US")
+        .option("channel", "6");
+    assert!(!a.equivalent(&changed));
+}

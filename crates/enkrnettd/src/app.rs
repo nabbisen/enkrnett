@@ -31,8 +31,11 @@ use crate::store::{OwnerRecord, Store};
 use crate::{log, random};
 
 mod change;
+mod readings;
 pub use change::CONFIRMATION_LIMIT;
 use change::ChangeRecord;
+use readings::Readings;
+pub use readings::{DRIFT_INTERVAL, READINGS_MAX_AGE, STATUS_DRIFT_INTERVAL, UPLINK_INTERVAL};
 
 /// A successful reply: status and JSON body.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -101,6 +104,12 @@ struct Inner {
     change: Option<ChangeRecord>,
     change_counter: u64,
     update: UpdateRecord,
+    /// The effective state as last read (ENK-API-027).
+    readings: Option<Readings>,
+    /// The owned sections differ from what the daemon last wrote (ENK-CFG-014).
+    drift: bool,
+    drift_checked: Option<Instant>,
+    uplink_checked: Option<Instant>,
 }
 
 struct Shared {
@@ -110,6 +119,8 @@ struct Shared {
     config: Arc<Config>,
     hasher: Hasher,
     started: Instant,
+    /// The address the HTTP listener is bound to, once it is (`App::set_bound`).
+    bound: Mutex<Option<std::net::SocketAddr>>,
 }
 
 #[derive(Clone)]
@@ -126,8 +137,16 @@ impl App {
         let (ownership, event) = Ownership::start(store.data.owner.is_some(), now);
         // ENK-CFG-009: a marker left by a change that did not finish. The stored document is
         // the one from before that change; applying it below is the undo.
+        // A restore completes at start-up (the stored document is applied below); any other
+        // change is undone by the restart, which the same apply performs.
+        let had_marker = store.has_pending();
         let (change, change_counter) = match store.read_pending() {
             None => (None, 0),
+            Some(Ok(marker)) if marker.kind == ChangeKind::Restore => {
+                log::event("change_settled", &[("id", &marker.id), ("by", &"restart")]);
+                let id = marker.id;
+                (Some(ChangeRecord::settled_by_restart(marker, now)), id)
+            }
             Some(Ok(marker)) => {
                 log::event(
                     "change_undone",
@@ -145,7 +164,7 @@ impl App {
                 (None, 0)
             }
         };
-        if change.is_some() || store.has_pending() {
+        if had_marker {
             store.remove_pending()?;
         }
         let (m, t, p) = config.argon2;
@@ -163,26 +182,35 @@ impl App {
                     last_check: None,
                     available: None,
                 },
+                readings: None,
+                drift: false,
+                drift_checked: None,
+                uplink_checked: None,
             }),
             platform,
             clock,
             config,
             hasher: Hasher::new(m, t, p),
             started: now,
+            bound: Mutex::new(None),
         }));
-        app.bring_platform_up(event);
+        app.bring_platform_up(event, had_marker);
         Ok(app)
     }
 
     /// At start and after a restart: the platform offers what the state says.
-    fn bring_platform_up(&self, event: Option<Event>) {
+    /// Start-up (chapter 6 §4, ENK-CFG-014): with a marker, the stored document is applied,
+    /// which undoes or completes the cut-short change; without one, the device is adopted as
+    /// the boot left it and a difference is reported as drift, never overwritten.
+    fn bring_platform_up(&self, event: Option<Event>, had_marker: bool) {
         let owner = {
             let inner = self.0.inner.lock().expect("app");
             inner.store.data.owner.clone()
         };
         let platform = &self.0.platform;
+        let now = self.0.clock.now();
         let result = match (owner, event) {
-            (Some(record), _) => platform
+            (Some(record), _) if had_marker => platform
                 .apply_settings(
                     &record.management_name,
                     &record.management_key,
@@ -196,15 +224,34 @@ impl App {
                         );
                     }
                 }),
+            (Some(record), _) => platform
+                .adopt_settings(
+                    &record.management_name,
+                    &record.management_key,
+                    &record.settings,
+                )
+                .map(|adopted| {
+                    if !adopted.health.is_empty() {
+                        log::event(
+                            "start_health_check_failed",
+                            &[("detail", &format!("{:?}", adopted.health))],
+                        );
+                    }
+                    if adopted.drift {
+                        log::event("drift_detected", &[("at", &"start")]);
+                    }
+                    let mut inner = self.0.inner.lock().expect("app");
+                    inner.drift = adopted.drift;
+                    inner.drift_checked = Some(now);
+                }),
             (None, _) => platform.enter_setup(),
         };
         if let Err(e) = result {
-            log::event("platform_failed", &[("at", &"start"), ("error", &e)]);
+            self.platform_failed("start", &e);
         }
         log::event("state", &[("state", &self.state().as_str())]);
     }
 
-    /// Starts the background thread that advances the timers once a second.
     pub fn start_ticking(&self) {
         let app = self.clone();
         std::thread::Builder::new()
@@ -213,6 +260,8 @@ impl App {
                 loop {
                     std::thread::sleep(Duration::from_secs(1));
                     app.tick();
+                    app.check_drift_if_due(DRIFT_INTERVAL);
+                    app.check_uplink_if_due(UPLINK_INTERVAL);
                 }
             })
             .expect("spawn tick");
@@ -261,6 +310,28 @@ impl App {
             );
         }
         self.tick_change();
+    }
+
+    /// Records where the listener was bound; the `Host` check and the renumbering follow it.
+    pub fn set_bound(&self, addr: std::net::SocketAddr) {
+        *self.0.bound.lock().expect("bound") = Some(addr);
+    }
+
+    pub fn bound(&self) -> Option<std::net::SocketAddr> {
+        *self.0.bound.lock().expect("bound")
+    }
+
+    /// The address to bind: on a platform whose listen address follows the management address,
+    /// that address with the configured port; else the configured address.
+    pub fn listen_address(&self) -> std::net::SocketAddr {
+        let configured = self.0.config.listen;
+        if !self.0.platform.listen_follows_management_address() {
+            return configured;
+        }
+        match self.0.platform.management_address().parse() {
+            Ok(ip) => std::net::SocketAddr::new(ip, configured.port()),
+            Err(_) => configured,
+        }
     }
 
     pub fn state(&self) -> OwnershipState {
@@ -649,6 +720,12 @@ impl App {
     }
 
     pub fn status(&self, token: Option<&str>) -> Result<Reply> {
+        {
+            let mut inner = self.0.inner.lock().expect("app");
+            self.owner(&mut inner, token)?;
+        }
+        // While the status is watched, drift is checked at most every 30 s (ENK-CFG-014).
+        self.check_drift_if_due(STATUS_DRIFT_INTERVAL);
         let mut inner = self.0.inner.lock().expect("app");
         self.owner(&mut inner, token)?;
         let now = self.0.clock.now();
@@ -658,8 +735,11 @@ impl App {
             .owner
             .clone()
             .expect("claimed has an owner");
-        let effective = self.0.platform.effective();
-        let info = self.0.platform.device_info();
+        let (mut effective, hardening_met) = {
+            let r = self.readings(&mut inner, now);
+            (r.effective.clone(), r.hardening_met)
+        };
+        effective.guest.checked_ago = Self::readings_age(&inner, now);
         Ok(Reply::ok(&Status {
             state: inner.ownership.state(),
             version: self.version(),
@@ -668,9 +748,9 @@ impl App {
             management: effective.management,
             uplink: effective.uplink,
             change: Self::change_shape(&inner, now),
-            drift: false,
+            drift: inner.drift,
             update: self.update_shape(&inner, now),
-            hardening_met: info.hardening.iter().all(|h| h.met),
+            hardening_met,
         }))
     }
 
@@ -930,7 +1010,7 @@ impl App {
             log::event("platform_failed", &[("at", &"restart"), ("error", &e)]);
         }
         log::event("restarted", &[]);
-        self.bring_platform_up(event);
+        self.bring_platform_up(event, false);
     }
 
     /// Erase (ENK-OWN-018): the store, then the platform, then a restart.

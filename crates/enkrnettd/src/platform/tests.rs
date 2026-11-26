@@ -36,8 +36,13 @@ fn mock_records_calls_and_reports_effective_state() {
     );
     assert!(p.effective().guest.up);
     assert_eq!(p.effective().guest.name.as_deref(), Some("Cafe"));
+    let calls: Vec<String> = p
+        .calls()
+        .into_iter()
+        .filter(|c| c != "effective()")
+        .collect();
     assert_eq!(
-        p.calls(),
+        calls,
         vec![
             "enter_setup()",
             "enter_pending(Enkrnett-3F2A)",
@@ -117,6 +122,8 @@ fn ipv6_sockets_count_as_every_address_unless_mapped() {
     assert_eq!(s[1].address, "192.168.207.1".parse::<Ipv4Addr>().unwrap());
 }
 
+const MGMT: Ipv4Addr = Ipv4Addr::new(192, 168, 207, 1);
+
 #[test]
 fn the_listener_is_exposed_when_the_ui_port_is_bound_anywhere_but_the_management_address() {
     let mgmt = |port| openwrt::BoundSocket {
@@ -134,20 +141,30 @@ fn the_listener_is_exposed_when_the_ui_port_is_bound_anywhere_but_the_management
         port,
         uid: 0,
     };
-    assert!(!openwrt::listener_exposed(&[
-        mgmt(8080),
-        any(53),
-        any(67),
-        guest(53)
-    ]));
-    assert!(openwrt::listener_exposed(&[any(8080)]));
-    assert!(openwrt::listener_exposed(&[mgmt(8080), guest(8080)]));
+    assert!(!openwrt::listener_exposed(
+        &[mgmt(8080), any(53), any(67), guest(53)],
+        MGMT,
+        None
+    ));
+    assert!(openwrt::listener_exposed(&[any(8080)], MGMT, None));
+    assert!(openwrt::listener_exposed(
+        &[mgmt(8080), guest(8080)],
+        MGMT,
+        None
+    ));
     assert!(
-        openwrt::listener_exposed(&[any(80)]),
+        openwrt::listener_exposed(&[any(80)], MGMT, None),
         "a stray web server on port 80"
     );
     // Other services are the hardening report's business, not the health check's.
-    assert!(!openwrt::listener_exposed(&[any(22)]));
+    assert!(!openwrt::listener_exposed(&[any(22)], MGMT, None));
+    // ENK-TOPO-006: the management network moved to .208.1; the daemon's own listener on the
+    // address it is leaving is not exposed, anything else on the old address or port 80 still is.
+    let moved: Ipv4Addr = "192.168.208.1".parse().unwrap();
+    assert!(!openwrt::listener_exposed(&[mgmt(8080)], moved, Some(MGMT)));
+    assert!(openwrt::listener_exposed(&[mgmt(80)], moved, Some(MGMT)));
+    assert!(openwrt::listener_exposed(&[any(8080)], moved, Some(MGMT)));
+    assert!(openwrt::listener_exposed(&[mgmt(8080)], moved, None));
 }
 
 #[test]

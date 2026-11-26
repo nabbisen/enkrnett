@@ -20,17 +20,17 @@ use enkrnett_model::api::{
     ManagementStatus, Memory, Radio, Storage, UplinkStatus,
 };
 use enkrnett_model::plan::{
-    self, BssRole, ExpectedBss, LISTEN_PORT, MANAGEMENT_ADDRESS, OWNED_PREFIX, Phase, Plan,
-    owned_sections,
+    self, BssRole, ExpectedBss, LISTEN_PORT, OWNED_PREFIX, Phase, Plan, owned_sections,
 };
 use enkrnett_model::profile::DeviceProfile;
 use enkrnett_model::settings::{GuestMode, Settings};
 use enkrnett_model::state::{ConnectionNetwork, ConnectionSecurity, OwnershipState};
+use enkrnett_model::subnet::{Addresses, Subnet, renumber};
 use enkrnett_model::uci::{File as UciFile, Section};
 use enkrnett_ubus::client::Client;
 use serde_json::{Map, Value, json};
 
-use super::{DeviceInfo, Effective, Platform, PlatformError};
+use super::{Adopted, DeviceInfo, Effective, Platform, PlatformError};
 use crate::log;
 
 /// The health check waits this long for the networks to come up (ENK-CFG-007).
@@ -48,7 +48,13 @@ pub struct OpenWrtPlatform {
     config_dir: PathBuf,
     state_dir: PathBuf,
     ubus_socket: Option<String>,
-    phase: Mutex<Option<Phase>>,
+    /// What the device runs now: the phase and the addresses, set when the daemon applied or
+    /// adopted it.
+    current: Mutex<Option<Plan>>,
+    /// The management address the daemon's listener is about to leave: set when an apply moved
+    /// the management network (ENK-TOPO-006), so that the health check does not count the
+    /// daemon's own listener there as exposed while the restart is pending.
+    leaving: Mutex<Option<Ipv4Addr>>,
 }
 
 impl OpenWrtPlatform {
@@ -63,7 +69,8 @@ impl OpenWrtPlatform {
             config_dir,
             state_dir,
             ubus_socket,
-            phase: Mutex::new(None),
+            current: Mutex::new(None),
+            leaving: Mutex::new(None),
         }
     }
 
@@ -74,7 +81,7 @@ impl OpenWrtPlatform {
             Some(p) => Client::connect_path(p),
             None => Client::connect(),
         }
-        .map_err(|e| PlatformError(format!("ubus: {e}")))
+        .map_err(|e| PlatformError::Failed(format!("ubus: {e}")))
     }
 
     fn call(
@@ -86,14 +93,14 @@ impl OpenWrtPlatform {
         let args = args.as_object().cloned().unwrap_or_default();
         self.ubus()?
             .call(object, method, &args)
-            .map_err(|e| PlatformError(format!("ubus {object} {method}: {e}")))
+            .map_err(|e| PlatformError::Failed(format!("ubus {object} {method}: {e}")))
     }
 
     fn objects(&self, prefix: &str) -> Vec<String> {
-        match self
-            .ubus()
-            .and_then(|mut c| c.lookup("").map_err(|e| PlatformError(e.to_string())))
-        {
+        match self.ubus().and_then(|mut c| {
+            c.lookup("")
+                .map_err(|e| PlatformError::Failed(e.to_string()))
+        }) {
             Ok(list) => list
                 .into_iter()
                 .map(|o| o.path)
@@ -107,10 +114,17 @@ impl OpenWrtPlatform {
 
     fn read_config(&self, name: &str) -> Result<UciFile, PlatformError> {
         let path = self.config_dir.join(name);
-        let text = fs::read_to_string(&path)
-            .map_err(|e| PlatformError(format!("read {}: {e}", path.display())))?;
+        let text = fs::read_to_string(&path).map_err(|e| {
+            let m = format!("read {}: {e}", path.display());
+            // A root-side `uci commit` leaves the file root's and 0600: not even readable.
+            if e.kind() == std::io::ErrorKind::PermissionDenied {
+                PlatformError::NotOurs(m)
+            } else {
+                PlatformError::Failed(m)
+            }
+        })?;
         UciFile::parse(&text).map_err(|e| {
-            PlatformError(format!(
+            PlatformError::Failed(format!(
                 "parse {}: line {} {}",
                 path.display(),
                 e.line,
@@ -125,10 +139,23 @@ impl OpenWrtPlatform {
         let path = self.config_dir.join(name);
         let tmp = self.config_dir.join(format!(".{name}.enkrnett.tmp"));
         // 0600: `wireless` carries the management key (ENK-OWN-011 in spirit); the others follow.
-        crate::store::write_private(&tmp, text.as_bytes())
-            .map_err(|e| PlatformError(format!("write {}: {e}", tmp.display())))?;
-        fs::rename(&tmp, &path)
-            .map_err(|e| PlatformError(format!("rename {}: {e}", path.display())))
+        let not_ours = |e: &std::io::Error| e.kind() == std::io::ErrorKind::PermissionDenied;
+        crate::store::write_private(&tmp, text.as_bytes()).map_err(|e| {
+            let m = format!("write {}: {e}", tmp.display());
+            if not_ours(&e) {
+                PlatformError::NotOurs(m)
+            } else {
+                PlatformError::Failed(m)
+            }
+        })?;
+        fs::rename(&tmp, &path).map_err(|e| {
+            let m = format!("rename {}: {e}", path.display());
+            if not_ours(&e) {
+                PlatformError::NotOurs(m)
+            } else {
+                PlatformError::Failed(m)
+            }
+        })
     }
 
     fn radios(&self) -> Result<Vec<Section>, PlatformError> {
@@ -147,7 +174,7 @@ impl OpenWrtPlatform {
             .find(|r| r.get("band") == Some("2g"))
             .or_else(|| radios.first())
             .and_then(|r| r.name.clone())
-            .ok_or_else(|| PlatformError("no wifi-device section".into()))
+            .ok_or_else(|| PlatformError::Failed("no wifi-device section".into()))
     }
 
     fn country(&self, settings: Option<&Settings>) -> String {
@@ -159,19 +186,98 @@ impl OpenWrtPlatform {
             .unwrap_or_else(|| "00".into())
     }
 
-    /// Writes the owned sections for `phase`, reloads, and verifies.
-    fn apply_phase(&self, phase: Phase) -> Result<Vec<HealthDetail>, PlatformError> {
+    /// The uplink's subnet as `netifd` reports it (ENK-TOPO-003).
+    fn uplink_subnet(&self) -> Option<Subnet> {
+        let wan = self
+            .call("network.interface.wan", "status", json!({}))
+            .ok()?;
+        let a = wan.get("ipv4-address")?.as_array()?.first()?;
+        let address = a.get("address")?.as_str()?;
+        let mask = u8::try_from(a.get("mask")?.as_u64()?).ok()?;
+        Subnet::parse(address, mask)
+    }
+
+    /// The addresses the device uses now: the current plan's, else what the owned `network`
+    /// sections on flash say, else the defaults.
+    fn current_addresses(&self) -> Addresses {
+        if let Some(p) = self.current.lock().expect("current").as_ref() {
+            return p.addresses;
+        }
+        let mut a = Addresses::default();
+        if let Ok(network) = self.read_config("network") {
+            for (section, slot) in [("enk_mgmt", &mut a.management), ("enk_guest", &mut a.guest)] {
+                if let Some(ip) = network
+                    .named_section(section)
+                    .and_then(|s| s.get("ipaddr"))
+                    .and_then(|v| v.parse().ok())
+                {
+                    *slot = ip;
+                }
+            }
+        }
+        a
+    }
+
+    /// The plan for `phase`: radios and country, and the addresses after renumbering.
+    fn make_plan(&self, phase: Phase) -> Result<(Plan, Vec<Section>), PlatformError> {
         let radios = self.radios()?;
         let settings = match &phase {
             Phase::Claimed { settings, .. } => Some(settings),
             _ => None,
         };
+        let current = self.current_addresses();
+        let addresses = renumber(current, self.uplink_subnet());
+        if addresses != current {
+            log::event(
+                "renumbered",
+                &[
+                    ("management", &addresses.management),
+                    ("guest", &addresses.guest),
+                    ("uplink", &format!("{:?}", self.uplink_subnet())),
+                ],
+            );
+        }
         let plan = Plan {
             country: self.country(settings),
             radio: Self::choose_radio(&radios)?,
-            phase: phase.clone(),
+            phase,
+            addresses,
         };
-        let owned = owned_sections(&plan, &radios);
+        Ok((plan, radios))
+    }
+
+    /// Whether the owned sections on flash differ from what `plan` produces (ENK-CFG-014).
+    fn differs(&self, plan: &Plan, radios: &[Section]) -> Result<bool, PlatformError> {
+        let owned = owned_sections(plan, radios);
+        let wireless = self.read_config("wireless")?;
+        let radios_equal = owned.radios.iter().all(|r| {
+            r.name
+                .as_deref()
+                .and_then(|n| wireless.named_section(n))
+                .is_some_and(|existing| existing.equivalent(r))
+        });
+        Ok(!(radios_equal
+            && wireless.owned_equal(OWNED_PREFIX, &owned.wireless)
+            && self
+                .read_config("network")?
+                .owned_equal(OWNED_PREFIX, &owned.network)
+            && self
+                .read_config("dhcp")?
+                .owned_equal(OWNED_PREFIX, &owned.dhcp)
+            && self
+                .read_config("firewall")?
+                .owned_equal(OWNED_PREFIX, &owned.firewall)))
+    }
+
+    /// Writes the owned sections for `phase`, reloads, and verifies.
+    fn apply_phase(&self, phase: Phase) -> Result<Vec<HealthDetail>, PlatformError> {
+        let (plan, radios) = self.make_plan(phase)?;
+        self.write_plan(&plan, &radios)?;
+        Ok(self.health_check(&plan))
+    }
+
+    fn write_plan(&self, plan: &Plan, radios: &[Section]) -> Result<(), PlatformError> {
+        let owned = owned_sections(plan, radios);
         let wireless =
             self.read_config("wireless")?
                 .rewrite(OWNED_PREFIX, &owned.wireless, &owned.radios);
@@ -198,18 +304,23 @@ impl OpenWrtPlatform {
                 json!({"type": "config.change", "data": {"package": package}}),
             )?;
         }
-        *self.phase.lock().expect("phase") = Some(phase.clone());
-        log::event("platform_applied", &[("phase", &phase_name(&phase))]);
-        Ok(self.health_check(&phase))
+        let previous = self.current.lock().expect("current").replace(plan.clone());
+        if let Some(previous) = previous
+            && previous.addresses.management != plan.addresses.management
+        {
+            *self.leaving.lock().expect("leaving") = Some(previous.addresses.management);
+        }
+        log::event("platform_applied", &[("phase", &phase_name(&plan.phase))]);
+        Ok(())
     }
 
     /// Waits for the networks of `phase` and reports what is missing (ENK-CFG-007).
-    fn health_check(&self, phase: &Phase) -> Vec<HealthDetail> {
+    fn health_check(&self, plan: &Plan) -> Vec<HealthDetail> {
         let deadline = Instant::now() + HEALTH_TIMEOUT;
-        let mut missing = self.missing(phase);
+        let mut missing = self.missing(plan);
         while !missing.is_empty() && Instant::now() < deadline {
             std::thread::sleep(HEALTH_POLL);
-            missing = self.missing(phase);
+            missing = self.missing(plan);
         }
         missing
     }
@@ -251,7 +362,8 @@ impl OpenWrtPlatform {
         })
     }
 
-    fn missing(&self, phase: &Phase) -> Vec<HealthDetail> {
+    fn missing(&self, plan: &Plan) -> Vec<HealthDetail> {
+        let phase = &plan.phase;
         let mut out = Vec::new();
         for iface in plan::expected_interfaces(phase) {
             if !self.interface_up(iface) {
@@ -282,16 +394,19 @@ impl OpenWrtPlatform {
         // The kernel's view (ENK-CFG-026): the ports really isolated, DNS really listening on
         // each network's address, the daemon's listener on the management address only.
         let udp = sockets("/proc/net/udp", None);
-        for (bridge, address) in plan::expected_bridges(phase) {
+        for (bridge, address) in plan::expected_bridges(plan) {
             if bridge_ports(bridge).iter().any(|(_, isolated)| !isolated) {
                 out.push(HealthDetail::IsolationMissing);
             }
-            let address: Ipv4Addr = address.parse().expect("literal");
             if !udp.iter().any(|s| s.port == 53 && s.address == address) {
                 out.push(HealthDetail::DhcpMissing);
             }
         }
-        if listener_exposed(&sockets("/proc/net/tcp", Some("0A"))) {
+        if listener_exposed(
+            &sockets("/proc/net/tcp", Some("0A")),
+            plan.addresses.management,
+            *self.leaving.lock().expect("leaving"),
+        ) {
             out.push(HealthDetail::ListenerExposed);
         }
         out.sort_by_key(|d| *d as u8);
@@ -361,7 +476,7 @@ impl OpenWrtPlatform {
             || Path::new("/www/luci-static").exists()
             || Path::new("/usr/share/ucode/luci").exists();
         // ENK-HARD-005: nothing listens but DNS, DHCP, and the daemon on the management address.
-        let mgmt: Ipv4Addr = MANAGEMENT_ADDRESS.parse().expect("literal");
+        let mgmt = self.current_addresses().management;
         let unexpected = sockets("/proc/net/tcp", Some("0A"))
             .into_iter()
             .chain(sockets("/proc/net/tcp6", Some("0A")))
@@ -445,7 +560,7 @@ impl Platform for OpenWrtPlatform {
             .profile
             .light
             .as_ref()
-            .ok_or_else(|| PlatformError("no light".into()))?
+            .ok_or_else(|| PlatformError::Failed("no light".into()))?
             .led
             .clone();
         let dir = PathBuf::from("/sys/class/leds").join(&led);
@@ -454,7 +569,7 @@ impl Platform for OpenWrtPlatform {
             .and_then(|s| s.trim().parse::<u32>().ok())
             .unwrap_or(1);
         let before = fs::read_to_string(dir.join("brightness"))
-            .map_err(|e| PlatformError(format!("led {led}: {e}")))?;
+            .map_err(|e| PlatformError::Failed(format!("led {led}: {e}")))?;
         std::thread::Builder::new()
             .name("enkrnettd-blink".into())
             .spawn(move || {
@@ -469,7 +584,7 @@ impl Platform for OpenWrtPlatform {
                 }
                 let _ = fs::write(dir.join("brightness"), before.trim());
             })
-            .map_err(|e| PlatformError(e.to_string()))?;
+            .map_err(|e| PlatformError::Failed(e.to_string()))?;
         Ok(())
     }
 
@@ -481,8 +596,12 @@ impl Platform for OpenWrtPlatform {
         COUNTRY_CHOICES.iter().map(|c| c.to_string()).collect()
     }
 
+    fn listen_follows_management_address(&self) -> bool {
+        true
+    }
+
     fn management_address(&self) -> String {
-        MANAGEMENT_ADDRESS.to_string()
+        self.current_addresses().management.to_string()
     }
 
     fn connection(&self, client: IpAddr, state: OwnershipState) -> Connection {
@@ -496,8 +615,11 @@ impl Platform for OpenWrtPlatform {
                 security: None,
             };
         };
-        let phase = self.phase.lock().expect("phase").clone();
-        let expected = phase.as_ref().map(plan::expected_bss).unwrap_or_default();
+        let current = self.current.lock().expect("current").clone();
+        let expected = current
+            .as_ref()
+            .map(|p| plan::expected_bss(&p.phase))
+            .unwrap_or_default();
         for (object, ssid, _) in self.bss_objects() {
             if self.clients(&object).get(&mac).is_none() {
                 continue;
@@ -582,9 +704,61 @@ impl Platform for OpenWrtPlatform {
         })
     }
 
+    fn adopt_settings(
+        &self,
+        management_name: &str,
+        management_key: &str,
+        settings: &Settings,
+    ) -> Result<Adopted, PlatformError> {
+        let phase = Phase::Claimed {
+            management_name: management_name.into(),
+            management_key: management_key.into(),
+            settings: settings.clone(),
+        };
+        let before = self.current_addresses();
+        let (plan, radios) = self.make_plan(phase)?;
+        if plan.addresses != before {
+            // ENK-TOPO-003: the colliding network is renumbered; this is the daemon's own work,
+            // not drift.
+            self.write_plan(&plan, &radios)?;
+            return Ok(Adopted {
+                health: self.health_check(&plan),
+                drift: false,
+            });
+        }
+        let drift = self.differs(&plan, &radios)?;
+        *self.current.lock().expect("current") = Some(plan.clone());
+        log::event(
+            "platform_adopted",
+            &[("phase", &phase_name(&plan.phase)), ("drift", &drift)],
+        );
+        Ok(Adopted {
+            health: self.health_check(&plan),
+            drift,
+        })
+    }
+
+    fn owned_drift(&self) -> Result<bool, PlatformError> {
+        let Some(plan) = self.current.lock().expect("current").clone() else {
+            return Ok(false);
+        };
+        let radios = self.radios()?;
+        self.differs(&plan, &radios)
+    }
+
+    fn uplink_collides(&self) -> bool {
+        let Some(plan) = self.current.lock().expect("current").clone() else {
+            return false;
+        };
+        renumber(plan.addresses, self.uplink_subnet()) != plan.addresses
+    }
+
     fn disconnect_management_stations(&self) -> Result<(), PlatformError> {
-        let phase = self.phase.lock().expect("phase").clone();
-        let expected = phase.as_ref().map(plan::expected_bss).unwrap_or_default();
+        let current = self.current.lock().expect("current").clone();
+        let expected = current
+            .as_ref()
+            .map(|p| plan::expected_bss(&p.phase))
+            .unwrap_or_default();
         let Some(ssid) = expected
             .iter()
             .find(|b| b.role == BssRole::Management && !b.guest)
@@ -615,8 +789,11 @@ impl Platform for OpenWrtPlatform {
     }
 
     fn effective(&self) -> Effective {
-        let phase = self.phase.lock().expect("phase").clone();
-        let expected = phase.as_ref().map(plan::expected_bss).unwrap_or_default();
+        let current = self.current.lock().expect("current").clone();
+        let expected = current
+            .as_ref()
+            .map(|p| plan::expected_bss(&p.phase))
+            .unwrap_or_default();
         let running = self.bss_objects();
         let object_of = |role: BssRole, guest: bool| -> Option<String> {
             let ssid = &expected
@@ -651,7 +828,7 @@ impl Platform for OpenWrtPlatform {
                 })
                 .unwrap_or(0)
         };
-        let guest_mode = match &phase {
+        let guest_mode = match current.as_ref().map(|p| &p.phase) {
             Some(Phase::Claimed { settings, .. }) if settings.guest.enabled => {
                 Some((settings.guest.mode, settings.guest.name.clone()))
             }
@@ -694,7 +871,11 @@ impl Platform for OpenWrtPlatform {
             } else {
                 None
             },
-            address: MANAGEMENT_ADDRESS.into(),
+            address: current
+                .as_ref()
+                .map(|p| p.addresses.management)
+                .unwrap_or(Addresses::default().management)
+                .to_string(),
             clients: count(&mgmt_object, false),
         };
         let wan = self
@@ -759,8 +940,17 @@ impl Platform for OpenWrtPlatform {
             self.state_dir.join(ERASE_MARKER),
             b"erase requested by the owner\n",
         )
-        .map_err(|e| PlatformError(format!("erase marker: {e}")))?;
+        .map_err(|e| PlatformError::Failed(format!("erase marker: {e}")))?;
         self.apply_phase(Phase::Closed).map(|_| ())
+    }
+
+    fn restart_service(&self) -> Result<(), PlatformError> {
+        self.call(
+            "rc",
+            "init",
+            json!({"name": "enkrnett", "action": "restart"}),
+        )
+        .map(|_| ())
     }
 
     fn restart(&self) -> Result<(), PlatformError> {
@@ -818,12 +1008,19 @@ fn sockets(path: &str, state: Option<&str>) -> Vec<BoundSocket> {
 
 /// ENK-CFG-025: the daemon's port is bound to the management address and to nothing else;
 /// nothing else answers on the UI's ports. Whatever listens on every address or on the guest
-/// address at port 80 or the daemon's port is exposed to guests.
-pub fn listener_exposed(listening: &[BoundSocket]) -> bool {
-    let mgmt: Ipv4Addr = MANAGEMENT_ADDRESS.parse().expect("literal");
-    listening
-        .iter()
-        .any(|s| (s.port == LISTEN_PORT || s.port == 80) && s.address != mgmt)
+/// address at port 80 or the daemon's port is exposed to guests. The daemon's own listener on
+/// the management address it is `leaving` (the network moved, the restart is pending,
+/// ENK-TOPO-006) is not: that address is on no interface any more.
+pub fn listener_exposed(
+    listening: &[BoundSocket],
+    mgmt: Ipv4Addr,
+    leaving: Option<Ipv4Addr>,
+) -> bool {
+    listening.iter().any(|s| {
+        (s.port == LISTEN_PORT || s.port == 80)
+            && s.address != mgmt
+            && !(s.port == LISTEN_PORT && Some(s.address) == leaving)
+    })
 }
 
 /// The ports of a bridge with their kernel `isolated` flag (ENK-CFG-023).

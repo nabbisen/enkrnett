@@ -46,9 +46,10 @@ pub fn start(
     // The platform first: it creates the management interface that carries the listen address
     // (ENK-CFG-025), so the bind comes after it and may have to wait for netifd.
     let app = App::new(Arc::clone(&config), platform, clock)?;
-    let listener = bind_with_patience(config.listen)?;
+    let listener = bind_with_patience(app.listen_address())?;
     http::set_backlog(&listener, http::LISTEN_BACKLOG);
     let addr = listener.local_addr()?;
+    app.set_bound(addr);
     app.start_ticking();
     let handler = api::Api::new(app.clone(), Arc::clone(&config));
     let worker_config = Arc::clone(&config);

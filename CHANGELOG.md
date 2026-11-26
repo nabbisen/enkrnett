@@ -5,6 +5,23 @@ release, the history of decisions is in `rfcs/`.
 
 ## Unreleased
 
+### Milestone M2, stage 3 (2026-11-26)
+
+- `status` answers from readings at most 2 s old (ENK-API-027); `checked_ago` is their age.
+- Drift (ENK-CFG-014): the owned sections compared with what the daemon last wrote at start-up,
+  every 10 minutes, and while the status is watched at most every 30 s; reported, never
+  overwritten; *restore* is the ordinary change. At start-up without a marker the device is
+  adopted as the boot left it (`Platform::adopt_settings`); a restore cut short by a restart is
+  completed by the start-up apply and reported settled.
+- A file handed back to root by a root-side `uci commit` makes the daemon ask procd to restart
+  its service (`PlatformError::NotOurs`, `ubus call rc init`); the init script restores ownership
+  at every start.
+- Renumbering (ENK-TOPO-003, 006, `enkrnett_model::subnet`): only the colliding network moves,
+  never back; the uplink is checked every 10 s. The daemon binds the management address the
+  platform reports; when it moved, the daemon asks for a service restart. The health check of
+  that move does not count the daemon's own listener on the address it is leaving as exposed.
+- `tests/effective.rs` (6 tests); `tests/vm/drift.sh` and `tests/vm/renumber.sh`.
+
 ### Milestone M2, stage 2 (2026-11-26)
 
 - Separation read back from the kernel in the health check (ENK-CFG-026): the `isolated` flag of

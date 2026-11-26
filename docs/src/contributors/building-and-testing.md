@@ -91,6 +91,8 @@ it is private material under `.git-exclude/tmp/m/vm/`. What the test checks is i
 tests/vm/package.sh  /path/to/vm   # x86/64 SDK from the lock, enkrnett-*.apk, apk add on the VM, reboot
 tests/vm/contract.sh /path/to/vm   # the RFC 003 and 004 checks against the procd-started service, Erase through a boot
 tests/vm/isolation.sh /path/to/vm   # chapter 2 with four simulated stations in network namespaces (after claim.sh)
+tests/vm/drift.sh /path/to/vm       # a hand edit with uci: drift reported, restored through a respawn (after claim.sh)
+tests/vm/renumber.sh /path/to/vm    # colliding uplinks (VM_WAN_NET in the VM launcher): only the colliding network moves; ends with Erase
 python3 tests/traceability.py --release 0.1.0   # the requirement-to-test table; fails on an uncovered 0.1.0 requirement
 ```
 

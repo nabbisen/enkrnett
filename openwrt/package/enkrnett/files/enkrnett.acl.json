@@ -43,6 +43,11 @@
         "info",
         "reboot"
       ]
+    },
+    "rc": {
+      "methods": [
+        "init"
+      ]
     }
   },
   "send": []

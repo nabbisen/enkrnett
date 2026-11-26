@@ -71,6 +71,10 @@ pub fn start_on(dir: &Path) -> TestServer {
     start_in(dir.to_path_buf(), |_| {})
 }
 
+pub fn start_on_with(dir: &Path, setup: impl FnOnce(&MockPlatform)) -> TestServer {
+    start_in(dir.to_path_buf(), setup)
+}
+
 fn start_in(dir: PathBuf, setup: impl FnOnce(&MockPlatform)) -> TestServer {
     let platform = Arc::new(MockPlatform::new());
     setup(&platform);

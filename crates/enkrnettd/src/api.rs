@@ -178,6 +178,18 @@ impl Api {
     }
 }
 
+impl Api {
+    /// The address the listener is really bound to, when it differs from the configured one
+    /// (the management network was renumbered, ENK-TOPO-006).
+    fn bound_host(&self, host: &str) -> bool {
+        let Some(bound) = self.app.bound() else {
+            return false;
+        };
+        let ip = bound.ip().to_string();
+        host == ip || host == format!("{ip}:{}", bound.port())
+    }
+}
+
 impl Handler for Api {
     fn now(&self) -> std::time::Instant {
         self.app.now()
@@ -186,7 +198,7 @@ impl Handler for Api {
     fn handle(&self, req: &Request) -> Response {
         self.app.tick();
         match req.header("host") {
-            Some(h) if self.config.allowed_host(h) => {}
+            Some(h) if self.config.allowed_host(h) || self.bound_host(h) => {}
             _ => return Response::new(421),
         }
         if req.path.starts_with("/api/") {

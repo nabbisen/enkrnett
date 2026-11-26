@@ -7,23 +7,27 @@
 //! and `<network>-owe` (the open BSS and the hidden OWE BSS); a single BSS gets an explicit
 //! `ifname`: `enk-mgmt`, `enk-guest`.
 
+use std::net::Ipv4Addr;
+
 use crate::settings::{GuestMode, Settings};
+use crate::subnet::Addresses;
 use crate::uci::Section;
 
 /// Every section the daemon owns starts with this (chapter 6 §3).
 pub const OWNED_PREFIX: &str = "enk_";
 
-/// The management UI's address (ENK-MGMT-007), the same on the setup and the management network.
+/// The management UI's address (ENK-MGMT-007), the same on the setup and the management network,
+/// unless the uplink collides with its subnet (`crate::subnet::renumber`).
 pub const MANAGEMENT_ADDRESS: &str = "192.168.207.1";
-pub const MANAGEMENT_NETMASK: &str = "255.255.255.0";
+/// Both Wi-Fi networks are /24 (`crate::subnet::PREFIX`).
+pub const NETMASK: &str = "255.255.255.0";
 /// The port the daemon listens on. Port 80 on the management interface is redirected to it by the
 /// firewall, so that the operator types the address alone (ENK-MGMT-007) and the daemon needs no
 /// capability: `procd` grants capabilities only inside a `ujail`, which the constrained target
 /// lacks (chapter 2 §6).
 pub const LISTEN_PORT: u16 = 8080;
-/// The guest network's subnet; renumbered when the uplink collides (ENK-TOPO-003, 006: M2).
+/// The guest network's default address; renumbered when the uplink collides (ENK-TOPO-003, 006).
 pub const GUEST_ADDRESS: &str = "10.207.0.1";
-pub const GUEST_NETMASK: &str = "255.255.255.0";
 
 /// The setup network's name ends with the label suffix (ENK-OWN-004).
 pub fn setup_network_name(label_suffix: &str) -> String {
@@ -62,6 +66,8 @@ pub struct Plan {
     /// The `wifi-device` section that carries Enkrnett's networks (a 2.4 GHz radio).
     pub radio: String,
     pub phase: Phase,
+    /// The device's address on each network, after renumbering (ENK-TOPO-003).
+    pub addresses: Addresses,
 }
 
 /// The owned sections per configuration file.
@@ -158,10 +164,10 @@ pub fn expected_bss(phase: &Phase) -> Vec<ExpectedBss> {
 /// The bridges of a phase with the address each carries: every port of these bridges must have
 /// the kernel's `isolated` flag (ENK-CFG-023, ENK-ISO-002) and each address must have its own
 /// DNS listener (ENK-CFG-024).
-pub fn expected_bridges(phase: &Phase) -> Vec<(&'static str, &'static str)> {
-    let mut v = vec![("br-mgmt", MANAGEMENT_ADDRESS)];
-    if matches!(phase, Phase::Claimed { settings, .. } if settings.guest.enabled) {
-        v.push(("br-guest", GUEST_ADDRESS));
+pub fn expected_bridges(plan: &Plan) -> Vec<(&'static str, Ipv4Addr)> {
+    let mut v = vec![("br-mgmt", plan.addresses.management)];
+    if matches!(&plan.phase, Phase::Claimed { settings, .. } if settings.guest.enabled) {
+        v.push(("br-guest", plan.addresses.guest));
     }
     v
 }
@@ -388,13 +394,12 @@ pub fn owned_sections(plan: &Plan, radios: &[Section]) -> Owned {
     }
     // The management bridge and interface exist in every phase; the setup network uses them too
     // (same address, ENK-MGMT-007), so the setup client finds the UI at the one address.
+    let mgmt = plan.addresses.management.to_string();
+    let guest_address = plan.addresses.guest.to_string();
     owned.network.push(bridge("enk_br_mgmt", "br-mgmt"));
-    owned.network.push(interface(
-        "enk_mgmt",
-        "br-mgmt",
-        MANAGEMENT_ADDRESS,
-        MANAGEMENT_NETMASK,
-    ));
+    owned
+        .network
+        .push(interface("enk_mgmt", "br-mgmt", &mgmt, NETMASK));
     owned.dhcp.push(dnsmasq(
         "enk_dns_mgmt",
         "enk_mgmt",
@@ -408,13 +413,9 @@ pub fn owned_sections(plan: &Plan, radios: &[Section]) -> Owned {
     owned.firewall.push(zone("enk_mgmt", "enk_mgmt"));
     match &plan.phase {
         Phase::Closed => {
-            owned.firewall.extend(zone_rules(
-                "enk_mgmt",
-                "enk_mgmt",
-                MANAGEMENT_ADDRESS,
-                true,
-                false,
-            ));
+            owned
+                .firewall
+                .extend(zone_rules("enk_mgmt", "enk_mgmt", &mgmt, true, false));
         }
         Phase::Setup { label_suffix } => {
             owned.wireless.push(owe_iface(
@@ -426,13 +427,9 @@ pub fn owned_sections(plan: &Plan, radios: &[Section]) -> Owned {
                 true,
             ));
             // No Internet for setup clients (chapter 2 §2).
-            owned.firewall.extend(zone_rules(
-                "enk_mgmt",
-                "enk_mgmt",
-                MANAGEMENT_ADDRESS,
-                true,
-                false,
-            ));
+            owned
+                .firewall
+                .extend(zone_rules("enk_mgmt", "enk_mgmt", &mgmt, true, false));
         }
         Phase::Pending {
             management_name,
@@ -443,13 +440,9 @@ pub fn owned_sections(plan: &Plan, radios: &[Section]) -> Owned {
                 management_name,
                 management_key,
             ));
-            owned.firewall.extend(zone_rules(
-                "enk_mgmt",
-                "enk_mgmt",
-                MANAGEMENT_ADDRESS,
-                true,
-                true,
-            ));
+            owned
+                .firewall
+                .extend(zone_rules("enk_mgmt", "enk_mgmt", &mgmt, true, true));
         }
         Phase::Claimed {
             management_name,
@@ -461,13 +454,9 @@ pub fn owned_sections(plan: &Plan, radios: &[Section]) -> Owned {
                 management_name,
                 management_key,
             ));
-            owned.firewall.extend(zone_rules(
-                "enk_mgmt",
-                "enk_mgmt",
-                MANAGEMENT_ADDRESS,
-                true,
-                true,
-            ));
+            owned
+                .firewall
+                .extend(zone_rules("enk_mgmt", "enk_mgmt", &mgmt, true, true));
             if settings.guest.enabled {
                 let transition = settings.guest.mode == GuestMode::OpenToAll;
                 owned.wireless.push(owe_iface(
@@ -479,12 +468,9 @@ pub fn owned_sections(plan: &Plan, radios: &[Section]) -> Owned {
                     transition,
                 ));
                 owned.network.push(bridge("enk_br_guest", "br-guest"));
-                owned.network.push(interface(
-                    "enk_guest",
-                    "br-guest",
-                    GUEST_ADDRESS,
-                    GUEST_NETMASK,
-                ));
+                owned
+                    .network
+                    .push(interface("enk_guest", "br-guest", &guest_address, NETMASK));
                 owned.dhcp.push(dnsmasq(
                     "enk_dns_guest",
                     "enk_guest",
@@ -499,7 +485,7 @@ pub fn owned_sections(plan: &Plan, radios: &[Section]) -> Owned {
                 owned.firewall.extend(zone_rules(
                     "enk_guest",
                     "enk_guest",
-                    GUEST_ADDRESS,
+                    &guest_address,
                     false,
                     true,
                 ));

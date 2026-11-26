@@ -19,12 +19,29 @@ pub use openwrt::OpenWrtPlatform;
 /// A platform operation that did not succeed. The message is for the log, never for the
 /// operator.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PlatformError(pub String);
+pub enum PlatformError {
+    Failed(String),
+    /// A configuration file the daemon owns is not writable by its user any more: a root-side
+    /// `uci commit` handed it back to root. The init script restores ownership at every service
+    /// start, so the daemon's answer is to exit and be respawned (`docs/src/design/platform.md`).
+    NotOurs(String),
+}
 
 impl std::fmt::Display for PlatformError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "platform: {}", self.0)
+        match self {
+            PlatformError::Failed(m) => write!(f, "platform: {m}"),
+            PlatformError::NotOurs(m) => write!(f, "platform: not ours: {m}"),
+        }
     }
+}
+
+/// What taking over a device at start-up found (ENK-CFG-014: the daemon compares before it
+/// writes, and does not overwrite drift by itself).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Adopted {
+    pub health: Vec<HealthDetail>,
+    pub drift: bool,
 }
 
 /// The effective state of the networks as the platform reports it (chapter 6 §1).
@@ -69,8 +86,15 @@ pub trait Platform: Send + Sync {
     fn country_choices(&self) -> Vec<String>;
 
     /// The IPv4 address of the management UI, the same on the management and the setup network
-    /// (ENK-MGMT-007).
+    /// (ENK-MGMT-007); another one only after renumbering (ENK-TOPO-006).
     fn management_address(&self) -> String;
+
+    /// Whether the daemon's listen address is derived from the management address at every
+    /// start (the OpenWrt init script does that), so that a renumbered management network calls
+    /// for a restart of the daemon. The mock listens wherever the tests say.
+    fn listen_follows_management_address(&self) -> bool {
+        false
+    }
 
     /// How the requesting station is connected (RFC 016 §10).
     fn connection(&self, client: IpAddr, state: OwnershipState) -> Connection;
@@ -97,6 +121,24 @@ pub trait Platform: Send + Sync {
         settings: &Settings,
     ) -> Result<Vec<HealthDetail>, PlatformError>;
 
+    /// Takes the device as the boot left it: if the owned sections already equal what the
+    /// settings would produce, nothing is written and the result is verified; if they differ,
+    /// that is drift, reported and left alone (ENK-CFG-014). A collision of the uplink's subnet
+    /// with one of the networks is the one exception: the colliding network is renumbered and
+    /// written (ENK-TOPO-003).
+    fn adopt_settings(
+        &self,
+        management_name: &str,
+        management_key: &str,
+        settings: &Settings,
+    ) -> Result<Adopted, PlatformError>;
+
+    /// Whether the owned sections differ from what the daemon last wrote (ENK-CFG-014).
+    fn owned_drift(&self) -> Result<bool, PlatformError>;
+
+    /// Whether the uplink's subnet now collides with one of the networks (ENK-TOPO-003).
+    fn uplink_collides(&self) -> bool;
+
     /// Disconnects every station of the management network with deauthentication
     /// (ENK-API-021), so that the next request proves a new association.
     fn disconnect_management_stations(&self) -> Result<(), PlatformError>;
@@ -114,6 +156,11 @@ pub trait Platform: Send + Sync {
 
     /// Reboot the device.
     fn restart(&self) -> Result<(), PlatformError>;
+
+    /// Asks the service manager to restart the daemon's own service, so that the init script
+    /// runs again (ownership of the owned files, the listen address). A plain exit would only
+    /// be respawned with the same command line.
+    fn restart_service(&self) -> Result<(), PlatformError>;
 }
 
 #[cfg(test)]

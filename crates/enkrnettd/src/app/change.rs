@@ -74,6 +74,15 @@ impl ChangeRecord {
         }
     }
 
+    /// A restore cut short by a restart: the start-up apply of the stored document is the
+    /// restore, so the change is reported settled.
+    pub(super) fn settled_by_restart(marker: PendingMarker, now: Instant) -> ChangeRecord {
+        let mut c = ChangeRecord::undone_by_restart(marker, now);
+        c.shape.state = ChangeState::Settled;
+        c.shape.reason = None;
+        c
+    }
+
     pub(super) fn in_progress(&self) -> bool {
         matches!(
             self.shape.state,
@@ -201,17 +210,25 @@ impl App {
         let failure = match outcome {
             Ok(details) if details.is_empty() => None,
             Ok(details) => Some((details.first().copied(), None)),
-            Err(e) => Some((Some(HealthDetail::ManagementDown), Some(e.to_string()))),
+            Err(e) => {
+                // A file that is not ours ends the process here; the respawn applies the
+                // stored document, which undoes this change (or completes a restore).
+                self.platform_failed("apply_settings", &e);
+                Some((Some(HealthDetail::ManagementDown), Some(e.to_string())))
+            }
         };
         if let Some((detail, error)) = failure {
             self.undo(id, UndoReason::HealthCheckFailed, detail, error);
             return;
         }
         if !needs_confirmation {
-            let mut inner = self.0.inner.lock().expect("app");
-            if Self::is_change(&inner, id) {
-                Self::settle(&mut inner, id);
+            {
+                let mut inner = self.0.inner.lock().expect("app");
+                if Self::is_change(&inner, id) {
+                    Self::settle(&mut inner, id);
+                }
             }
+            self.follow_management_address();
             return;
         }
         // ENK-API-021: disconnect first, then wait; a request that arrives on a connection
@@ -248,6 +265,8 @@ impl App {
         c.confirm_deadline = None;
         let kind = c.shape.kind;
         inner.store.data.owner = Some(candidate);
+        inner.drift = false;
+        inner.readings = None;
         if let Err(e) = inner.store.save() {
             log::event("store_failed", &[("at", &"settle"), ("error", &e)]);
         }
@@ -287,7 +306,7 @@ impl App {
             &previous.settings,
         );
         if let Err(e) = restored {
-            log::event("platform_failed", &[("at", &"undo"), ("error", &e)]);
+            self.platform_failed("undo", &e);
         }
         let mut inner = self.0.inner.lock().expect("app");
         if let Some(c) = inner.change.as_mut().filter(|c| c.shape.id == id) {
@@ -296,6 +315,8 @@ impl App {
             c.shape.detail = detail;
             c.undoing = false;
         }
+        inner.drift = false;
+        inner.readings = None;
         if let Err(e) = inner.store.remove_pending() {
             log::event("store_failed", &[("at", &"remove_pending"), ("error", &e)]);
         }

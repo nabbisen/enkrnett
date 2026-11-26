@@ -68,6 +68,9 @@ start_service() {
 	local listen development
 	config_get listen main listen "192.168.207.1:8080"
 	config_get_bool development main development 0
+	# On this platform the daemon binds the management address it has itself written (ENK-TOPO-006:
+	# renumbered only when the uplink collides with its subnet); `listen` gives the port and the
+	# address before any network exists.
 
 	prepare_files
 	prepare_light

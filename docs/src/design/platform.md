@@ -148,7 +148,7 @@ and the read-backs that make the health check tell the truth (ENK-CFG-026).
 |---|---|---|
 | Bridge-port `isolated` on every port of `br-guest` and `br-mgmt` (ENK-CFG-023; M-8 row 6: OpenWrt 25.12 gives it to the radio's first BSS only) | `/etc/hotplug.d/net/50-enkrnett-isolate`, as root, when a network interface appears, and the init script at every service start. sysfs is root's; the daemon cannot write it. | `/sys/class/net/<bridge>/brif/<port>/isolated` for every port of every expected bridge; a `0` is `isolation_missing` |
 | One DNS listener per network (ENK-CFG-024) | The owned `dhcp` sections | The `dnsmasq` instances running (ubus `service list`) and a UDP socket on port 53 bound to each network's address (`/proc/net/udp`); otherwise `dhcp_missing` |
-| The daemon's listener on the management address only (ENK-CFG-025) | `--listen` from `/etc/config/enkrnett` | Any TCP listener on port 80 or the daemon's port bound to another address, or to every address, is `listener_exposed` (`/proc/net/tcp`, `tcp6`) |
+| The daemon's listener on the management address only (ENK-CFG-025) | `--listen` from `/etc/config/enkrnett` | Any TCP listener on port 80 or the daemon's port bound to another address, or to every address, is `listener_exposed` (`/proc/net/tcp`, `tcp6`). One exception: when an apply moved the management network (ENK-TOPO-006), the daemon's own listener on the address it is leaving is not exposed, since that address is on no interface any more; without the exception the health check of the move waited its full 60 s and reported `ListenerExposed` on the VM. |
 | Each network sees its own services only (chapter 2 §3) | The DNS and UI rules of a zone carry `dest_ip` of that network's address, so a management client cannot reach the guest DNS instance on the device's guest-side address (found by `tests/vm/isolation.sh`) | `tests/vm/isolation.sh` |
 | Nothing else listening (ENK-HARD-005) | The image (M3) | The hardening report: every bound socket other than DNS, DHCP, and the daemon on the management address makes ENK-HARD-005 "not met" |
 
@@ -165,3 +165,20 @@ expose `ieee80211w`, and the generated configuration is root's. wifi-scripts alw
 observable consequence; the status counts encrypted guests by it. `mode_differs`: the set of
 running BSSes per SSID is what the health check compares; hostapd does not report the encryption
 of a BSS through ubus.
+
+## 10. M2 stage 3: adopting, drift, renumbering
+
+| Operation | What the OpenWrt platform does |
+|---|---|
+| `adopt_settings` (start-up without a marker) | Builds the plan (radios, country, addresses after `renumber` against `network.interface.wan`'s subnet). If renumbering changed an address: write and reload, that is the daemon's own duty. Otherwise compare the four files' owned sections with the regenerated ones; equal: set the current plan and verify; different: the same, with `drift: true`. Nothing is written on drift. |
+| `owned_drift` | The same comparison against the current plan, for the periodic check. Sections compare as sets of entries (`Section::equivalent`): a section the daemon rendered and the one regenerated from it may list the same options in another order, and `uci` re-renders in its own order. |
+| `uplink_collides` | `renumber(current addresses, uplink subnet) != current addresses` |
+| Addresses on flash | The daemon keeps no address file: the owned `network` sections *are* the record (`enk_mgmt`, `enk_guest` `ipaddr`), read at start-up before the plan is built |
+| A write refused with `EPERM` | `PlatformError::NotOurs`: the sticky directory lets the daemon replace only its own files; a root-side `uci commit` made the file root's |
+| The listen address | `listen_follows_management_address` is true here: the daemon binds the management address of its current plan with the configured port. A moved address means `restart_service` (`ubus call rc init {name, action: restart}`, in the ACL) and a new process. |
+| `restart_service` | procd's `rc` object runs `/etc/init.d/enkrnett restart`: stop, then `start_service` with `prepare_files`, `isolate_ports`, and the fresh command line. A respawn after a plain exit would repeat the old command line and skip the init script, which the first attempt of this stage showed as a respawn loop until procd gave up. |
+
+What the comparison does not count as drift: a change to a radio's hardware options (channel,
+`htmode`) by hand, because the daemon writes those from the existing section and only adds the
+country; chapter 6 §3 lists every `wifi-device` as owned, so this is an interpretation to carry
+into the next amendment RFC.

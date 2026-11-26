@@ -16,6 +16,7 @@ pub mod plan;
 pub mod profile;
 pub mod settings;
 pub mod state;
+pub mod subnet;
 pub mod uci;
 
 /// The API version carried in the path prefix `/api/1/` and in the greeting (ENK-API-001).

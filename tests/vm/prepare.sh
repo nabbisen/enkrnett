@@ -29,6 +29,10 @@ delete network.lan.ipaddr
 delete network.lan.netmask
 delete network.lan.ip6assign
 EOF
+# Every owned section of a previous run goes too (network, wireless), including a renumbered
+# management network: the daemon adopts an existing owned section at start-up (ENK-CFG-014),
+# so a leftover would carry the addresses of the previous run into this one.
+for s in $(uci -q show network | sed -n "s/^network\.\(enk_[a-z0-9_]*\)=.*/\1/p" | sort -u); do uci -q delete "network.$s"; done
 uci -q commit network
 for s in $(uci -q show wireless | sed -n "s/^wireless\.\(enk_[a-z0-9_]*\)=.*/\1/p; s/^wireless\.\(default_radio[0-9]*\)=.*/\1/p" | sort -u); do uci -q delete "wireless.$s"; done
 uci -q commit wireless

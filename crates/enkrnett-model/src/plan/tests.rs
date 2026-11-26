@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::settings::{GuestSettings, ManagementSettings};
+use crate::subnet::Addresses;
 use crate::uci::{File, Section};
 
 fn radios() -> Vec<Section> {
@@ -50,6 +51,7 @@ fn every_radio_gets_the_country_and_only_the_chosen_one_is_enabled() {
     let plan = Plan {
         country: "JP".into(),
         radio: "radio0".into(),
+        addresses: Addresses::default(),
         phase: Phase::Setup {
             label_suffix: "3F2A".into(),
         },
@@ -88,6 +90,7 @@ fn setup_phase_offers_the_setup_network_on_the_management_subnet_without_interne
     let plan = Plan {
         country: "JP".into(),
         radio: "radio0".into(),
+        addresses: Addresses::default(),
         phase: Phase::Setup {
             label_suffix: "3F2A".into(),
         },
@@ -141,6 +144,7 @@ fn pending_phase_has_the_management_network_with_internet() {
     let plan = Plan {
         country: "JP".into(),
         radio: "radio0".into(),
+        addresses: Addresses::default(),
         phase: Phase::Pending {
             management_name: "Enkrnett-3F2A".into(),
             management_key: "abcde-fghjk-mnpqr-stuvw".into(),
@@ -171,6 +175,7 @@ fn claimed_phase_adds_the_guest_network_in_both_modes() {
     let open = Plan {
         country: "JP".into(),
         radio: "radio0".into(),
+        addresses: Addresses::default(),
         phase: Phase::Claimed {
             management_name: "Enkrnett-3F2A".into(),
             management_key: "k".into(),
@@ -230,6 +235,7 @@ fn claimed_phase_adds_the_guest_network_in_both_modes() {
     let encrypted = Plan {
         country: "JP".into(),
         radio: "radio0".into(),
+        addresses: Addresses::default(),
         phase: Phase::Claimed {
             management_name: "m".into(),
             management_key: "k".into(),
@@ -253,6 +259,7 @@ fn claimed_phase_adds_the_guest_network_in_both_modes() {
     let off = Plan {
         country: "JP".into(),
         radio: "radio0".into(),
+        addresses: Addresses::default(),
         phase: Phase::Claimed {
             management_name: "m".into(),
             management_key: "k".into(),
@@ -270,6 +277,7 @@ fn every_owned_section_carries_the_prefix_and_the_firewall_rules_reject_private_
     let plan = Plan {
         country: "JP".into(),
         radio: "radio0".into(),
+        addresses: Addresses::default(),
         phase: Phase::Claimed {
             management_name: "m".into(),
             management_key: "k".into(),
@@ -320,6 +328,7 @@ fn closed_phase_offers_no_wifi() {
         country: "JP".into(),
         radio: "radio0".into(),
         phase: Phase::Closed,
+        addresses: Addresses::default(),
     };
     let owned = owned_sections(&plan, &radios());
     assert!(owned.wireless.is_empty());
@@ -330,11 +339,19 @@ fn closed_phase_offers_no_wifi() {
 #[test]
 fn the_bridges_to_isolate_follow_the_phase() {
     // ENK-CFG-023, ENK-CFG-024: one bridge and one DNS address per Wi-Fi network.
+    let plan = |phase: Phase| Plan {
+        country: "JP".into(),
+        radio: "radio0".into(),
+        phase,
+        addresses: Addresses::default(),
+    };
+    let mgmt: std::net::Ipv4Addr = MANAGEMENT_ADDRESS.parse().unwrap();
+    let guest: std::net::Ipv4Addr = GUEST_ADDRESS.parse().unwrap();
     assert_eq!(
-        expected_bridges(&Phase::Setup {
+        expected_bridges(&plan(Phase::Setup {
             label_suffix: "3F2A".into()
-        }),
-        vec![("br-mgmt", MANAGEMENT_ADDRESS)]
+        })),
+        vec![("br-mgmt", mgmt)]
     );
     let claimed = Phase::Claimed {
         management_name: "Enkrnett-3F2A".into(),
@@ -342,15 +359,15 @@ fn the_bridges_to_isolate_follow_the_phase() {
         settings: settings(GuestMode::OpenToAll, true),
     };
     assert_eq!(
-        expected_bridges(&claimed),
-        vec![("br-mgmt", MANAGEMENT_ADDRESS), ("br-guest", GUEST_ADDRESS)]
+        expected_bridges(&plan(claimed)),
+        vec![("br-mgmt", mgmt), ("br-guest", guest)]
     );
     let off = Phase::Claimed {
         management_name: "Enkrnett-3F2A".into(),
         management_key: "k".into(),
         settings: settings(GuestMode::OpenToAll, false),
     };
-    assert_eq!(expected_bridges(&off).len(), 1);
+    assert_eq!(expected_bridges(&plan(off)).len(), 1);
 }
 
 #[test]
@@ -366,6 +383,7 @@ fn dns_and_ui_rules_are_bound_to_the_networks_own_address() {
         country: "JP".into(),
         radio: "radio0".into(),
         phase: claimed,
+        addresses: Addresses::default(),
     };
     let owned = owned_sections(&plan, &radios());
     let rule = |name: &str| {
@@ -389,5 +407,42 @@ fn dns_and_ui_rules_are_bound_to_the_networks_own_address() {
         rule("enk_guest_dhcp").get("dest_ip"),
         None,
         "DHCP is broadcast"
+    );
+}
+
+#[test]
+fn renumbered_addresses_flow_into_every_owned_section() {
+    // ENK-TOPO-006: the guest network moved to 10.207.1.0/24; the management one stayed.
+    let plan = Plan {
+        country: "JP".into(),
+        radio: "radio0".into(),
+        phase: Phase::Claimed {
+            management_name: "Enkrnett-3F2A".into(),
+            management_key: "k".into(),
+            settings: settings(GuestMode::OpenToAll, true),
+        },
+        addresses: Addresses {
+            management: MANAGEMENT_ADDRESS.parse().unwrap(),
+            guest: "10.207.1.1".parse().unwrap(),
+        },
+    };
+    let owned = owned_sections(&plan, &radios());
+    let find = |v: &[Section], name: &str| -> Section {
+        v.iter()
+            .find(|s| s.name.as_deref() == Some(name))
+            .cloned()
+            .unwrap_or_else(|| panic!("{name}"))
+    };
+    assert_eq!(
+        find(&owned.network, "enk_guest").get("ipaddr"),
+        Some("10.207.1.1")
+    );
+    assert_eq!(
+        find(&owned.network, "enk_mgmt").get("ipaddr"),
+        Some(MANAGEMENT_ADDRESS)
+    );
+    assert_eq!(
+        find(&owned.firewall, "enk_guest_dns").get("dest_ip"),
+        Some("10.207.1.1")
     );
 }

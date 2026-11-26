@@ -11,7 +11,7 @@ use enkrnett_model::api::{
 use enkrnett_model::settings::Settings;
 use enkrnett_model::state::{ConnectionNetwork, ConnectionSecurity, OwnershipState};
 
-use super::{DeviceInfo, Effective, Platform, PlatformError};
+use super::{Adopted, DeviceInfo, Effective, Platform, PlatformError};
 
 #[derive(Clone, Debug)]
 struct State {
@@ -29,6 +29,10 @@ struct State {
     index_result: CheckResult,
     /// While true, `apply_settings` waits (tests observe the change while it is applying).
     hold_apply: bool,
+    /// The owned sections differ from what was last written (ENK-CFG-014).
+    drift: bool,
+    /// The uplink's subnet collides with a network (ENK-TOPO-003).
+    uplink_collides: bool,
 }
 
 pub struct MockPlatform {
@@ -59,6 +63,8 @@ impl MockPlatform {
                 fail_apply_with: None,
                 index_result: CheckResult::Unreachable,
                 hold_apply: false,
+                drift: false,
+                uplink_collides: false,
             }),
             released: Condvar::new(),
         }
@@ -99,6 +105,16 @@ impl MockPlatform {
 
     pub fn set_installed_as(&self, how: InstalledAs) {
         self.state.lock().expect("mock").installed_as = how;
+    }
+
+    /// Pretends an expert edited an owned section by hand; cleared by the next apply.
+    pub fn set_drift(&self, drift: bool) {
+        self.state.lock().expect("mock").drift = drift;
+    }
+
+    /// Pretends the uplink's subnet collides with a network; cleared by the next apply.
+    pub fn set_uplink_collides(&self, collides: bool) {
+        self.state.lock().expect("mock").uplink_collides = collides;
     }
 
     /// Holds every `apply_settings` until `release_apply`: the change stays *applying*.
@@ -142,7 +158,7 @@ impl Platform for MockPlatform {
 
     fn blink(&self) -> Result<(), PlatformError> {
         if !self.has_light() {
-            return Err(PlatformError("no light".into()));
+            return Err(PlatformError::Failed("no light".into()));
         }
         self.record("blink()");
         Ok(())
@@ -225,7 +241,47 @@ impl Platform for MockPlatform {
         s.setup_up = false;
         s.management = Some((management_name.to_string(), management_key.to_string()));
         s.applied = Some(settings.clone());
+        s.drift = false;
+        s.uplink_collides = false;
         Ok(Vec::new())
+    }
+
+    fn adopt_settings(
+        &self,
+        management_name: &str,
+        management_key: &str,
+        settings: &Settings,
+    ) -> Result<Adopted, PlatformError> {
+        self.record(&format!(
+            "adopt_settings(v{}, {})",
+            settings.version, settings.guest.name
+        ));
+        let mut s = self.state.lock().expect("mock");
+        if s.uplink_collides {
+            // Renumbering: the one case where adopting writes.
+            drop(s);
+            let health = self.apply_settings(management_name, management_key, settings)?;
+            return Ok(Adopted {
+                health,
+                drift: false,
+            });
+        }
+        s.setup_up = false;
+        s.management = Some((management_name.to_string(), management_key.to_string()));
+        s.applied = Some(settings.clone());
+        let health = s.fail_apply_with.take().into_iter().collect();
+        Ok(Adopted {
+            health,
+            drift: s.drift,
+        })
+    }
+
+    fn owned_drift(&self) -> Result<bool, PlatformError> {
+        Ok(self.state.lock().expect("mock").drift)
+    }
+
+    fn uplink_collides(&self) -> bool {
+        self.state.lock().expect("mock").uplink_collides
     }
 
     fn disconnect_management_stations(&self) -> Result<(), PlatformError> {
@@ -234,6 +290,7 @@ impl Platform for MockPlatform {
     }
 
     fn effective(&self) -> Effective {
+        self.record("effective()");
         let s = self.state.lock().expect("mock");
         let guest = match &s.applied {
             Some(settings) if settings.guest.enabled => GuestStatus {
@@ -334,6 +391,11 @@ impl Platform for MockPlatform {
         s.management = None;
         s.applied = None;
         s.setup_up = false;
+        Ok(())
+    }
+
+    fn restart_service(&self) -> Result<(), PlatformError> {
+        self.record("restart_service()");
         Ok(())
     }
 

@@ -46,6 +46,22 @@ impl Section {
         self
     }
 
+    /// The same section whatever the order of its entries: a section the daemon rendered and
+    /// a section regenerated from it may list the same options in another order.
+    pub fn equivalent(&self, other: &Section) -> bool {
+        if self.kind != other.kind
+            || self.name != other.name
+            || self.entries.len() != other.entries.len()
+        {
+            return false;
+        }
+        let mut a: Vec<String> = self.entries.iter().map(|e| format!("{e:?}")).collect();
+        let mut b: Vec<String> = other.entries.iter().map(|e| format!("{e:?}")).collect();
+        a.sort();
+        b.sort();
+        a == b
+    }
+
     pub fn get(&self, key: &str) -> Option<&str> {
         self.entries.iter().find_map(|e| match e {
             Entry::Option(k, v) if k == key => Some(v.as_str()),
@@ -260,7 +276,7 @@ impl File {
             .sections()
             .filter(|s| s.name.as_deref().is_some_and(|n| n.starts_with(prefix)))
             .collect();
-        mine.len() == owned.len() && mine.iter().zip(owned).all(|(a, b)| *a == b)
+        mine.len() == owned.len() && mine.iter().zip(owned).all(|(a, b)| a.equivalent(b))
     }
 }
 
