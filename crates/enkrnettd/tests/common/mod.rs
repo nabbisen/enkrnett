@@ -54,6 +54,7 @@ pub fn config_for_tests(dir: &Path) -> Config {
         argon2: (64, 1, 1),
         // The mock platform brings its own index URL.
         update_index: None,
+        staging_dir: dir.join("staging"),
     }
 }
 
@@ -75,6 +76,18 @@ pub fn start_on(dir: &Path) -> TestServer {
 
 pub fn start_on_with(dir: &Path, setup: impl FnOnce(&MockPlatform)) -> TestServer {
     start_in(dir.to_path_buf(), setup)
+}
+
+/// A restart over an existing state directory as another build: the first boot of a successor
+/// release (ENK-UPD-005).
+pub fn start_on_configured(
+    dir: &Path,
+    adjust: impl FnOnce(&mut Config),
+    setup: impl FnOnce(&MockPlatform),
+) -> TestServer {
+    let mut config = config_for_tests(dir);
+    adjust(&mut config);
+    start_configured(dir.to_path_buf(), config, setup)
 }
 
 /// A daemon whose configuration the test adjusts first (a development build, another version).

@@ -18,7 +18,7 @@ use std::time::{Duration, Instant};
 
 use enkrnett_model::api::{
     Connection, GuestStatus, HardeningItem, HealthDetail, InstalledAs, ManagementStatus, Memory,
-    Radio, Storage, UplinkStatus,
+    Radio, Storage, UpdateFailure, UplinkStatus,
 };
 use enkrnett_model::plan::{
     self, BssRole, ExpectedBss, LISTEN_PORT, OWNED_PREFIX, Phase, Plan, owned_sections,
@@ -31,11 +31,14 @@ use enkrnett_model::uci::{File as UciFile, Section};
 use enkrnett_ubus::client::Client;
 use serde_json::{Map, Value, json};
 
-use super::{Adopted, DeviceInfo, Effective, FetchError, Platform, PlatformError};
+use super::{Adopted, DeviceInfo, Effective, FetchError, InstallVerdict, Platform, PlatformError};
 use crate::log;
 
 /// Where the package installs the release public keys (ENK-RLS-005).
 pub const KEYS_DIR: &str = "/usr/share/enkrnett/keys";
+/// A file the project's image build puts into every image and the package never installs:
+/// "installed from a published image" on a target without `/rom` (ENK-INST-005, ENK-UPD-008).
+pub const FROM_IMAGE_MARKER: &str = "/usr/share/enkrnett/from-image";
 /// The platform's downloader (RFC 016 §9), by its path: the daemon's environment has no PATH
 /// to speak of under procd.
 const DOWNLOADER: &str = "/bin/uclient-fetch";
@@ -47,6 +50,11 @@ pub const HEALTH_TIMEOUT: Duration = Duration::from_secs(60);
 const HEALTH_POLL: Duration = Duration::from_secs(2);
 /// The file the init script looks for at boot to erase the device (ENK-OWN-018).
 pub const ERASE_MARKER: &str = "ERASE";
+/// The root helper's verdict file (`openwrt/package/enkrnett/files/enkrnett.install` writes
+/// it); `/var/run` is root's, so nothing but root can place a file there.
+pub const INSTALL_RESULT: &str = "/var/run/enkrnett-install/result";
+/// The event the init script's raw trigger turns into the root helper.
+const INSTALL_EVENT: &str = "enkrnett.install";
 
 const COUNTRY_CHOICES: [&str; 12] = [
     "JP", "US", "CA", "GB", "DE", "FR", "IT", "ES", "NL", "AU", "NZ", "SG",
@@ -926,7 +934,12 @@ impl Platform for OpenWrtPlatform {
             memory: Self::meminfo(),
             storage: Self::overlay(),
             hardening: self.hardening(),
-            installed_as: if Path::new("/rom/usr/sbin/enkrnettd").exists() {
+            // ENK-INST-005: the daemon in the read-only part of a squashfs system, or the file
+            // the project's image build places beside it (a target without `/rom`, such as the
+            // x86 ext4 test VM, has no other witness; the package never installs that file).
+            installed_as: if Path::new("/rom/usr/sbin/enkrnettd").exists()
+                || Path::new(FROM_IMAGE_MARKER).exists()
+            {
                 InstalledAs::Image
             } else {
                 InstalledAs::Package
@@ -969,6 +982,80 @@ impl Platform for OpenWrtPlatform {
             return Err(FetchError::Unreachable("uclient-fetch failed".into()));
         }
         Ok(out.stdout)
+    }
+
+    /// The image, by the same downloader, written to `dest` in RAM (`/tmp` is tmpfs on OpenWrt)
+    /// and watched: a server that sends more than the index promised is cut off before it fills
+    /// the memory (`spawn::run_watching`).
+    fn download(&self, url: &str, dest: &Path, max_bytes: u64) -> Result<u64, FetchError> {
+        if !url.starts_with("https://") {
+            return Err(FetchError::Unreachable("not an https URL".into()));
+        }
+        let _ = fs::remove_file(dest);
+        let dest_s = dest
+            .to_str()
+            .ok_or_else(|| FetchError::Unreachable("destination path".into()))?;
+        let watched = super::spawn::run_watching(
+            DOWNLOADER,
+            &["-q", "-O", dest_s, FETCH_TIMEOUT, url],
+            dest,
+            max_bytes,
+        )
+        .map_err(|e| FetchError::Unreachable(format!("uclient-fetch: {e}")))?;
+        match watched {
+            super::spawn::Watched::TooLarge => {
+                let _ = fs::remove_file(dest);
+                Err(FetchError::TooLarge)
+            }
+            super::spawn::Watched::Exited(false) => {
+                let _ = fs::remove_file(dest);
+                Err(FetchError::Unreachable("uclient-fetch failed".into()))
+            }
+            super::spawn::Watched::Exited(true) => fs::metadata(dest)
+                .map(|m| m.len())
+                .map_err(|e| FetchError::Unreachable(format!("downloaded file: {e}"))),
+        }
+    }
+
+    /// The request file beside the image names the attempt; then the `enkrnett.install` event on
+    /// procd's `service` object, which the init script's raw trigger turns into the root helper
+    /// (`/usr/libexec/enkrnett/install`). The helper copies the image out of the daemon's reach,
+    /// verifies it with `usign` against the same keys, runs `sysupgrade -T`, and flashes.
+    fn install(&self, image: &Path, signature: &Path, token: &str) -> Result<(), PlatformError> {
+        let dir = image
+            .parent()
+            .ok_or_else(|| PlatformError::Failed("image path".into()))?;
+        if signature.parent() != Some(dir) {
+            return Err(PlatformError::Failed("signature beside the image".into()));
+        }
+        fs::write(dir.join("request"), format!("{token}\n"))
+            .map_err(|e| PlatformError::Failed(format!("install request: {e}")))?;
+        self.call(
+            "service",
+            "event",
+            json!({"type": INSTALL_EVENT, "data": {}}),
+        )
+        .map(|_| ())
+    }
+
+    /// `TOKEN WORD [REASON]` in the helper's result file, root's.
+    fn install_verdict(&self, token: &str) -> Option<InstallVerdict> {
+        let text = fs::read_to_string(INSTALL_RESULT).ok()?;
+        let mut words = text.split_whitespace();
+        if words.next()? != token {
+            return None;
+        }
+        match words.next()? {
+            "flashing" => Some(InstallVerdict::Flashing),
+            "failed" => Some(InstallVerdict::Failed),
+            "refused" => Some(InstallVerdict::Refused(
+                words
+                    .next()
+                    .and_then(UpdateFailure::parse)
+                    .unwrap_or(UpdateFailure::InstallFailed),
+            )),
+            _ => None,
+        }
     }
 
     fn release_keys(&self) -> Vec<String> {

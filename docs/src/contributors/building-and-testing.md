@@ -108,8 +108,10 @@ tests/vm/contract.sh /path/to/vm   # the RFC 003 and 004 checks against the proc
 tests/vm/isolation.sh /path/to/vm   # chapter 2 with four simulated stations in network namespaces (after claim.sh)
 tests/vm/drift.sh /path/to/vm       # a hand edit with uci: drift reported, restored through a respawn (after claim.sh)
 tests/vm/update-check.sh /path/to/vm # a release index signed with a test key, served from the host over HTTPS: the daemon's check and every refusal (after claim.sh; needs openssl and python3)
+tests/vm/update-install.sh /path/to/vm # two successor images built from this source, installed through the daemon, the root helper and sysupgrade; the broken successor; the disk put back (after claim.sh; about ten minutes)
+tests/vm/successor.sh /path/to/vm 9.9.9 out/   # by itself: a successor release (daemon as 9.9.9 through ENKRNETT_VERSION, package, x86-64 image); add `broken` for one without the VM's wireless driver
 tests/vm/renumber.sh /path/to/vm    # colliding uplinks (VM_WAN_NET in the VM launcher): only the colliding network moves; ends with Erase
-tests/vm/run-all.sh /path/to/vm [logs]  # the whole chain in the order CI runs it (about 25 minutes with KVM)
+tests/vm/run-all.sh /path/to/vm [logs]  # the whole chain in the order CI runs it (about 35 minutes with KVM)
 python3 tests/traceability.py --release 0.2.0   # the requirement-to-test table; fails on an uncovered 0.2.0 requirement
 ```
 
@@ -129,7 +131,13 @@ target/release/enkrnett-release verify index.json --key release.pub
 ```
 
 The formats are OpenBSD signify's; `docs/src/design/release.md` has the index fields and the
-rules the device applies. The public keys an image carries live in `openwrt/release-keys/`.
+rules the device applies. The public keys an image carries live in `openwrt/release-keys/`. An
+image is published beside the index with its signature (`sign release.sec IMAGE` gives
+`IMAGE.sig`); the device and its root side both verify it.
+
+`ENKRNETT_VERSION=9.9.9 cargo build -p enkrnettd` builds a daemon that reports that version
+(`crates/enkrnettd/build.rs` makes Cargo notice the variable); the VM test builds its successor
+releases that way. A release build never sets it.
 
 ## Validate a settings document
 

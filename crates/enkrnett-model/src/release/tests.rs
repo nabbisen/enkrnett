@@ -189,3 +189,49 @@ fn an_upgrade_is_offered_from_its_previous_baseline_and_says_so() {
             .changes_baseline()
     );
 }
+
+#[test]
+fn the_install_checks_name_the_first_failing_condition_and_the_image_sits_beside_the_index() {
+    use crate::api::UpdateFailure;
+    let e = entry("x86_64_generic", "0.3.0", "25.12", "25.12");
+    assert_eq!(
+        e.image_url("https://updates.example/enkrnett/index.json"),
+        format!("https://updates.example/enkrnett/{}", e.file)
+    );
+    // ENK-UPD-003: the image plus 16 MB, or the index's own minimum when that is larger (the
+    // fixture asks for 24 MiB).
+    let kib = e.size.div_ceil(1024);
+    assert_eq!(e.needed_kib(), kib + 24_576);
+    assert_eq!(
+        e.check_device("x86_64_generic", "25.12", kib + 24_576),
+        Ok(())
+    );
+    assert_eq!(
+        e.check_device("x86_64_generic", "25.12", kib + 24_576 - 1),
+        Err(UpdateFailure::NotEnoughMemory)
+    );
+    let mut small = e.clone();
+    small.min_free_kib = 1024;
+    assert_eq!(small.needed_kib(), kib + 16 * 1024);
+    assert_eq!(
+        e.check_device("other_device", "25.12", 1 << 20),
+        Err(UpdateFailure::WrongDevice)
+    );
+    assert_eq!(
+        e.check_device("x86_64_generic", "24.10", 1 << 20),
+        Err(UpdateFailure::WrongBaseline)
+    );
+    let mut big = e.clone();
+    big.min_free_kib = 40_000;
+    assert_eq!(big.needed_kib(), kib + 40_000);
+    // The bytes: the size and the hash the index states, both.
+    assert_eq!(e.check_bytes(e.size, &e.sha512), Ok(()));
+    assert_eq!(
+        e.check_bytes(e.size - 1, &e.sha512),
+        Err(UpdateFailure::BadSignature)
+    );
+    assert_eq!(
+        e.check_bytes(e.size, &"00".repeat(64)),
+        Err(UpdateFailure::BadSignature)
+    );
+}

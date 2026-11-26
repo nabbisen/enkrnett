@@ -2,12 +2,13 @@
 # The whole VM chain (chapter 14 §2, VM integration): prepare, package, claim, then chapters 2, 6
 # and 7 on the real platform, then the RFC 003/004 contract with Erase through a boot. Each
 # script's output goes to LOG_DIR; the summary names what passed and what did not. The host needs
-# openssl and python3 for the update check.
+# openssl and python3 for the update check and the update install, which also builds two
+# successor images with the pinned SDK and Image Builder.
 #
 #   tests/vm/run-all.sh VM_DIR [LOG_DIR]     VM_DIR from tests/vm/image.sh (or the measurement VM)
 #
 # Needs: the static x86-64 daemon (see package.sh), ui/dist, the x86/64 SDK (fetched by
-# package.sh), QEMU. About 25 minutes with KVM.
+# package.sh), QEMU. About 35 minutes with KVM.
 set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 VM=${1:?VM_DIR}
@@ -38,6 +39,9 @@ step isolation isolation.sh || true
 step drift drift.sh || true
 # update-check.sh serves a signed index from the host; the device stays CLAIMED and is left as it was.
 step update-check update-check.sh || true
+# update-install.sh builds two successor images, installs them through the daemon and sysupgrade,
+# and puts the disk back as it was: CLAIMED on this release again. About ten minutes.
+step update-install update-install.sh || true
 # renumber.sh restarts the VM twice with colliding uplinks and ends with Erase: SETUP again.
 step renumber renumber.sh || true
 # contract.sh starts from SETUP (it erases first otherwise) and ends with Erase through a boot.

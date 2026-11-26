@@ -3,10 +3,11 @@
 //! stands in on a workstation and in CI and records what it was asked to do.
 
 use std::net::IpAddr;
+use std::path::Path;
 
 use enkrnett_model::api::{
     Connection, GuestStatus, HardeningItem, HealthDetail, InstalledAs, ManagementStatus, Memory,
-    Radio, Storage, UplinkStatus,
+    Radio, Storage, UpdateFailure, UplinkStatus,
 };
 use enkrnett_model::settings::Settings;
 use enkrnett_model::state::OwnershipState;
@@ -70,6 +71,19 @@ impl std::fmt::Display for FetchError {
             FetchError::TooLarge => write!(f, "too large"),
         }
     }
+}
+
+/// What the root side of an update answered (chapter 11 §3). The daemon never runs as root: it
+/// stages the verified image and asks; the platform's root helper verifies again, lets the
+/// system check the image against the device, and flashes it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum InstallVerdict {
+    /// The image is being written; the device restarts and this process ends.
+    Flashing,
+    /// Not written, with the reason for `last_result`.
+    Refused(UpdateFailure),
+    /// Writing started and did not succeed; the device still runs the old release.
+    Failed,
 }
 
 /// Facts about the device for the details screen and the version line.
@@ -179,6 +193,19 @@ pub trait Platform: Send + Sync {
     /// The signify public keys the image carries (ENK-RLS-005: the current key and the
     /// designated next one), as the texts of their files.
     fn release_keys(&self) -> Vec<String>;
+
+    /// Downloads `url` through the platform's downloader over HTTPS into `dest` (in RAM), at
+    /// most `max_bytes`: the image of chapter 11 §3. Returns the size written.
+    fn download(&self, url: &str, dest: &Path, max_bytes: u64) -> Result<u64, FetchError>;
+
+    /// Hands a verified image and its signature to the platform's root side (ENK-UPD-003 done
+    /// once more where root can see it, then `sysupgrade` with the configuration kept,
+    /// ENK-UPD-004). `token` names this attempt in the verdict. Returns when the request is
+    /// placed, not when the image is written.
+    fn install(&self, image: &Path, signature: &Path, token: &str) -> Result<(), PlatformError>;
+
+    /// The root side's verdict on the attempt `token`, once there is one.
+    fn install_verdict(&self, token: &str) -> Option<InstallVerdict>;
 
     /// Remove every platform setting Enkrnett owns (ENK-OWN-018).
     fn erase(&self) -> Result<(), PlatformError>;

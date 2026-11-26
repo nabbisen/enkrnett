@@ -125,6 +125,7 @@
   "update.failed.wrong_baseline": "This update cannot follow the installed version directly.",
   "update.failed.not_enough_memory": "Not enough free memory. Restart the device and try again.",
   "update.failed.download_failed": "The update could not be downloaded. Check the Internet connection and try again.",
+  "update.failed.install_failed": "The update could not be installed. Nothing was changed.",
   "update.disabled": "This device was not installed from a published image, so it does not look for updates.",
   "update.enable": "Turn on update checks?",
   "update.last_checked": "Last checked {s} seconds ago.",

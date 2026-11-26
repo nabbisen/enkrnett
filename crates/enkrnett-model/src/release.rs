@@ -17,7 +17,7 @@ use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
 
-use crate::api::Available;
+use crate::api::{Available, UpdateFailure};
 
 pub const INDEX_FORMAT: u32 = 1;
 /// The index is small by requirement; anything larger is refused before parsing.
@@ -25,6 +25,8 @@ pub const INDEX_MAX_BYTES: usize = 64 * 1024;
 /// How many releases one index may list.
 pub const INDEX_MAX_RELEASES: usize = 64;
 /// An image larger than this is not for the devices of chapter 5.
+/// ENK-UPD-003: free memory must exceed the image size by this much, 16 MB.
+pub const INSTALL_HEADROOM_KIB: u64 = 16 * 1024;
 pub const IMAGE_MAX_BYTES: u64 = 256 * 1024 * 1024;
 
 /// A release version `major.minor.patch` (ENK-RLS-001: semantic versioning, no prefix).
@@ -179,6 +181,51 @@ impl ReleaseEntry {
 
     pub fn version(&self) -> Version {
         Version::parse(&self.version).expect("checked when parsed")
+    }
+
+    /// Where the image is: beside the index, under the file name the index gives (ENK-RLS-002).
+    /// `index_url` is the URL the index was fetched from.
+    pub fn image_url(&self, index_url: &str) -> String {
+        match index_url.rsplit_once('/') {
+            Some((dir, _)) => format!("{dir}/{}", self.file),
+            None => self.file.clone(),
+        }
+    }
+
+    /// Free memory an installation needs (ENK-UPD-003: the image plus 16 MB, or more when the
+    /// index says so), in KiB.
+    pub fn needed_kib(&self) -> u64 {
+        self.size.div_ceil(1024) + INSTALL_HEADROOM_KIB.max(self.min_free_kib)
+    }
+
+    /// The checks of ENK-UPD-003 that need no bytes of the image: for this device profile, from
+    /// the installed baseline, and room for it in memory. The first failure is the answer;
+    /// nothing is written.
+    pub fn check_device(
+        &self,
+        profile: &str,
+        baseline: &str,
+        available_kib: u64,
+    ) -> Result<(), UpdateFailure> {
+        if self.profile != profile {
+            return Err(UpdateFailure::WrongDevice);
+        }
+        if self.from_baseline != baseline {
+            return Err(UpdateFailure::WrongBaseline);
+        }
+        if available_kib < self.needed_kib() {
+            return Err(UpdateFailure::NotEnoughMemory);
+        }
+        Ok(())
+    }
+
+    /// The checks of ENK-UPD-003 on the downloaded bytes: the size and the SHA-512 the index
+    /// states (the signature over the image is the caller's, through `signify::Verifier`).
+    pub fn check_bytes(&self, size: u64, sha512_hex: &str) -> Result<(), UpdateFailure> {
+        if size != self.size || sha512_hex != self.sha512 {
+            return Err(UpdateFailure::BadSignature);
+        }
+        Ok(())
     }
 
     pub fn changes_baseline(&self) -> bool {

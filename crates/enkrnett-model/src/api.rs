@@ -348,6 +348,38 @@ pub enum UpdateFailure {
     NotEnoughMemory,
     DownloadFailed,
     HealthCheckFailed,
+    /// The root side did not flash the verified image (or did not answer): nothing changed.
+    /// Not in the accepted API; a deviation recorded for the next amendment RFC.
+    InstallFailed,
+}
+
+impl UpdateFailure {
+    /// The wire word, for the log and the root helper's verdict.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            UpdateFailure::BadSignature => "bad_signature",
+            UpdateFailure::WrongDevice => "wrong_device",
+            UpdateFailure::WrongBaseline => "wrong_baseline",
+            UpdateFailure::NotEnoughMemory => "not_enough_memory",
+            UpdateFailure::DownloadFailed => "download_failed",
+            UpdateFailure::HealthCheckFailed => "health_check_failed",
+            UpdateFailure::InstallFailed => "install_failed",
+        }
+    }
+
+    pub fn parse(word: &str) -> Option<UpdateFailure> {
+        [
+            UpdateFailure::BadSignature,
+            UpdateFailure::WrongDevice,
+            UpdateFailure::WrongBaseline,
+            UpdateFailure::NotEnoughMemory,
+            UpdateFailure::DownloadFailed,
+            UpdateFailure::HealthCheckFailed,
+            UpdateFailure::InstallFailed,
+        ]
+        .into_iter()
+        .find(|f| f.as_str() == word)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

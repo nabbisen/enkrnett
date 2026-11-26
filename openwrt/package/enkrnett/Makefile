@@ -22,7 +22,7 @@ define Package/enkrnett
   CATEGORY:=Network
   TITLE:=Enkrnett: guest Wi-Fi with OWE for people without IT training
   URL:=https://github.com/nabbisen/enkrnett
-  DEPENDS:=+wpad-basic-mbedtls +dnsmasq +firewall4
+  DEPENDS:=+wpad-basic-mbedtls +dnsmasq +firewall4 +usign
   USERID:=enkrnett=1900:enkrnett=1900
 endef
 
@@ -61,6 +61,8 @@ define Package/enkrnett/install
 	[ ! -d $(ENKRNETT_PREBUILT)/keys ] || $(CP) $(ENKRNETT_PREBUILT)/keys/. $(1)/usr/share/enkrnett/keys/
 	$(INSTALL_DIR) $(1)/usr/share/acl.d
 	$(INSTALL_DATA) ./files/enkrnett.acl.json $(1)/usr/share/acl.d/enkrnett.json
+	$(INSTALL_DIR) $(1)/usr/libexec/enkrnett
+	$(INSTALL_BIN) ./files/enkrnett.install $(1)/usr/libexec/enkrnett/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/enkrnett.init $(1)/etc/init.d/enkrnett
 	$(INSTALL_DIR) $(1)/etc/config

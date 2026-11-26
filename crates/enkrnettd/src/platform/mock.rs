@@ -3,6 +3,7 @@
 
 use std::collections::HashMap;
 use std::net::IpAddr;
+use std::path::Path;
 use std::sync::{Condvar, Mutex};
 
 use enkrnett_model::api::{
@@ -13,7 +14,7 @@ use enkrnett_model::settings::Settings;
 use enkrnett_model::state::{ConnectionNetwork, ConnectionSecurity, OwnershipState};
 
 use super::FetchError;
-use super::{Adopted, DeviceInfo, Effective, Platform, PlatformError};
+use super::{Adopted, DeviceInfo, Effective, InstallVerdict, Platform, PlatformError};
 
 #[derive(Clone, Debug)]
 struct State {
@@ -32,6 +33,13 @@ struct State {
     /// What `fetch` answers per URL; an unknown URL is unreachable.
     fetches: HashMap<String, Result<Vec<u8>, FetchError>>,
     release_keys: Vec<String>,
+    /// `file://` URLs are read from disk (the browser harness serves an index this way).
+    file_urls: bool,
+    /// What the root side answers after `install`; `None` answers nothing (the daemon waits).
+    install_verdict: Option<InstallVerdict>,
+    /// The attempts `install` was asked for, by token.
+    installs: Vec<String>,
+    available_kib: u64,
     /// While true, `apply_settings` waits (tests observe the change while it is applying).
     hold_apply: bool,
     /// The owned sections differ from what was last written (ENK-CFG-014).
@@ -69,6 +77,10 @@ impl MockPlatform {
                 update_index_url: Some("https://updates.example/index.json".into()),
                 fetches: HashMap::new(),
                 release_keys: Vec::new(),
+                file_urls: false,
+                install_verdict: Some(InstallVerdict::Flashing),
+                installs: Vec::new(),
+                available_kib: 98_304,
                 hold_apply: false,
                 drift: false,
                 uplink_collides: false,
@@ -155,6 +167,45 @@ impl MockPlatform {
     /// The signify public keys the "image" carries, as file texts.
     pub fn set_release_keys(&self, keys: Vec<String>) {
         self.state.lock().expect("mock").release_keys = keys;
+    }
+
+    /// Lets `fetch` and `download` read `file://` URLs from disk.
+    pub fn allow_file_urls(&self) {
+        self.state.lock().expect("mock").file_urls = true;
+    }
+
+    /// What the root side answers to an install; `None` keeps the daemon waiting.
+    pub fn set_install_verdict(&self, verdict: Option<InstallVerdict>) {
+        self.state.lock().expect("mock").install_verdict = verdict;
+    }
+
+    pub fn set_available_memory_kib(&self, kib: u64) {
+        self.state.lock().expect("mock").available_kib = kib;
+    }
+
+    /// The tokens of the install requests so far.
+    pub fn installs(&self) -> Vec<String> {
+        self.state.lock().expect("mock").installs.clone()
+    }
+
+    fn bytes_of(&self, url: &str, max_bytes: u64) -> Result<Vec<u8>, FetchError> {
+        let s = self.state.lock().expect("mock");
+        if s.file_urls
+            && let Some(path) = url.strip_prefix("file://")
+        {
+            let bytes = std::fs::read(path)
+                .map_err(|e| FetchError::Unreachable(format!("mock file: {e}")))?;
+            return if bytes.len() as u64 > max_bytes {
+                Err(FetchError::TooLarge)
+            } else {
+                Ok(bytes)
+            };
+        }
+        match s.fetches.get(url) {
+            Some(Ok(bytes)) if bytes.len() as u64 > max_bytes => Err(FetchError::TooLarge),
+            Some(r) => r.clone(),
+            None => Err(FetchError::Unreachable("mock: no such url".into())),
+        }
     }
 
     /// The settings last applied, if any.
@@ -373,7 +424,7 @@ impl Platform for MockPlatform {
             device_class: "standard".into(),
             memory: Memory {
                 total_kib: 131_072,
-                available_kib: 98_304,
+                available_kib: s.available_kib,
             },
             storage: Storage {
                 overlay_total_kib: 12_288,
@@ -408,12 +459,40 @@ impl Platform for MockPlatform {
 
     fn fetch(&self, url: &str, max_bytes: usize) -> Result<Vec<u8>, FetchError> {
         self.record(&format!("fetch({url})"));
+        self.bytes_of(url, max_bytes as u64)
+    }
+
+    fn download(&self, url: &str, dest: &Path, max_bytes: u64) -> Result<u64, FetchError> {
+        self.record(&format!("download({url})"));
+        let bytes = self.bytes_of(url, max_bytes)?;
+        std::fs::write(dest, &bytes)
+            .map_err(|e| FetchError::Unreachable(format!("mock write: {e}")))?;
+        Ok(bytes.len() as u64)
+    }
+
+    fn install(&self, image: &Path, signature: &Path, token: &str) -> Result<(), PlatformError> {
+        self.record(&format!(
+            "install({}, {})",
+            image.file_name().and_then(|n| n.to_str()).unwrap_or("?"),
+            signature
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("?")
+        ));
+        self.state
+            .lock()
+            .expect("mock")
+            .installs
+            .push(token.to_string());
+        Ok(())
+    }
+
+    fn install_verdict(&self, token: &str) -> Option<InstallVerdict> {
         let s = self.state.lock().expect("mock");
-        match s.fetches.get(url) {
-            Some(Ok(bytes)) if bytes.len() > max_bytes => Err(FetchError::TooLarge),
-            Some(r) => r.clone(),
-            None => Err(FetchError::Unreachable("mock: no such url".into())),
-        }
+        s.installs
+            .iter()
+            .any(|t| t == token)
+            .then_some(s.install_verdict)?
     }
 
     fn release_keys(&self) -> Vec<String> {

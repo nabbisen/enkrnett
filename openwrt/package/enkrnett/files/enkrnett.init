@@ -93,4 +93,7 @@ start_service() {
 
 service_triggers() {
 	procd_add_reload_trigger "enkrnett"
+	# An update (chapter 11 §3): the daemon stages and verifies the image, then fires this event;
+	# procd runs the root side (/usr/libexec/enkrnett/install) for it.
+	procd_add_raw_trigger "enkrnett.install" 1000 /usr/libexec/enkrnett/install
 }

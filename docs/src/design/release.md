@@ -86,8 +86,14 @@ change. With no key in the image and nothing published yet, a check from an imag
 ## 5. What the device does
 
 `docs/src/design/daemon.md` §6b: the daily check, the request, the switch of ENK-UPD-008, the
-outcomes, the log lines. `docs/src/design/platform.md`: `fetch`, `release_keys`,
-`update_index_url`.
+outcomes, the log lines. §6c: the install, from the owner's *Update* to the first boot of the new
+release. `docs/src/design/platform.md`: `fetch`, `release_keys`, `update_index_url`, and §11
+for `download`, `install`, the root helper.
+
+An image is published beside the index under the name the index gives (ENK-RLS-002), with its
+signature as `<file>.sig`: `signify -S` (or the tool's `sign`) over the image's bytes, the same
+key as the index. The device fetches `<index directory>/<file>` and `<file>.sig`, and the root
+side verifies the same signature again with `usign`.
 
 ## 6. Tests
 
@@ -96,5 +102,9 @@ outcomes, the log lines. `docs/src/design/platform.md`: `fetch`, `release_keys`,
 | `crates/enkrnett-model/src/signify/tests.rs` | 6 | Verify under the right key and no other, same key number with another key, round trips of the three files, an Ed25519 vector from OpenSSL in signify's layout, hostile files, passphrase-protected and corrupt secret keys, SHA-512 |
 | `crates/enkrnett-model/src/release/tests.rs` | 5 | Strict versions, round trip with unknown fields, every malformed field refused by name, the offer, the upgrade |
 | `crates/enkrnettd/tests/update.rs` | 9 | The daemon against signed indexes through the mock platform (§6b) |
-| `crates/enkrnettd/src/platform/spawn/tests.rs` | 2 | Output captured and bounded, exit status, the fixed environment, empty input |
+| `crates/enkrnett-model/src/signify/tests.rs` (stage 2) | +1 | The streaming verifier and SHA-512 agree with the whole-message forms; a changed byte refused; an unknown key number refused before any byte |
+| `crates/enkrnett-model/src/release/tests.rs` (stage 2) | +1 | The image URL beside the index; the memory rule (image plus 16 MB, or the index's minimum); the checks before the download and on the bytes, by the first failing condition |
+| `crates/enkrnettd/tests/install.rs` | 5 | Installing against the mock platform (`daemon.md` §6c) |
+| `crates/enkrnettd/src/platform/spawn/tests.rs` | 3 | Output captured and bounded, exit status, the fixed environment, empty input; a watched file past its limit kills the program |
 | `tests/vm/update-check.sh` | see `docs/src/verification/m3.md` | The real platform: `uclient-fetch` over HTTPS with a test authority, the offer, every refusal, the sequence on flash |
+| `tests/vm/update-install.sh` | see `docs/src/verification/m3.md` | The real platform: two successor images built from this source (`tests/vm/successor.sh`), the install through the daemon, the root helper and `sysupgrade`, the first boot's report, the broken successor, the root side's refusal of a stranger's signature |

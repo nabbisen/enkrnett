@@ -12,6 +12,12 @@
   let update = $state<Update | null>(null);
   let error = $state('');
   let checking = $state(false);
+  // The update's own step (ENK-UI-013, ENK-UPD-002, 006, 007): the consequence in full and one
+  // primary button; then the shape is followed every 2 s until the device restarts.
+  let confirmingUpdate = $state(false);
+  let installing = $state(false);
+  let installError = $state('');
+  let poll: ReturnType<typeof setInterval> | null = null;
 
   let changingPassword = $state(false);
   let current = $state('');
@@ -24,14 +30,56 @@
 
   $effect(() => {
     void load();
+    return () => stopPolling();
   });
 
   async function load() {
     try {
       device = await api.device();
       update = await api.update();
+      if (update.state !== 'idle') startPolling();
     } catch (e) {
       if (!app.handle(e)) error = errorSentence(e);
+    }
+  }
+
+  function startPolling() {
+    if (poll) return;
+    poll = setInterval(async () => {
+      try {
+        const u = await api.update();
+        update = u;
+        if (u.state === 'idle') stopPolling();
+      } catch (e) {
+        // While the image is written the device goes away; the installing sentence stays. A
+        // session that ended (the device came back) sends the owner to the login screen.
+        if (e instanceof ApiError) app.handle(e);
+      }
+    }, 2_000);
+  }
+
+  function stopPolling() {
+    if (poll) clearInterval(poll);
+    poll = null;
+  }
+
+  async function startUpdate() {
+    installing = true;
+    installError = '';
+    try {
+      update = await api.updateInstall();
+      confirmingUpdate = false;
+      startPolling();
+    } catch (e) {
+      if (e instanceof ApiError && e.detail.code === 'cannot_update' && e.detail.reason) {
+        // ENK-UPD-003: one sentence of reason; nothing was written.
+        installError = i18n.t(`update.failed.${e.detail.reason}`);
+      } else if (!app.handle(e)) {
+        installError = errorSentence(e);
+      }
+      confirmingUpdate = false;
+    } finally {
+      installing = false;
     }
   }
 
@@ -128,26 +176,34 @@
     {#if !update.checks_enabled}
       <p>{i18n.t('update.disabled')}</p>
       <button onclick={enableChecks} disabled={checking}>{checking ? i18n.t('update.checking') : i18n.t('update.enable')}</button>
+    {:else if update.state !== 'idle'}
+      <p class="notice-bar" role="status">
+        {#if update.state === 'downloading'}{i18n.t('update.downloading')}
+        {:else if update.state === 'verifying'}{i18n.t('update.verifying')}
+        {:else}{i18n.t('update.installing')}{/if}
+      </p>
+    {:else if confirmingUpdate && update.available}
+      <p>{i18n.t('update.available', { v: update.available.version, m: Math.max(1, Math.round(update.available.install_seconds / 60)) })}</p>
+      {#if update.available.changes_baseline}<p>{i18n.t('update.changes_baseline')}</p>{/if}
+      <button class="primary" onclick={startUpdate} disabled={installing}>{i18n.t('update.button')}</button>
+      <button class="link" onclick={() => (confirmingUpdate = false)} disabled={installing}>{i18n.t('common.cancel')}</button>
     {:else}
-      {#if update.state === 'downloading'}<p>{i18n.t('update.downloading')}</p>
-      {:else if update.state === 'verifying'}<p>{i18n.t('update.verifying')}</p>
-      {:else if update.state === 'installing'}<p>{i18n.t('update.installing')}</p>
-      {/if}
       {#if update.last_result?.result === 'done'}
-        <p>{i18n.t('update.done', { v: update.installed.version })}</p>
+        <p class="notice-bar" role="status">{i18n.t('update.done', { v: update.installed.version })}</p>
       {:else if update.last_result?.result === 'failed'}
-        <p class="field-error">{i18n.t(`update.failed.${update.last_result.reason ?? 'download_failed'}`)}</p>
+        <p class="field-error" role="alert">{i18n.t(`update.failed.${update.last_result.reason ?? 'install_failed'}`)}</p>
       {/if}
+      {#if installError}<p class="field-error" role="alert">{installError}</p>{/if}
       {#if update.available}
-        <p>{i18n.t('update.available', { v: update.available.version, m: Math.max(1, Math.round(update.available.install_seconds / 60)) })}</p>
-        {#if update.available.changes_baseline}<p>{i18n.t('update.changes_baseline')}</p>{/if}
+        <p>{i18n.t('update.available_short', { v: update.available.version })}</p>
+        <button class="primary" onclick={() => (confirmingUpdate = true)}>{i18n.t('update.button')}</button>
       {:else}
         <p>{checkSentence(update)}</p>
       {/if}
       {#if update.last_check}
         <p class="field-note">{i18n.t('update.last_checked', { s: update.last_check.checked_ago })}</p>
       {/if}
-      <button onclick={check} disabled={checking || update.state !== 'idle'}>{checking ? i18n.t('update.checking') : i18n.t('update.check')}</button>
+      <button onclick={check} disabled={checking}>{checking ? i18n.t('update.checking') : i18n.t('update.check')}</button>
     {/if}
   </section>
 

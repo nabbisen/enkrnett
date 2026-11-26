@@ -5,6 +5,38 @@ decisions is in `rfcs/`.
 
 ## Unreleased
 
+### Milestone M3, stage 2 (2026-11-26)
+
+- Installing an update (chapter 11 §3, ENK-UPD-002 to 007). `update/install`, on the owner's
+  *Update* after the details screen's own step (version, minutes, the Wi-Fi stops, cannot be
+  undone from here; the baseline sentence of ENK-UPD-007): the checks of ENK-UPD-003 one by one,
+  `400 cannot_update` with the reason before anything is written; the image downloaded to RAM
+  through the platform's downloader and bounded by the size the index states; the SHA-512 and the
+  signify signature verified in one pass over the file (`signify::Verifier`); the update marker
+  on flash; the hand-over to the platform's root side; `409 update_in_progress` for every other
+  POST meanwhile (ENK-API-012).
+- The root side: `/usr/libexec/enkrnett/install`, run by procd on the daemon's `enkrnett.install`
+  event (a raw trigger of the init script). It copies the image out of the daemon's reach,
+  verifies the signature again with `usign` against the keys the image carries, runs
+  `sysupgrade -T`, then `sysupgrade` with the configuration kept (`/etc/config`, `/etc/enkrnett`;
+  sessions and the log live in RAM, ENK-UPD-004). The package depends on `usign`.
+- The first boot after an update (ENK-UPD-005): the marker says `installing`; the running version,
+  the carried owner and the start-up health check decide `done` or `failed` with the reason, kept
+  as `update.last_result` until the next attempt. A broken successor keeps serving the carried
+  configuration and says so.
+- `install_failed`, a `last_result.reason` the accepted API lacks (the root side did not flash
+  the verified image, or it did not take): a deviation recorded for the next amendment RFC.
+- `tests/vm/update-install.sh` and `tests/vm/successor.sh`: two successor releases built from
+  this source (`ENKRNETT_VERSION` at build time), packaged and put into x86-64 images by the
+  pinned Image Builder, signed and served over HTTPS; installed through the daemon, the helper and
+  `sysupgrade` on the VM; the device back with its owner and settings; the broken successor's
+  report; the root side refusing a stranger's signature; the disk put back afterwards. In the
+  chain.
+- The browser harness serves a signed index to the mock from disk; `update.spec.ts` walks the
+  step and the install to "Installing…".
+- MIPS daemon 285 KiB of 300 (274 after stage 1).
+- `docs/src/design/daemon.md` §6c, `platform.md` §11, `release.md` §5; `docs/src/verification/m3.md`.
+
 ### Milestone M3, stage 1 (2026-11-26)
 
 - The release index and its signature (chapter 11 §1–2): `enkrnett_model::signify` reads and

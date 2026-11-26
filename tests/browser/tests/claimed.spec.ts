@@ -71,13 +71,16 @@ test('details: version, hardening report, restart on its own step, log out', asy
   await expect(page.getByText('ENK-HARD-001: in place')).toBeVisible();
   await expect(page.getByText('Installed from an image')).toBeVisible();
   // ENK-UPD-008: the harness runs a development build, which does not look for updates until the
-  // owner says so; the switch runs the first check in the same request.
+  // owner says so; the switch runs the first check in the same request, and the harness's index
+  // offers 9.9.9 (the install itself is update.spec.ts, the last file).
   await expect(page.getByText(/not installed from a published image/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Check for updates' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Update', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Turn on update checks?' }).click();
-  await expect(page.getByText('Could not reach the update server.')).toBeVisible();
+  await expect(page.getByText('Update available: Enkrnett 9.9.9')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Check for updates' }).click();
-  await expect(page.getByText('Could not reach the update server.')).toBeVisible();
+  await expect(page.getByText('Update available: Enkrnett 9.9.9')).toBeVisible();
   await page.getByRole('button', { name: 'Restart', exact: true }).first().click();
   await expect(page.getByText('Restart turns the device off and on.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Erase this device' })).toHaveCount(0); // never beside Restart

@@ -195,3 +195,48 @@ fn stored_files_are_readable_by_the_daemon_only() {
         & 0o777;
     assert_eq!(mode, 0o600);
 }
+
+#[test]
+fn the_update_marker_records_installing_then_the_outcome_and_survives_a_restart() {
+    // ENK-UPD-005: written before the image is handed over; the first boot reads it and turns it
+    // into the outcome, which stays until the next attempt. Erase removes it with the rest.
+    let dir = TempDir::new();
+    let store = Store::open(&dir.0, || "dev".into()).unwrap();
+    assert!(store.read_update().is_none());
+    let marker = UpdateMarker::installing("0.2.0", "0.3.0", "25.12", true);
+    assert_eq!(marker.last_result(), None);
+    store.write_update(&marker).unwrap();
+    assert!(!dir.0.join("update.json.tmp").exists());
+    let again = Store::open(&dir.0, || "other".into()).unwrap();
+    assert_eq!(again.read_update(), Some(marker.clone()));
+    let done = marker.clone().done();
+    assert_eq!(done.stage, UpdateStage::Done);
+    assert_eq!(
+        done.last_result(),
+        Some(LastResult {
+            result: UpdateOutcome::Done,
+            reason: None
+        })
+    );
+    let failed = marker.failed(UpdateFailure::HealthCheckFailed);
+    again.write_update(&failed).unwrap();
+    assert_eq!(
+        again.read_update().unwrap().last_result(),
+        Some(LastResult {
+            result: UpdateOutcome::Failed,
+            reason: Some(UpdateFailure::HealthCheckFailed)
+        })
+    );
+    // A marker from a newer format, or not a marker at all, counts as none.
+    fs::write(
+        dir.0.join("update.json"),
+        br#"{"format": 99, "stage": "done"}"#,
+    )
+    .unwrap();
+    assert!(again.read_update().is_none());
+    fs::write(dir.0.join("update.json"), b"{ not json").unwrap();
+    assert!(again.read_update().is_none());
+    again.remove_update().unwrap();
+    again.remove_update().unwrap();
+    assert!(!dir.0.join("update.json").exists());
+}

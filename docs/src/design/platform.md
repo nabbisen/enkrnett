@@ -84,6 +84,7 @@ amendment RFC (ENK-SCOPE-006).
 | Blinking the LED | The init script hands the profile's LED `brightness` attribute to the user at boot |
 | Erase | The daemon writes `/etc/enkrnett/ERASE`, takes the Wi-Fi down, and asks for a reboot (`system reboot` through ubus). The init script's `boot()` sees the marker: on an image install `firstboot -y` resets the overlay to the image; on a package install it removes Enkrnett's state and sections, because `firstboot` would remove Enkrnett itself. |
 | Reboot | `ubus call system reboot` (in the ACL) |
+| Flashing an update | The daemon stages and verifies the image, then fires the `enkrnett.install` event (`service event`, in the ACL already); the init script's raw trigger runs `/usr/libexec/enkrnett/install` as root (§11) |
 | Disconnecting the management stations (ENK-API-021) | `hostapd.<mgmt> del_client {addr, reason 3, deauth true}` for every associated station, found by the management SSID (in the ACL) |
 
 ## 5. The device profile at run time
@@ -185,3 +186,48 @@ What the comparison does not count as drift: a change to a radio's hardware opti
 `htmode`) by hand, because the daemon writes those from the existing section and only adds the
 country; chapter 6 §3 lists every `wifi-device` as owned, so this is an interpretation to carry
 into the next amendment RFC.
+
+## 11. M3 stage 2: the update's root side
+
+The daemon's part is `docs/src/design/daemon.md` §6c. On this platform:
+
+| Method | How |
+|---|---|
+| `download` | `/bin/uclient-fetch -q -O /tmp/enkrnett-update/image --timeout=15 URL` through `spawn::run_watching`: the downloader's output goes to the file (`/tmp` is tmpfs: RAM, never flash) while the daemon measures the file every 100 ms and kills the downloader when it passes the size the index states, so a server cannot fill the memory. `https://` only, as `fetch`. |
+| `install` | Writes `request` (the attempt's token) beside the staged `image` and `image.sig`, then `ubus call service event '{"type":"enkrnett.install","data":{}}'`. procd runs the init script's `procd_add_raw_trigger "enkrnett.install" 1000 /usr/libexec/enkrnett/install` as root, with `PATH` set; verified on the VM, also that the daemon's user may fire the event (the ACL's `service.event`, which `restart_service` uses already). |
+| `install_verdict` | Reads `/var/run/enkrnett-install/result`, `TOKEN WORD [REASON]`, and answers only for its own token. `/var/run` is root's: the daemon's user cannot place a file or a symbolic link there (and OpenWrt sets `fs.protected_symlinks`). |
+
+The root helper, `openwrt/package/enkrnett/files/enkrnett.install`, installed to
+`/usr/libexec/enkrnett/install`:
+
+1. copies `image.sig` and `image` out of the daemon's directory into `/var/run/enkrnett-install/`,
+   which only root writes, and removes the daemon's copy: the daemon's user cannot swap the bytes
+   between the checks and the flash (the copy is the second image in RAM for a few seconds; the
+   daemon's memory check, image plus 16 MB, allows for it);
+2. verifies the signature once more with `usign` (OpenWrt's signify-compatible tool, 736 KB of
+   peak memory on a 20 MB file, in the image already and a dependency of the package) against
+   every `*.pub` of `/usr/share/enkrnett/keys`: a compromised daemon cannot have root flash what
+   the project did not sign (`refused bad_signature`);
+3. `sysupgrade -T`: the system's own check of the image against the device
+   (`refused wrong_device`);
+4. `say flashing`, then `sysupgrade -q`, which keeps the configuration (`/etc/config/*`,
+   `/etc/enkrnett/` through `/lib/upgrade/keep.d/enkrnett`, the package's `conffiles`) and does
+   not return: procd ends every process and the device restarts into the new release. Should it
+   return, `failed install_failed`.
+
+The helper never trusts a path from the daemon beyond the fixed staging directory, writes
+nothing there but a removal, and reads the token through `tr -cd 'A-Za-z0-9_-'`. On x86
+`sysupgrade` accepts the gzip ext4 combined image (`platform_check_image`: the boot sector's
+magic and the partition table compared with the disk's); the VM's disk, resized on the host,
+keeps the image's table. The configuration goes along as `/sysupgrade.tgz` on the new root
+filesystem and is unpacked at the first boot, before the init script runs: the daemon finds
+`state.json` and `update.json` where it left them.
+
+`installed_as` (ENK-INST-005, which decides ENK-UPD-008's default) read `/rom/usr/sbin/enkrnettd`
+alone until the VM test: an x86 ext4 image has no `/rom`, so a device updated to an image still
+said `package`. The project's image build now places `/usr/share/enkrnett/from-image` in every
+image, outside the package, and the platform reads either witness; the package never installs
+that file. `tests/vm/successor.sh` does it for the test images; the release image build of stage
+3 must do the same.
+
+What the VM test observed is in `docs/src/verification/m3.md` (stage 2).

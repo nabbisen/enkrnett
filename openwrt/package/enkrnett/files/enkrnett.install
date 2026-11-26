@@ -1,0 +1,56 @@
+#!/bin/sh
+# Enkrnett: the root side of an update (chapter 11 §3; docs/src/design/platform.md §11). The
+# daemon never runs as root. It downloads the image to /tmp/enkrnett-update, verifies the size,
+# the SHA-512 and the signify signature, writes its update marker, and fires the `enkrnett.install`
+# event; procd runs this script for it (the init script's raw trigger). Here, as root:
+#   1. the image and its signature are copied to a directory only root can write, so that the
+#      daemon's user cannot swap the bytes after they are checked;
+#   2. the signature is verified once more, with usign (signify-compatible) against the keys the
+#      image carries in /usr/share/enkrnett/keys: a compromised daemon cannot have root flash
+#      what the project did not sign;
+#   3. sysupgrade -T checks the image against this device;
+#   4. sysupgrade flashes it with the configuration kept (/etc/config, /etc/enkrnett through the
+#      package's keep list; sessions and logs live in RAM and are not carried, ENK-UPD-004).
+# The verdict goes to /var/run/enkrnett-install/result as "TOKEN WORD [REASON]": "flashing",
+# "refused REASON" (one of the update failure words), or "failed install_failed" when sysupgrade
+# returned. The token is the daemon's, from /tmp/enkrnett-update/request.
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+STAGE=/tmp/enkrnett-update
+RUN=/var/run/enkrnett-install
+KEYS=/usr/share/enkrnett/keys
+
+mkdir -p "$RUN" && chmod 0755 "$RUN"
+token=$(head -c 80 "$STAGE/request" 2>/dev/null | tr -cd 'A-Za-z0-9_-')
+[ -n "$token" ] || exit 0
+say() {
+	echo "$token $*" > "$RUN/result.tmp" && mv "$RUN/result.tmp" "$RUN/result"
+	logger -t enkrnett "install: $*"
+}
+refuse() {
+	rm -f "$RUN/image" "$RUN/image.sig"
+	say refused "$1"
+	exit 0
+}
+
+rm -f "$RUN/image" "$RUN/image.sig"
+[ -f "$STAGE/image" ] && [ -f "$STAGE/image.sig" ] || refuse install_failed
+cp "$STAGE/image.sig" "$RUN/image.sig" || refuse install_failed
+# RAM: the copy must fit (the daemon checked the image plus 16 MB before downloading).
+cp "$STAGE/image" "$RUN/image" || refuse not_enough_memory
+rm -f "$STAGE/image"
+
+verified=0
+for k in "$KEYS"/*.pub; do
+	[ -f "$k" ] || continue
+	if usign -V -q -p "$k" -m "$RUN/image" -x "$RUN/image.sig"; then verified=1; break; fi
+done
+[ "$verified" = 1 ] || refuse bad_signature
+
+# The system's own check: the image's metadata names this device, the format is right.
+sysupgrade -T "$RUN/image" >/dev/null 2>&1 || refuse wrong_device
+
+say flashing
+# Does not return when it works: procd ends every process, including the daemon, and the device
+# restarts into the new release, which finds the daemon's update marker (ENK-UPD-005).
+sysupgrade -q "$RUN/image"
+say failed install_failed

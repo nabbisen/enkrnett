@@ -57,7 +57,17 @@ of eight or more as content-hashed and immutable (ENK-API-024).
   held in memory; the claim session is kept alive by polling `claim` every 30 seconds.
 - **Polling.** `status` every 5 seconds on the claimed screens; the greeting every 3 seconds
   while there is none or during S-7. A failed poll sets `notConnected`; the next success clears
-  it; nothing else changes.
+  it; nothing else changes. While `update.state` is not `idle`, the details screen reads `update`
+  every 2 seconds (chapter 9 §7) and shows Downloading…, Verifying…, or the installing sentence;
+  when the device goes away to write the image the sentence stays and the not-connected bar
+  appears; when it comes back, the ended session sends the owner to the login screen, and the
+  details screen then shows "Updated to Enkrnett {v}." or the failure (`last_result`).
+- **The update's own step (ENK-UI-013; RFC 017 §5.6).** The update block shows "Update
+  available: Enkrnett {v}" and one *Update* button; pressing it opens the step: the full sentence
+  (version, minutes, the Wi-Fi stops, cannot be undone from here), the baseline sentence when
+  `changes_baseline`, the primary *Update*, and *Cancel*. `400 cannot_update` shows the sentence
+  of its `reason` (the same catalogue as `last_result.reason`); `install_failed` is a reason the
+  accepted API lacks (`daemon.md` §6c).
 - **Errors.** A field error goes to its field (and, in setup, the wizard returns to that step);
   `version_mismatch` reloads the settings and says so; `no_session` returns to the login screen;
   `try_later` shows the countdown from `retry_in`.
@@ -77,7 +87,12 @@ RFC (ENK-SCOPE-006).
 ## 6. The browser harness
 
 `tests/browser/`, Playwright. `global-setup.ts` starts `enkrnettd --mock --development` with the
-built UI on port 18080 and waits for the greeting; the tests reset the device through the API
+built UI on port 18080 and waits for the greeting; it first makes a signed release index and a
+pretend image with `enkrnett-release` and hands them to the mock as `file://` URLs (the key
+beside the index is the one the mock's "image" carries), so that an update can be offered and
+started. `update.spec.ts` runs last: once the owner confirms, the mock's root side answers
+"flashing" and the daemon stays in the update, refusing every other POST, as a device does until
+it restarts. The tests reset the device through the API
 (erase when claimed) and must never leave a claim session behind, because the device rightly
 refuses the next *Start* for five minutes.
 

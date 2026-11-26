@@ -34,7 +34,18 @@ pub struct Config {
     /// Where the signed release index is fetched from (ENK-UPD-001), `https://` only. Given by
     /// the init script from the platform's configuration; `None` means no checks can succeed.
     pub update_index: Option<String>,
+    /// Where an update image is downloaded to, in RAM (chapter 11 §3); the platform's root side
+    /// knows the same place.
+    pub staging_dir: PathBuf,
 }
+
+/// The daemon's version: Cargo's, unless `ENKRNETT_VERSION` was set when it was built (the VM
+/// test builds a successor release of the same source this way; `build.rs` makes the build
+/// notice the variable).
+pub const VERSION: &str = match option_env!("ENKRNETT_VERSION") {
+    Some(v) => v,
+    None => env!("CARGO_PKG_VERSION"),
+};
 
 impl Default for Config {
     fn default() -> Config {
@@ -47,10 +58,11 @@ impl Default for Config {
             hosts: Vec::new(),
             request_timeout: Duration::from_secs(10),
             response_timeout: Duration::from_secs(30),
-            version: env!("CARGO_PKG_VERSION").to_string(),
+            version: VERSION.to_string(),
             languages: vec!["en".to_string(), "ja".to_string()],
             argon2: (8 * 1024, 3, 1),
             update_index: None,
+            staging_dir: PathBuf::from("/tmp/enkrnett-update"),
         }
     }
 }

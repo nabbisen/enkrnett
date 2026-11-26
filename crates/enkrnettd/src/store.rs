@@ -1,5 +1,6 @@
-//! What the daemon keeps on flash: the device identifier, the owner record, the settings, and,
-//! while a change runs, the pending marker. JSON files with a format version (ENK-BASE-005),
+//! What the daemon keeps on flash: the device identifier, the owner record, the settings, while
+//! a change runs the pending marker, and from an update's start until the next attempt the
+//! update marker. JSON files with a format version (ENK-BASE-005),
 //! each written to a temporary name and renamed into place (ENK-CFG-006). Erase removes them
 //! (ENK-OWN-018).
 
@@ -8,12 +9,14 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use enkrnett_model::STORAGE_FORMAT;
-use enkrnett_model::api::ChangeKind;
+use enkrnett_model::api::{ChangeKind, LastResult, UpdateFailure, UpdateOutcome};
 use enkrnett_model::settings::Settings;
 use serde::{Deserialize, Serialize};
 
 pub const FILE_NAME: &str = "state.json";
 pub const PENDING_FILE_NAME: &str = "pending.json";
+pub const UPDATE_FILE_NAME: &str = "update.json";
+pub const UPDATE_MARKER_FORMAT: u32 = 1;
 
 /// The owner and everything the claim created.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -37,6 +40,80 @@ pub struct PendingMarker {
     pub to_version: u64,
     pub needs_confirmation: bool,
     pub previous: OwnerRecord,
+}
+
+/// Where an update stands (chapter 11 §3). `installing` is written right before the image is
+/// handed to the root side and is what the first boot of the new release finds (ENK-UPD-005);
+/// `done` or `failed` is the outcome of the latest attempt, kept across restarts until the next
+/// attempt replaces it (`update.last_result`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum UpdateStage {
+    Installing,
+    Done,
+    Failed,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpdateMarker {
+    pub format: u32,
+    pub stage: UpdateStage,
+    /// The Enkrnett version that started the update.
+    pub from_version: String,
+    /// The version of the image handed over.
+    pub to_version: String,
+    pub to_baseline: String,
+    /// Whether an owner record was on flash when the update started: the first boot must find
+    /// it again (ENK-UPD-004).
+    pub had_owner: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<UpdateFailure>,
+}
+
+impl UpdateMarker {
+    pub fn installing(
+        from_version: &str,
+        to_version: &str,
+        to_baseline: &str,
+        had_owner: bool,
+    ) -> UpdateMarker {
+        UpdateMarker {
+            format: UPDATE_MARKER_FORMAT,
+            stage: UpdateStage::Installing,
+            from_version: from_version.to_string(),
+            to_version: to_version.to_string(),
+            to_baseline: to_baseline.to_string(),
+            had_owner,
+            reason: None,
+        }
+    }
+
+    pub fn done(mut self) -> UpdateMarker {
+        self.stage = UpdateStage::Done;
+        self.reason = None;
+        self
+    }
+
+    pub fn failed(mut self, reason: UpdateFailure) -> UpdateMarker {
+        self.stage = UpdateStage::Failed;
+        self.reason = Some(reason);
+        self
+    }
+
+    /// The `last_result` of chapter 9 §4, when the marker records an outcome.
+    pub fn last_result(&self) -> Option<LastResult> {
+        match self.stage {
+            UpdateStage::Installing => None,
+            UpdateStage::Done => Some(LastResult {
+                result: UpdateOutcome::Done,
+                reason: None,
+            }),
+            UpdateStage::Failed => Some(LastResult {
+                result: UpdateOutcome::Failed,
+                reason: self.reason,
+            }),
+        }
+    }
 }
 
 /// The whole stored document.
@@ -160,6 +237,30 @@ impl Store {
 
     pub fn has_pending(&self) -> bool {
         self.dir.join(PENDING_FILE_NAME).exists()
+    }
+
+    /// Writes the update marker (ENK-UPD-005), atomically.
+    pub fn write_update(&self, marker: &UpdateMarker) -> io::Result<()> {
+        let bytes = serde_json::to_vec_pretty(marker).map_err(io::Error::other)?;
+        self.write_atomically(UPDATE_FILE_NAME, &bytes)
+    }
+
+    /// The update marker, if any. A marker this release cannot read counts as none: the
+    /// attempt it recorded is lost, the device runs on.
+    pub fn read_update(&self) -> Option<UpdateMarker> {
+        let bytes = fs::read(self.dir.join(UPDATE_FILE_NAME)).ok()?;
+        let marker: UpdateMarker = serde_json::from_slice(&bytes).ok()?;
+        (marker.format <= UPDATE_MARKER_FORMAT).then_some(marker)
+    }
+
+    pub fn remove_update(&self) -> io::Result<()> {
+        match fs::remove_file(self.dir.join(UPDATE_FILE_NAME)) {
+            Err(e) if e.kind() != io::ErrorKind::NotFound => Err(e),
+            _ => {
+                self.sync_dir();
+                Ok(())
+            }
+        }
     }
 
     fn write_atomically(&self, name: &str, bytes: &[u8]) -> io::Result<()> {

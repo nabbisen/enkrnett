@@ -2,7 +2,8 @@ name: vm
 
 # The VM integration of chapter 14 §2: the x86-64 OpenWrt test VM built from the pinned Image
 # Builder, the package installed through procd, then chapters 2, 6 and 7 and the RFC 003/004
-# contract on the real platform (tests/vm/run-all.sh). About 30 minutes with KVM, which the
+# contract on the real platform (tests/vm/run-all.sh), and an update installed to a successor
+# image built on the runner (tests/vm/update-install.sh). About 40 minutes with KVM, which the
 # standard GitHub-hosted Linux runners offer once the kvm device is made writable (GitHub
 # changelog 2024-04-02). Runs on every push to main, on request, and weekly against the live
 # 25.12.5 package feeds the Image Builder reads.

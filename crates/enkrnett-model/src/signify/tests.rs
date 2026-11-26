@@ -152,3 +152,41 @@ fn sha512_and_hex() {
          2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f"
     );
 }
+
+#[test]
+fn the_streaming_verifier_agrees_with_the_whole_message_verification() {
+    let signer = key_pair([7; 32], [1, 2, 3, 4, 5, 6, 7, 8], [0; 16]);
+    let other = key_pair([8; 32], [9; 8], [0; 16]);
+    let keys = vec![other.public_key(), signer.public_key()];
+    let message: Vec<u8> = (0..100_000u32).map(|i| (i % 251) as u8).collect();
+    let signature = signer.sign(&message);
+
+    let mut v = Verifier::new(&keys, &signature).unwrap();
+    for chunk in message.chunks(4096) {
+        v.absorb(chunk);
+    }
+    assert_eq!(v.finish().unwrap().keynum, signer.keynum);
+
+    // One byte changed in the middle: refused, and sha512 differs too.
+    let mut changed = message.clone();
+    changed[50_000] ^= 1;
+    let mut v = Verifier::new(&keys, &signature).unwrap();
+    v.absorb(&changed);
+    assert_eq!(v.finish().unwrap_err(), SignifyError::Signature);
+    let mut h = Sha512::new();
+    for chunk in changed.chunks(1000) {
+        h.absorb(chunk);
+    }
+    assert_ne!(h.finish(), sha512(&message));
+    let mut h = Sha512::new();
+    h.absorb(&message[..1]);
+    h.absorb(&message[1..]);
+    assert_eq!(h.finish(), sha512(&message));
+
+    // A key number no key has: refused before any byte is read.
+    let stranger = key_pair([3; 32], [0xaa; 8], [0; 16]);
+    assert_eq!(
+        Verifier::new(&keys, &stranger.sign(&message)).err(),
+        Some(SignifyError::UnknownKey)
+    );
+}

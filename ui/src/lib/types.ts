@@ -25,7 +25,10 @@ export type UpdateFailure =
   | 'wrong_baseline'
   | 'not_enough_memory'
   | 'download_failed'
-  | 'health_check_failed';
+  | 'health_check_failed'
+  // Not in the accepted API (RFC 015): the root side did not flash the verified image; recorded
+  // for the next amendment RFC.
+  | 'install_failed';
 
 export interface Connection {
   network: ConnectionNetwork;

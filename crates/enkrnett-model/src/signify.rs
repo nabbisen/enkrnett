@@ -235,8 +235,63 @@ pub fn verify<'k>(
     Ok(key)
 }
 
+/// Verifies a message that arrives in pieces (an image on flash-sized RAM is read once, never
+/// held whole): the key is chosen by the signature's key number when the verifier is made, the
+/// chunks are absorbed, and `finish` says whether the signature verifies. Ed25519 verification
+/// hashes the message in one pass, so this costs no more than [`verify`].
+pub struct Verifier<'k> {
+    key: &'k PublicKey,
+    state: ed::VerifyingState,
+}
+
+impl<'k> Verifier<'k> {
+    pub fn new(keys: &'k [PublicKey], signature: &Signature) -> Result<Verifier<'k>, SignifyError> {
+        let key = keys
+            .iter()
+            .find(|k| k.keynum == signature.keynum)
+            .ok_or(SignifyError::UnknownKey)?;
+        let state = ed::PublicKey::new(key.key)
+            .verify_incremental(&ed::Signature::new(signature.sig))
+            .map_err(|_| SignifyError::Signature)?;
+        Ok(Verifier { key, state })
+    }
+
+    pub fn absorb(&mut self, chunk: &[u8]) {
+        self.state.absorb(chunk);
+    }
+
+    /// The key that verified the message, or the refusal.
+    pub fn finish(self) -> Result<&'k PublicKey, SignifyError> {
+        self.state.verify().map_err(|_| SignifyError::Signature)?;
+        Ok(self.key)
+    }
+}
+
 pub fn sha512(bytes: &[u8]) -> [u8; 64] {
     ed::sha512::Hash::hash(bytes)
+}
+
+/// SHA-512 of a message that arrives in pieces.
+pub struct Sha512(ed::sha512::Hash);
+
+impl Default for Sha512 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Sha512 {
+    pub fn new() -> Sha512 {
+        Sha512(ed::sha512::Hash::new())
+    }
+
+    pub fn absorb(&mut self, chunk: &[u8]) {
+        self.0.update(chunk);
+    }
+
+    pub fn finish(self) -> [u8; 64] {
+        self.0.finalize()
+    }
 }
 
 pub fn hex(bytes: &[u8]) -> String {

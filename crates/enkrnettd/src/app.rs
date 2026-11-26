@@ -10,11 +10,12 @@ use std::time::{Duration, Instant};
 use enkrnett_model::api::{
     Available, ChangeKind, CheckResult, Claim, ClaimCheck, ClaimGuest, CountryChoice, Device,
     Empty, EraseRequest, ErrorCode, ErrorDetail, FieldCode, FieldError, Greeting, Installed,
-    InstalledAs, LastCheck, LoginRequest, ManagementKey, ManagementProposal, PasswordChange,
-    Proposal, Session, SessionKind, SettingsShape, Status, Update, UpdateCheckRequest, UpdateState,
-    Version,
+    InstalledAs, LastCheck, LastResult, LoginRequest, ManagementKey, ManagementProposal,
+    PasswordChange, Proposal, Session, SessionKind, SettingsShape, Status, Update,
+    UpdateCheckRequest, UpdateFailure, UpdateState, Version,
 };
 use enkrnett_model::password::{PasswordContext, check_new_password};
+use enkrnett_model::release::ReleaseEntry;
 use enkrnett_model::settings::{
     self, GuestMode, GuestSettings, Limits, ManagementSettings, Settings, SettingsUpdate,
 };
@@ -28,7 +29,7 @@ use crate::config::Config;
 use crate::ownership::{Event, Ownership};
 use crate::platform::Platform;
 use crate::session::SessionStore;
-use crate::store::{OwnerRecord, Store};
+use crate::store::{OwnerRecord, Store, UpdateStage};
 use crate::{log, random};
 
 mod change;
@@ -83,6 +84,14 @@ impl ApiError {
         d.state = Some(state);
         ApiError(Box::new(d))
     }
+
+    /// `update/install` refused by ENK-UPD-003 (chapter 9 §5: `reason` is one of the
+    /// `last_result.reason` values).
+    pub fn cannot_update(reason: UpdateFailure, message: &str) -> ApiError {
+        let mut d = ErrorDetail::new(ErrorCode::CannotUpdate).message(message);
+        d.reason = Some(reason);
+        ApiError(Box::new(d))
+    }
 }
 
 type Result<T> = std::result::Result<T, ApiError>;
@@ -96,6 +105,10 @@ struct UpdateRecord {
     state: UpdateState,
     last_check: Option<(Instant, CheckResult)>,
     available: Option<Available>,
+    /// The index entry behind `available`: what `update/install` downloads and checks.
+    offer: Option<ReleaseEntry>,
+    /// The outcome of the latest attempt, from the update marker on flash (ENK-UPD-005).
+    last_result: Option<LastResult>,
     /// A check is running (by request or the daily one); a second one waits for the shape.
     checking: bool,
 }
@@ -180,6 +193,12 @@ impl App {
         if had_marker {
             store.remove_pending()?;
         }
+        // The update marker (chapter 11 §3): `installing` means this is the first boot after an
+        // update, judged below once the platform is up; an outcome is `last_result`.
+        let update_marker = store.read_update();
+        let last_result = update_marker.as_ref().and_then(|m| m.last_result());
+        // Whatever an earlier attempt left in RAM.
+        let _ = std::fs::remove_dir_all(&config.staging_dir);
         let (m, t, p) = config.argon2;
         let info = platform.device_info();
         let device = DeviceStatic {
@@ -200,6 +219,8 @@ impl App {
                     state: UpdateState::Idle,
                     last_check: None,
                     available: None,
+                    offer: None,
+                    last_result,
                     checking: false,
                 },
                 readings: None,
@@ -215,15 +236,19 @@ impl App {
             started: now,
             bound: Mutex::new(None),
         }));
-        app.bring_platform_up(event, had_marker);
+        let healthy = app.bring_platform_up(event, had_marker);
+        if let Some(marker) = update_marker.filter(|m| m.stage == UpdateStage::Installing) {
+            app.finish_update_after_boot(marker, healthy);
+        }
         Ok(app)
     }
 
     /// At start and after a restart: the platform offers what the state says.
     /// Start-up (chapter 6 §4, ENK-CFG-014): with a marker, the stored document is applied,
     /// which undoes or completes the cut-short change; without one, the device is adopted as
-    /// the boot left it and a difference is reported as drift, never overwritten.
-    fn bring_platform_up(&self, event: Option<Event>, had_marker: bool) {
+    /// the boot left it and a difference is reported as drift, never overwritten. Returns
+    /// whether the health check passed (ENK-UPD-005 judges the first boot after an update by it).
+    fn bring_platform_up(&self, event: Option<Event>, had_marker: bool) -> bool {
         let owner = {
             let inner = self.0.inner.lock().expect("app");
             inner.store.data.owner.clone()
@@ -244,6 +269,7 @@ impl App {
                             &[("detail", &format!("{details:?}"))],
                         );
                     }
+                    details.is_empty()
                 }),
             (Some(record), _) => platform
                 .adopt_settings(
@@ -264,13 +290,19 @@ impl App {
                     let mut inner = self.0.inner.lock().expect("app");
                     inner.drift = adopted.drift;
                     inner.drift_checked = Some(now);
+                    adopted.health.is_empty()
                 }),
-            (None, _) => platform.enter_setup(),
+            (None, _) => platform.enter_setup().map(|()| true),
         };
-        if let Err(e) = result {
-            self.platform_failed("start", &e);
-        }
+        let healthy = match result {
+            Ok(healthy) => healthy,
+            Err(e) => {
+                self.platform_failed("start", &e);
+                false
+            }
+        };
         log::event("state", &[("state", &self.state().as_str())]);
+        healthy
     }
 
     pub fn start_ticking(&self) {
@@ -457,7 +489,8 @@ impl App {
                 None
             },
             state: inner.update.state,
-            last_result: None,
+            last_result: inner.update.last_result.clone(),
+            // ENK-UPD-006: a single-slot device has no way back from here.
             can_undo: false,
         }
     }
@@ -972,28 +1005,6 @@ impl App {
         self.record_check(&mut inner, checked, "request");
         let now = self.0.clock.now();
         Ok(Reply::ok(&self.update_shape(&inner, now)))
-    }
-
-    pub fn update_install(&self, token: Option<&str>) -> Result<Reply> {
-        let mut inner = self.0.inner.lock().expect("app");
-        self.owner(&mut inner, token)?;
-        if inner.change.as_ref().is_some_and(ChangeRecord::in_progress) {
-            return Err(ApiError::code(
-                ErrorCode::ChangePending,
-                "a change is in progress",
-            ));
-        }
-        if inner.update.available.is_none() {
-            return Err(ApiError::code(
-                ErrorCode::NothingToInstall,
-                "no update is available",
-            ));
-        }
-        // Downloading, verifying, and installing (chapter 11) arrive with the OpenWrt platform.
-        Err(ApiError::code(
-            ErrorCode::NothingToInstall,
-            "installing is not part of this stage",
-        ))
     }
 
     pub fn restart(&self, token: Option<&str>) -> Result<Reply> {
