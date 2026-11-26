@@ -6,6 +6,10 @@
 #   VM_WAN_NET: the uplink subnet, for the ENK-TOPO collision tests (default 10.0.2.0/24).
 # KVM is used when /dev/kvm is writable (GitHub-hosted runners after the udev rule in the
 # workflow); otherwise QEMU falls back to software emulation, which is slower but works.
+# The SMBIOS product string is pinned: OpenWrt derives the board name from the DMI vendor and
+# product, and the daemon picks its profile by that name (qemu-standard-pc-i440fx-piix-1996 in
+# openwrt/profiles/x86_64_generic). Distribution builds of QEMU change the default product string
+# (Ubuntu's says "Ubuntu 26.04 PC ..."), which left the daemon without a profile on the runner.
 cd "$(dirname "$0")" || exit 1
 case "$1" in
 start)
@@ -14,6 +18,7 @@ start)
   if [ -w /dev/kvm ]; then ACCEL="-enable-kvm -cpu host"; else ACCEL="-accel tcg -cpu max"; echo "no /dev/kvm: software emulation"; fi
   # shellcheck disable=SC2086
   qemu-system-x86_64 $ACCEL -m 256 -smp 2 \
+    -machine pc -smbios 'type=1,manufacturer=QEMU,product=Standard PC (i440FX + PIIX,, 1996)' \
     -drive file=disk.img,format=raw,if=virtio \
     -nic user,model=virtio-net-pci,net=192.168.100.0/24 \
     -nic user,model=virtio-net-pci,net="${VM_WAN_NET:-10.0.2.0/24}",hostfwd=tcp:127.0.0.1:2222-:22,hostfwd=tcp:127.0.0.1:8080-:8080 \

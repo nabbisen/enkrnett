@@ -3,6 +3,13 @@
 Releases use semantic versioning; tags carry no prefix (RFC 013 ENK-RLS-001). The history of
 decisions is in `rfcs/`.
 
+## Unreleased
+
+- The VM launcher pins the SMBIOS vendor and product string: Ubuntu's QEMU build names the machine
+  after the Ubuntu release, which gave OpenWrt another board name on the GitHub runner and left the
+  daemon without a profile (the first `vm` run in CI). `tests/vm/claim.sh` says so plainly when
+  the daemon does not start; `run-all.sh` keeps the daemon log after a failed foundation step.
+
 ## 0.2.0 (2026-11-26)
 
 The wrap of milestone M2, *Guest Wi-Fi* (ROADMAP), on top of 0.1.0. Tagged 2026-11-26 on the

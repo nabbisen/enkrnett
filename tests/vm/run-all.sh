@@ -22,8 +22,9 @@ step() { # name script
   [ $rc -eq 0 ] || { echo "    FAILED (exit $rc; $LOGS/$name.log)"; FAILED+=("$name"); }
   return $rc
 }
+daemon_log() { ( cd "$VM" && python3 vmsh.py run 'logread | grep enkrnettd | tail -200' >"$LOGS/daemon-log.txt" 2>&1 ) || true; }
 # The first three steps are the foundation; when one fails, the rest would only report the fallout.
-foundation() { step "$@" || { echo "foundation step $1 failed; stopping the chain"; exit 1; }; }
+foundation() { step "$@" || { echo "foundation step $1 failed; stopping the chain"; daemon_log; exit 1; }; }
 # The uplink must be the default one: renumber.sh restarts the VM with other uplinks and ends on it.
 ( cd "$VM" && ./vm.sh stop >/dev/null 2>&1; sleep 1; ./vm.sh start >/dev/null && python3 vmsh.py wait 240 >/dev/null 2>&1 ) || { echo "the VM did not come up"; exit 1; }
 foundation prepare prepare.sh
@@ -38,6 +39,6 @@ step drift drift.sh || true
 step renumber renumber.sh || true
 # contract.sh starts from SETUP (it erases first otherwise) and ends with Erase through a boot.
 step contract contract.sh || true
-( cd "$VM" && python3 vmsh.py run 'logread | grep enkrnettd | tail -200' >"$LOGS/daemon-log.txt" 2>&1 ) || true
+daemon_log
 echo
 if [ ${#FAILED[@]} -eq 0 ]; then echo "VM chain: every script passed (logs in $LOGS)"; else echo "VM chain: failed: ${FAILED[*]} (logs in $LOGS)"; exit 1; fi

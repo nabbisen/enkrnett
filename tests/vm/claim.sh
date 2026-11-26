@@ -47,7 +47,8 @@ else
   su enkrnett -s /bin/sh -c "setsid /usr/sbin/enkrnettd --listen 192.168.207.1:8080 --state-dir /etc/enkrnett --ui-dir /usr/share/enkrnett/ui --profiles-dir /usr/share/enkrnett/profiles > /tmp/enkrnettd.log 2>&1 < /dev/null &"
 fi
 for i in $(seq 1 45); do logread 2>/dev/null | grep -q "enkrnettd started" && break; grep -q "enkrnettd started" /tmp/enkrnettd.log 2>/dev/null && break; sleep 2; done
-echo "--- daemon log"; logread | grep enkrnettd | tail -8; echo "--- sections"; uci -q show wireless | grep -E "^wireless\.enk_" | cut -d= -f1 | sort -u || true; uci -q show network | grep -E "^network\.enk_[a-z_]*=" || true; echo "--- hostapd objects"; ubus list | grep hostapd || true; echo "--- dnsmasq instances"; ubus call service list "{\"name\":\"dnsmasq\"}" | grep -E "enk_dns|running" || true'
+echo "--- daemon log"; logread | grep enkrnettd | tail -8; logread | grep -q "enkrnettd started" || echo "DAEMON DID NOT START (board: $(ubus call system board | sed -n "s/.*\"board_name\": \"\([^\"]*\)\".*/\1/p"))"; echo "--- sections"; uci -q show wireless | grep -E "^wireless\.enk_" | cut -d= -f1 | sort -u || true; uci -q show network | grep -E "^network\.enk_[a-z_]*=" || true; echo "--- hostapd objects"; ubus list | grep hostapd || true; echo "--- dnsmasq instances"; ubus call service list "{\"name\":\"dnsmasq\"}" | grep -E "enk_dns|running" || true' | tee /tmp/enkrnett-vm-install
+if grep -q "DAEMON DID NOT START" /tmp/enkrnett-vm-install; then echo "FAIL: the daemon did not start; its log is above"; exit 1; fi
 
 step "tunnel to the management address"
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -i id_ed25519 -p 2222 -N -L "$PORT:192.168.207.1:8080" root@127.0.0.1 &
