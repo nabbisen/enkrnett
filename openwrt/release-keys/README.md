@@ -13,7 +13,9 @@ the daemon accepts an index signed by any of them.
 - The file format is signify's: a comment line and one Base64 line. The daemon ignores a file it
   cannot parse and logs `release_key_ignored`.
 
-**State (2026-11-26): no key yet.** The project's release key is the owner's act on the signing
+The rotation and the signing steps are `docs/src/contributors/releasing.md` §4.
+
+**State (2026-11-27): no key yet.** The project's release key is the owner's act on the signing
 host (RFC 008); until it exists, an image carries no key and every index check answers
 "could not be verified". The VM test (`tests/vm/update-check.sh`) installs its own key for the
 duration of the test.

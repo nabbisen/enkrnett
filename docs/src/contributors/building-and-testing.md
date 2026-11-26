@@ -8,7 +8,7 @@ For contributors. The operator never does any of this.
 |---|---|
 | Rust | 1.85 or later (edition 2024); the workspace pins nothing newer |
 | mdBook | any recent, for this book |
-| OpenWrt SDK 25.12.5 | Fetched and verified by `openwrt/build-mips.sh` from the lock; the Image Builder follows in stage 4 |
+| OpenWrt SDK and Image Builder 25.12.5 | Fetched and verified from the lock by the scripts that need them (`openwrt/lib.sh`), into `openwrt/.cache/` |
 
 ## Build and test
 
@@ -64,6 +64,7 @@ daemon; otherwise `cargo build -p enkrnettd` runs.
 ```sh
 openwrt/build-mips.sh             # fetch and verify the SDK, build enkrnettd for mipsel_24kc, check the budgets
 openwrt/build-mips.sh --package   # also build the OpenWrt package (.apk) from the daemon and ui/dist
+openwrt/build-mips.sh --package --twice   # and build the daemon again elsewhere; a difference fails (ENK-BUILD-009)
 ```
 
 Needs the pinned nightly with `rust-src` (`rustup toolchain install nightly-2026-11-21 --component
@@ -71,6 +72,20 @@ rust-src`, the date is in `openwrt/lock/inputs.json`), `zstd`, `xz`, and `squash
 the real squashfs figure (without it the script estimates with xz and says so). The SDK (about
 100 MB) is cached in `openwrt/.cache/`; `ENKRNETT_SDK_DIR` points at an existing one. Output:
 `openwrt/out/enkrnettd`, `openwrt/out/sizes.json`, and the `.apk`.
+
+## The release images from the lock
+
+```sh
+openwrt/build-image.sh elecom_wrc-1167gst2 --apk openwrt/out/enkrnett-0.2.0-r1.apk --twice   # the images of a profile, built twice and compared
+openwrt/build-image.sh buffalo_wcr-1166ds   --apk openwrt/out/enkrnett-0.2.0-r1.apk --twice
+openwrt/release-assemble.sh 0.2.0 [--sequence N --notes-url URL]   # openwrt/out/release/0.2.0: hashes, lock, report, source offer, index
+openwrt/lock-packages.sh elecom_wrc-1167gst2 --apk openwrt/out/enkrnett-0.2.0-r1.apk   # only to change the lock: regenerate, review the diff, commit
+```
+
+The Image Builders (about 100 MB each) land in `openwrt/.cache/ib/<target>/`, the locked packages
+in `openwrt/.cache/mirror/`; `ENKRNETT_MIRROR` names the project's pinned mirror instead of the
+release's download tree. Needs `zstd`, `patch`, `python3`, `curl`. The whole procedure of a
+release, including the signing host's part, is [Releasing](./releasing.md).
 
 ## The OpenWrt virtual machine
 
@@ -109,7 +124,7 @@ tests/vm/isolation.sh /path/to/vm   # chapter 2 with four simulated stations in 
 tests/vm/drift.sh /path/to/vm       # a hand edit with uci: drift reported, restored through a respawn (after claim.sh)
 tests/vm/update-check.sh /path/to/vm # a release index signed with a test key, served from the host over HTTPS: the daemon's check and every refusal (after claim.sh; needs openssl and python3)
 tests/vm/update-install.sh /path/to/vm # two successor images built from this source, installed through the daemon, the root helper and sysupgrade; the broken successor; the disk put back (after claim.sh; about ten minutes)
-tests/vm/successor.sh /path/to/vm 9.9.9 out/   # by itself: a successor release (daemon as 9.9.9 through ENKRNETT_VERSION, package, x86-64 image); add `broken` for one without the VM's wireless driver
+tests/vm/successor.sh /path/to/vm 9.9.9 out/   # by itself: a successor release (daemon as 9.9.9 through ENKRNETT_VERSION, package, x86-64 image from the lock through openwrt/build-image.sh); add `broken` for one without the VM's wireless driver
 tests/vm/renumber.sh /path/to/vm    # colliding uplinks (VM_WAN_NET in the VM launcher): only the colliding network moves; ends with Erase
 tests/vm/run-all.sh /path/to/vm [logs]  # the whole chain in the order CI runs it (about 35 minutes with KVM)
 python3 tests/traceability.py --release 0.2.0   # the requirement-to-test table; fails on an uncovered 0.2.0 requirement
@@ -160,7 +175,7 @@ cd docs && mdbook serve
 | `crates/enkrnett-ubus` | ubus wire format and client |
 | `crates/enkrnettd` | The daemon; `tests/` are the API contract tests |
 | `ui/` | The management UI: Svelte 5 + TypeScript, two catalogues, the word check |
-| `openwrt/` | `build-mips.sh`, the package, the device profiles, the lock; `patches/` arrives with M2 |
+| `openwrt/` | `build-mips.sh`, `build-image.sh`, `lock-packages.sh`, `release-assemble.sh`, the package, the device profiles, the lock, `patches/` |
 | `tests/browser` | The Playwright harness against `enkrnettd --mock` |
 | `tests/vm` | The VM integration tests (M2) |
 | `docs/src/specification` | What is built; `docs/src/design` how |

@@ -17,6 +17,7 @@
   },
   "flash_image_limit_kib": 24576,
   "ram_mib": 256,
+  "update": { "min_free_kib": 32768, "install_seconds": 180 },
   "uplink_port": "wan",
   "reset_button": "reset",
   "light": { "led": "white:power" },

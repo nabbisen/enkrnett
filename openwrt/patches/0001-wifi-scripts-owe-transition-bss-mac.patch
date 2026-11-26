@@ -5,6 +5,9 @@
 # Applies to: package/network/config/wifi-scripts in OpenWrt 25.12 (the release carries the defect:
 #   both BSSes of an automatic Transition Mode pair get the same BSSID; found in measurement M-6).
 # Remove when: the 25.12 release branch contains the commit, or the baseline moves to a release that does.
+# Installed file: /usr/share/ucode/wifi/ap.uc (package wifi-scripts). The image build takes the file
+#   from the locked package, applies this patch, and places the result in the image
+#   (openwrt/build-image.sh); the test VM applies it on first boot instead (tests/vm/files).
 # Release checklist item 8 reviews this header.
 #
 From 1789118599234ae367869c65ad6a92c6f1cbbf10 Mon Sep 17 00:00:00 2001

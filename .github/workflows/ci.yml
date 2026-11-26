@@ -51,6 +51,11 @@ jobs:
       - run: npm test
       - name: Build with the size check (ENK-FOOT-002)
         run: npm run build
+      - name: Build again and compare (ENK-BUILD-009)
+        run: |
+          npx vite build --outDir dist-again --emptyOutDir >/dev/null
+          diff -r dist dist-again && echo "UI bundle: the two builds are identical"
+          rm -rf dist-again
       - uses: actions/upload-artifact@v4
         with:
           name: ui-dist
@@ -111,8 +116,8 @@ jobs:
         with:
           name: ui-dist
           path: ui/dist
-      - name: Build, measure (ENK-FOOT-001 to 003), package
-        run: openwrt/build-mips.sh --package
+      - name: Build twice and compare (ENK-BUILD-009), measure (ENK-FOOT-001 to 003), package
+        run: openwrt/build-mips.sh --package --twice
       - uses: actions/upload-artifact@v4
         with:
           name: enkrnett-mipsel_24kc
@@ -120,6 +125,41 @@ jobs:
             openwrt/out/enkrnettd
             openwrt/out/sizes.json
             openwrt/out/*.apk
+
+  images:
+    name: Images from the lock, built twice and compared; the release directory
+    runs-on: ubuntu-latest
+    needs: [mips]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends zstd xz-utils python3 patch
+      - name: Cache the Image Builders and the mirror of the locked packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            openwrt/.cache/ib
+            openwrt/.cache/mirror
+          key: openwrt-images-${{ hashFiles('openwrt/lock/**') }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: enkrnett-mipsel_24kc
+          path: openwrt/out
+      - name: Every Tier 1 profile from the lock, twice (ENK-BUILD-007, 008, 010; ENK-RLS-002)
+        run: |
+          APK=$(ls openwrt/out/enkrnett-*.apk | head -1)
+          for p in elecom_wrc-1167gst2 buffalo_wcr-1166ds; do
+            openwrt/build-image.sh "$p" --apk "$APK" --twice
+          done
+      - name: The release directory (ENK-BUILD-012; unsigned, the key is never here)
+        run: |
+          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          openwrt/release-assemble.sh "$VERSION"
+          cat "openwrt/out/release/$VERSION/build-report.md"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: enkrnett-release-unsigned
+          path: openwrt/out/release
 
   book:
     name: mdBook builds

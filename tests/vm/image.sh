@@ -11,28 +11,22 @@
 # stations), wpa_supplicant's wpa-cli, nmap and tcpdump-mini for the separation checks, patch for
 # the carried wifi-scripts fix. The Image Builder fetches the release's packages over the network
 # (its `repositories` file names the 25.12.5 feeds); the Image Builder itself is checked against
-# its SHA-256 from the lock (ENK-BUILD-007).
+# its SHA-256 from the lock (ENK-BUILD-007). A release image is built differently, from the
+# locked packages: openwrt/build-image.sh, which tests/vm/successor.sh uses.
 set -euo pipefail
-ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+. "$(dirname "$0")/../../openwrt/lib.sh"
 VM=${1:?VM_DIR}
-LOCK="$ROOT/openwrt/lock/inputs.json"
-CACHE="${ENKRNETT_IB_DIR_X86:-$ROOT/openwrt/.cache/x86_64-ib}"
-lock() { python3 -c "import json,sys; d=json.load(open('$LOCK')); print(eval('d'+sys.argv[1]))" "$1"; }
 for t in qemu-img ssh-keygen gunzip curl sha256sum zstd; do command -v $t >/dev/null || { echo "missing tool: $t"; exit 1; }; done
 
-IB_URL=$(lock "['openwrt']['targets']['x86/64']['image_builder']['url']")
-IB_SHA=$(lock "['openwrt']['targets']['x86/64']['image_builder']['sha256']")
-mkdir -p "$CACHE"
-IB_DIR=$(ls -d "$CACHE"/openwrt-imagebuilder-*/ 2>/dev/null | head -1 || true)
-if [ -z "$IB_DIR" ]; then
-  TAR="$CACHE/$(basename "$IB_URL")"
-  [ -f "$TAR" ] || { echo "fetching Image Builder: $IB_URL"; curl -fsSL -o "$TAR" "$IB_URL"; }
-  echo "$IB_SHA  $TAR" | sha256sum -c - || { echo "Image Builder checksum mismatch (ENK-BUILD-007)"; exit 1; }
-  tar -C "$CACHE" --zstd -xf "$TAR"
-  IB_DIR=$(ls -d "$CACHE"/openwrt-imagebuilder-*/ | head -1)
-fi
-IB_DIR=${IB_DIR%/}
+IB_DIR=$(image_builder x86/64)
 echo "Image Builder: $IB_DIR"
+# This is the test VM of the package path, not a release image: the live feeds and the test
+# tooling. openwrt/build-image.sh may have left the Image Builder on the lock; put the feeds back.
+[ -f "$IB_DIR/repositories.feeds" ] && cp "$IB_DIR/repositories.feeds" "$IB_DIR/repositories"
+for f in "$IB_DIR"/packages/*.apk; do
+  case "$(basename "$f")" in base-files-*|kernel-*|libc-*) ;; *) rm -f "$f" ;; esac
+done
+rm -f "$IB_DIR/packages/packages.adb"
 
 mkdir -p "$VM"
 VM=$(cd "$VM" && pwd)

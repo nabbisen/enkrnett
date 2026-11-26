@@ -67,6 +67,23 @@ fn rules_catch_impossible_values() {
 }
 
 #[test]
+fn the_update_figures_fit_the_device() {
+    // ENK-RLS-006, ENK-UPD-003: what the index will state per device comes from the profile.
+    for json in [WRC_1167GST2, WCR_1166DS, X86_64] {
+        let p = DeviceProfile::parse(json).unwrap();
+        assert!(p.update.min_free_kib >= 8 * 1024);
+        assert!(p.update.min_free_kib < u64::from(p.ram_mib) * 1024);
+        assert!((30..=3600).contains(&p.update.install_seconds));
+    }
+    let mut p = DeviceProfile::parse(WCR_1166DS).unwrap();
+    p.update.min_free_kib = 64 * 1024;
+    assert!(p.check().iter().any(|e| e.0.contains("min_free_kib")));
+    p.update.min_free_kib = 16 * 1024;
+    p.update.install_seconds = 5;
+    assert!(p.check().iter().any(|e| e.0.contains("install_seconds")));
+}
+
+#[test]
 fn the_virtual_machine_profile_is_tier_three_and_passes() {
     let p = DeviceProfile::parse(X86_64).unwrap();
     assert_eq!(p.check(), vec![]);

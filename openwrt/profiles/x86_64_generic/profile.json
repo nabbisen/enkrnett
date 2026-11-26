@@ -17,6 +17,7 @@
   },
   "flash_image_limit_kib": 131072,
   "ram_mib": 256,
+  "update": { "min_free_kib": 16384, "install_seconds": 120 },
   "uplink_port": "eth1",
   "reset_button": "none",
   "light": null,

@@ -1,0 +1,615 @@
+{
+ "format": 1,
+ "comment": "The OpenWrt packages the image of this profile installs (ENK-BUILD-007): version, path under openwrt.downloads of inputs.json, SHA-256. openwrt/build-image.sh fetches each by its path (from ENKRNETT_MIRROR when set, the project's pinned mirror of RFC 013 §6), checks the hash, and gives the Image Builder these files and no feed (ENK-BUILD-008). Written by openwrt/lock-packages.sh; the project's own package, enkrnett, is built from the lock's toolchain and is not listed.",
+ "profile": "buffalo_wcr-1166ds",
+ "target": "ramips/mt76x8",
+ "package_arch": "mipsel_24kc",
+ "openwrt_release": "25.12.5",
+ "source": {
+  "comment": "OpenWrt's own record of what built these packages (version.buildinfo and feeds.buildinfo of the target): the tag's revision and the feed commits, for the source offer of ENK-BUILD-012.",
+  "openwrt_revision": "r33051-f5dae5ece4",
+  "feeds": [
+   "src-git packages https://git.openwrt.org/feed/packages.git^5caa62e0bc9f7fb9b0c12a23267bceb7724214dd",
+   "src-git luci https://git.openwrt.org/project/luci.git^128a7812f4be233c5dd7f7466f534fd888785caf",
+   "src-git routing https://git.openwrt.org/feed/routing.git^3d7d0dc7fa43d3eb09498417407e95a6552e5312",
+   "src-git telephony https://git.openwrt.org/feed/telephony.git^2618106d5846a4a542fdf5809f0d3ed228ce439b",
+   "src-git video https://github.com/openwrt/video.git^094bf58da6682f895255a35a84349a79dab4bf95"
+  ]
+ },
+ "image_builder": "openwrt-imagebuilder-25.12.5-ramips-mt76x8.Linux-x86_64",
+ "from_image_builder": [
+  {
+   "name": "base-files",
+   "version": "1711~f5dae5ece4",
+   "file": "base-files-1711~f5dae5ece4.apk"
+  },
+  {
+   "name": "kernel",
+   "version": "6.12.94~2fe195f1cc4f533c70c3c6ea555ac460-r1",
+   "file": "kernel-6.12.94~2fe195f1cc4f533c70c3c6ea555ac460-r1.apk"
+  },
+  {
+   "name": "libc",
+   "version": "1.2.5-r5",
+   "file": "libc-1.2.5-r5.apk"
+  }
+ ],
+ "packages": [
+  {
+   "name": "apk-mbedtls",
+   "version": "3.0.5-r3",
+   "path": "packages/mipsel_24kc/base/apk-mbedtls-3.0.5-r3.apk",
+   "sha256": "c1a9ab5b2bc9ed6b951716e020722d2c4eb2168a7613dbe3eb8e566c0777f775"
+  },
+  {
+   "name": "busybox",
+   "version": "1.37.0-r6",
+   "path": "packages/mipsel_24kc/base/busybox-1.37.0-r6.apk",
+   "sha256": "2a7cabc3b908f7cadc0d068138fbcf52cfc40cd9e9d71b5a3308b33b19f94c58"
+  },
+  {
+   "name": "ca-bundle",
+   "version": "20260816-r2",
+   "path": "packages/mipsel_24kc/base/ca-bundle-20260816-r2.apk",
+   "sha256": "c05db57523aad88e1d6f926dd483f34e2a21a720204799b4631e9be45cc1cc19"
+  },
+  {
+   "name": "dnsmasq",
+   "version": "2.93-r2",
+   "path": "packages/mipsel_24kc/base/dnsmasq-2.93-r2.apk",
+   "sha256": "d917a3df03e03fe7c1deaf84ee8690a99a6ad40eb5ca7e18c258b0d0ee805338"
+  },
+  {
+   "name": "firewall4",
+   "version": "2025.03.17~b6e51575-r2",
+   "path": "packages/mipsel_24kc/base/firewall4-2025.03.17~b6e51575-r2.apk",
+   "sha256": "0c363c2d053ad15dfcab24a72c51032483cf6846d15b0d7338c740f172640cf9"
+  },
+  {
+   "name": "fstools",
+   "version": "2026.05.23~16718b6e-r1",
+   "path": "targets/ramips/mt76x8/packages/fstools-2026.05.23~16718b6e-r1.apk",
+   "sha256": "39c1b998c4596f2de1b26c9b662bd8cd466d67e1e390cc99fa6d736bb47bd1b1"
+  },
+  {
+   "name": "fwtool",
+   "version": "2025.10.03~04cd252e-r1",
+   "path": "targets/ramips/mt76x8/packages/fwtool-2025.10.03~04cd252e-r1.apk",
+   "sha256": "e4e908a882e83059df93b6bb29c5102fcb44aaa01a3d22c49c1c938402260ec5"
+  },
+  {
+   "name": "getrandom",
+   "version": "2025.10.30~6f78fa49-r1",
+   "path": "packages/mipsel_24kc/base/getrandom-2025.10.30~6f78fa49-r1.apk",
+   "sha256": "9f9e220699e921fca579bd7332519189bb34640f53410e5c46db39863f347aa2"
+  },
+  {
+   "name": "hostapd-common",
+   "version": "2025.08.26~ca266cc2-r7",
+   "path": "packages/mipsel_24kc/base/hostapd-common-2025.08.26~ca266cc2-r7.apk",
+   "sha256": "42b0f4c8283f059998f1b7335d4c58748a25cb8a00bebab9ee0117ee9394603c"
+  },
+  {
+   "name": "iw",
+   "version": "6.17-r1",
+   "path": "packages/mipsel_24kc/base/iw-6.17-r1.apk",
+   "sha256": "8b98cf36a98fa20f74397804af3af4e11e8090a991c2b8bcea19e4f0ea9c4249"
+  },
+  {
+   "name": "jansson4",
+   "version": "2.14.1-r1",
+   "path": "packages/mipsel_24kc/base/jansson4-2.14.1-r1.apk",
+   "sha256": "aceeea1119b5ce0214923aebc73812d87bdfd4734125ce35a76f9b6f1ef3a693"
+  },
+  {
+   "name": "jshn",
+   "version": "2026.11.02~ff13b89e-r1",
+   "path": "packages/mipsel_24kc/base/jshn-2026.11.02~ff13b89e-r1.apk",
+   "sha256": "ec13d7ee7e2c3c9a38349d043e10ca8ca15ec87794add7f9382a170f121b4823"
+  },
+  {
+   "name": "jsonfilter",
+   "version": "2026.03.16~b9034210-r1",
+   "path": "packages/mipsel_24kc/base/jsonfilter-2026.03.16~b9034210-r1.apk",
+   "sha256": "5f25caedc2f7f0b89cefe58a2e901a4a8d6ea25a83e4775d4571876e896aec60"
+  },
+  {
+   "name": "kmod-cfg80211",
+   "version": "6.12.94.6.18.26-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-cfg80211-6.12.94.6.18.26-r1.apk",
+   "sha256": "fc90b7e055c39a3421dd82336df553847112a9557a7f7a90d32702c4c3c1cd99"
+  },
+  {
+   "name": "kmod-crypto-aead",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-aead-6.12.94-r1.apk",
+   "sha256": "717c6bd7a46131cabacb198e355eef17bea9227c3302bcdd6cdd2bcad55dd8e8"
+  },
+  {
+   "name": "kmod-crypto-ccm",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-ccm-6.12.94-r1.apk",
+   "sha256": "0bbb5e51f173c75fc19374219b8a87c570b2b63d902867b8e308ccbb83cfcf1a"
+  },
+  {
+   "name": "kmod-crypto-cmac",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-cmac-6.12.94-r1.apk",
+   "sha256": "9e4df0dff45ae2082b7ba3fddc348648003b95a81f23cc051a4deea541ac7878"
+  },
+  {
+   "name": "kmod-crypto-crc32c",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-crc32c-6.12.94-r1.apk",
+   "sha256": "665c218fe77da54362a160990a32edf31bdc16b9afeca91ec431ea498e3e3ef4"
+  },
+  {
+   "name": "kmod-crypto-ctr",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-ctr-6.12.94-r1.apk",
+   "sha256": "81aeb7f3ade1a603ecaa96eb24829487fe580de73d9719272e52fa84b96ab166"
+  },
+  {
+   "name": "kmod-crypto-gcm",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-gcm-6.12.94-r1.apk",
+   "sha256": "8265f006fda6ff2919fb21b214f4be36c90323eca9290e20731d9a0a6b43dd33"
+  },
+  {
+   "name": "kmod-crypto-geniv",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-geniv-6.12.94-r1.apk",
+   "sha256": "cd31e7c7af45c79c55960102bd6fa8ee32a23bbacbf63de55749d9ef6b6357b7"
+  },
+  {
+   "name": "kmod-crypto-gf128",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-gf128-6.12.94-r1.apk",
+   "sha256": "f85316f1383aa35854fc2168958ab02b0af1869d179150c81c45ed056d56aec2"
+  },
+  {
+   "name": "kmod-crypto-ghash",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-ghash-6.12.94-r1.apk",
+   "sha256": "b0b6b564f93cfc79d7ab0748b40cac7a400a9fe142c2562316d06ed56eff94da"
+  },
+  {
+   "name": "kmod-crypto-hash",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-hash-6.12.94-r1.apk",
+   "sha256": "d51c81da5167137f022116e13da609a36f12638b59f8dfe3511560ab33b84cb5"
+  },
+  {
+   "name": "kmod-crypto-hmac",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-hmac-6.12.94-r1.apk",
+   "sha256": "804a395a589c6967d689133763049f3c5681985dc27c8b086468c12a4fb8c74a"
+  },
+  {
+   "name": "kmod-crypto-manager",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-manager-6.12.94-r1.apk",
+   "sha256": "cc0eb4d21c7d59346b6356d83816aac7e2194a9199848b7298c3e19fd7aec616"
+  },
+  {
+   "name": "kmod-crypto-null",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-null-6.12.94-r1.apk",
+   "sha256": "0137aeb0b0c8f0628b165d9c5e2a27c2868b80a17ea644fbbb49adf93c5d24bc"
+  },
+  {
+   "name": "kmod-crypto-rng",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-rng-6.12.94-r1.apk",
+   "sha256": "e50010a8150c66ad6b3356e4c250b44ab14644a9379c8791fd95fe35e4faa72e"
+  },
+  {
+   "name": "kmod-crypto-seqiv",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-seqiv-6.12.94-r1.apk",
+   "sha256": "78ee877e5bb4821908051f53ab2bd4a80889c67797ee0c8ef5177d06bb9c63df"
+  },
+  {
+   "name": "kmod-crypto-sha3",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-sha3-6.12.94-r1.apk",
+   "sha256": "1c24f48c6f10d4f2ae3622c48a73edbe341826bd018218ba8d8657e8a2d33a9b"
+  },
+  {
+   "name": "kmod-crypto-sha512",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-crypto-sha512-6.12.94-r1.apk",
+   "sha256": "7e628bf1f0ad766210e2a9f00502a801e3cb200e2a6f4c6384a071abb54973ba"
+  },
+  {
+   "name": "kmod-gpio-button-hotplug",
+   "version": "6.12.94-r5",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-gpio-button-hotplug-6.12.94-r5.apk",
+   "sha256": "32a35dd7357811d153218d6d6850da17883588cbdd0ee0a056660a9e65744bcc"
+  },
+  {
+   "name": "kmod-leds-gpio",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-leds-gpio-6.12.94-r1.apk",
+   "sha256": "bc6df8702ccb5c415d1f38dcbcfef921c8b127add5f572fbd43a1ad7ac71a1de"
+  },
+  {
+   "name": "kmod-lib-crc32c",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-lib-crc32c-6.12.94-r1.apk",
+   "sha256": "87ca9668b743945be71f55cdba5c90a13f5a9eb5903be00d327a266bfc330cb6"
+  },
+  {
+   "name": "kmod-mac80211",
+   "version": "6.12.94.6.18.26-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-mac80211-6.12.94.6.18.26-r1.apk",
+   "sha256": "0ccdd7003f24ac502e2619048ae6f5e498e3583480c5aeae913fa39ac98fed18"
+  },
+  {
+   "name": "kmod-mt76-core",
+   "version": "6.12.94.2026.03.19~39c960c3-r2",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-mt76-core-6.12.94.2026.03.19~39c960c3-r2.apk",
+   "sha256": "e6078eb39c0ad54685e4f865ed81c6ce56dba4c9318938cc5297d6b04f3343c3"
+  },
+  {
+   "name": "kmod-mt7603",
+   "version": "6.12.94.2026.03.19~39c960c3-r2",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-mt7603-6.12.94.2026.03.19~39c960c3-r2.apk",
+   "sha256": "f3a5f2a046b4131ea47e558d40daa0183113ea51a5c487a50d6075e6fe2eac6c"
+  },
+  {
+   "name": "kmod-mt76x02-common",
+   "version": "6.12.94.2026.03.19~39c960c3-r2",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-mt76x02-common-6.12.94.2026.03.19~39c960c3-r2.apk",
+   "sha256": "385647c4f08331761f1330707e2977f1c48cc203bd27e667135974b119924583"
+  },
+  {
+   "name": "kmod-mt76x2",
+   "version": "6.12.94.2026.03.19~39c960c3-r2",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-mt76x2-6.12.94.2026.03.19~39c960c3-r2.apk",
+   "sha256": "4d6fa81cdada4c9fa8263cd3b9da88de7f0df7434a919e2f69d746badf4154ff"
+  },
+  {
+   "name": "kmod-mt76x2-common",
+   "version": "6.12.94.2026.03.19~39c960c3-r2",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-mt76x2-common-6.12.94.2026.03.19~39c960c3-r2.apk",
+   "sha256": "445873b92ea02e8adb8c353c9103fd42f797dda68d13b1bde6c3e5a7ac958b72"
+  },
+  {
+   "name": "kmod-nf-conntrack",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nf-conntrack-6.12.94-r1.apk",
+   "sha256": "171e66ef50e1f19e8febde3417a8469e6f249b099633d628358f7c9a64d249ad"
+  },
+  {
+   "name": "kmod-nf-conntrack6",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nf-conntrack6-6.12.94-r1.apk",
+   "sha256": "efca4b118b4c1eeb77513fd968c4a844a2fd3b61c392f241beb7f3fab01cfcac"
+  },
+  {
+   "name": "kmod-nf-flow",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nf-flow-6.12.94-r1.apk",
+   "sha256": "d64a383e553152a760f645e490aae92d34e57b94f3170b989df24939ee50407a"
+  },
+  {
+   "name": "kmod-nf-log",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nf-log-6.12.94-r1.apk",
+   "sha256": "6673ae8abcdf90e6ae789256951769d0841f47634eab4475342076a0a8a4379f"
+  },
+  {
+   "name": "kmod-nf-log6",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nf-log6-6.12.94-r1.apk",
+   "sha256": "745a7c429a1cbfd1a277ea7d36a411a3335584a475fee79916231737ba5a8b38"
+  },
+  {
+   "name": "kmod-nf-nat",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nf-nat-6.12.94-r1.apk",
+   "sha256": "0375177ddd25078f45acb7dcc5037d2f83cd310a2199bf8b5f359598f8a2362c"
+  },
+  {
+   "name": "kmod-nf-reject",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nf-reject-6.12.94-r1.apk",
+   "sha256": "a49c5060a95775354320bfc26e53f633996b7ff60c5b7d9551dd98dee7263117"
+  },
+  {
+   "name": "kmod-nf-reject6",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nf-reject6-6.12.94-r1.apk",
+   "sha256": "5e5076eb98af5ce3e7dd85a4b057618ed1beef7ee64be0165b96753702e151dc"
+  },
+  {
+   "name": "kmod-nfnetlink",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nfnetlink-6.12.94-r1.apk",
+   "sha256": "8dcde88eec323a0949078d34aa6a801b43286cc35d002334235cb0590d2c91ae"
+  },
+  {
+   "name": "kmod-nft-core",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nft-core-6.12.94-r1.apk",
+   "sha256": "b7417bc85cbfdd0476ed30023857d60f2a5dad88310e8a8a31695b4e8cae520b"
+  },
+  {
+   "name": "kmod-nft-fib",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nft-fib-6.12.94-r1.apk",
+   "sha256": "8e9c55b4f0480e90b8675718db8cb1099273825bb9c9b12fa6c9fe44943c1ff9"
+  },
+  {
+   "name": "kmod-nft-nat",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nft-nat-6.12.94-r1.apk",
+   "sha256": "989d32b12baf7093903513065d9b6169387ff27c180f9d87897eaf42d903f8f0"
+  },
+  {
+   "name": "kmod-nft-offload",
+   "version": "6.12.94-r1",
+   "path": "targets/ramips/mt76x8/kmods/6.12.94-1-2fe195f1cc4f533c70c3c6ea555ac460/kmod-nft-offload-6.12.94-r1.apk",
+   "sha256": "f1c43adbeb292556b2e1ab4f741a7f2e5cb5b9200606f3aa573f5d75ec75c8f4"
+  },
+  {
+   "name": "libblobmsg-json20260213",
+   "version": "2026.11.02~ff13b89e-r1",
+   "path": "packages/mipsel_24kc/base/libblobmsg-json20260213-2026.11.02~ff13b89e-r1.apk",
+   "sha256": "27c4c578ad59180f88a498e32580b1d9b952faa44eae3148176cf593f86d80f2"
+  },
+  {
+   "name": "libgcc1",
+   "version": "14.3.0-r5",
+   "path": "targets/ramips/mt76x8/packages/libgcc1-14.3.0-r5.apk",
+   "sha256": "bbe3589517e841305540128ccb8e39cbc3969f08abae55c0ba2e6117a777bf34"
+  },
+  {
+   "name": "libjson-c5",
+   "version": "0.18-r1",
+   "path": "packages/mipsel_24kc/base/libjson-c5-0.18-r1.apk",
+   "sha256": "00aeaeda6a7130ab5bf553506d30281d3be4522e8fa9fb451b501a6c013e0f34"
+  },
+  {
+   "name": "libjson-script20260213",
+   "version": "2026.11.02~ff13b89e-r1",
+   "path": "packages/mipsel_24kc/base/libjson-script20260213-2026.11.02~ff13b89e-r1.apk",
+   "sha256": "f93477e2b61ae0fdf61171971ae75bb7d8d48e9803e93b132ea8e5c4cb937cca"
+  },
+  {
+   "name": "libmbedtls21",
+   "version": "3.6.7-r1",
+   "path": "packages/mipsel_24kc/base/libmbedtls21-3.6.7-r1.apk",
+   "sha256": "97461fa623fd3e9971fbeb33bf4ecfe5192f3ab260f35bbac48765af7ba14889"
+  },
+  {
+   "name": "libmnl0",
+   "version": "1.0.5-r1",
+   "path": "packages/mipsel_24kc/base/libmnl0-1.0.5-r1.apk",
+   "sha256": "95d4a9d76c812f8a31cbf3e812cb684f1ef3c71d6043c58396f3907f53a9a8da"
+  },
+  {
+   "name": "libnftnl11",
+   "version": "1.3.1-r1",
+   "path": "packages/mipsel_24kc/base/libnftnl11-1.3.1-r1.apk",
+   "sha256": "7b20f433d973ac54211155d5a1c3c97518963f1724b71fcdd6886cb2b0fb0c52"
+  },
+  {
+   "name": "libnl-tiny1",
+   "version": "2025.12.02~40493a65-r1",
+   "path": "packages/mipsel_24kc/base/libnl-tiny1-2025.12.02~40493a65-r1.apk",
+   "sha256": "dcb3199e708777c0a8ffc10ae3bc78b46adf70e509f7fb9652f0aecebfa5e6e0"
+  },
+  {
+   "name": "libubox20260213",
+   "version": "2026.11.02~ff13b89e-r1",
+   "path": "packages/mipsel_24kc/base/libubox20260213-2026.11.02~ff13b89e-r1.apk",
+   "sha256": "33ed0e5de9438ee86f4da03ebfe7f5a24c39a0e9940fab917d4a178fc9362273"
+  },
+  {
+   "name": "libubus20251202",
+   "version": "2026.06.28~24864e78-r2",
+   "path": "packages/mipsel_24kc/base/libubus20251202-2026.06.28~24864e78-r2.apk",
+   "sha256": "50a430fffe3797269aaf807123fc62c7b1b2003320c7cac1216600e7d2472f41"
+  },
+  {
+   "name": "libuci20250120",
+   "version": "2025.12.02~66127cd7-r1",
+   "path": "packages/mipsel_24kc/base/libuci20250120-2025.12.02~66127cd7-r1.apk",
+   "sha256": "2b11ee9832bdba97c806df63fdc4cd6e5b989ff27d69206f27dd3defec473d72"
+  },
+  {
+   "name": "libuclient20201210",
+   "version": "2026.06.07~daad21fa-r1",
+   "path": "packages/mipsel_24kc/base/libuclient20201210-2026.06.07~daad21fa-r1.apk",
+   "sha256": "176f00092e8e0a4c11438ef8c9fd19a463cddbac97b55389135cad8a5145d336"
+  },
+  {
+   "name": "libucode20230711",
+   "version": "2026.07.09~b885dd0f-r3",
+   "path": "packages/mipsel_24kc/base/libucode20230711-2026.07.09~b885dd0f-r3.apk",
+   "sha256": "f959cc70fdd404e17af15e3c1c115cbe4f259d56930301093ed5410fedd0fff7"
+  },
+  {
+   "name": "libudebug",
+   "version": "2026.01.16~875e1a7a",
+   "path": "packages/mipsel_24kc/base/libudebug-2026.01.16~875e1a7a.apk",
+   "sha256": "e4025c9fde18c39b01379a39c20f9901226bb68113cb16e8eedb015bc4628f77"
+  },
+  {
+   "name": "libustream-mbedtls20201210",
+   "version": "2026.03.01~99f1c0db-r1",
+   "path": "packages/mipsel_24kc/base/libustream-mbedtls20201210-2026.03.01~99f1c0db-r1.apk",
+   "sha256": "20b1640d66c9939454181db8d71de29140da104eb53d8abe8b29be78d0e9b46b"
+  },
+  {
+   "name": "logd",
+   "version": "2025.10.30~6f78fa49-r1",
+   "path": "packages/mipsel_24kc/base/logd-2025.10.30~6f78fa49-r1.apk",
+   "sha256": "e0d34635ebe48b0097a3c112c0e280aa64729c9e60703ae629ad9eb6b2c25fa4"
+  },
+  {
+   "name": "mtd",
+   "version": "27",
+   "path": "targets/ramips/mt76x8/packages/mtd-27.apk",
+   "sha256": "997058c4ac7d9ce36cba3947db8acf2929733c05a8245b82ecbb1a6e816ccf57"
+  },
+  {
+   "name": "netifd",
+   "version": "2026.02.26~cbb83a18-r2",
+   "path": "packages/mipsel_24kc/base/netifd-2026.02.26~cbb83a18-r2.apk",
+   "sha256": "4a0f385462881749feea8cf49b9188d09fd218321851566ba35f8ecef842c7d2"
+  },
+  {
+   "name": "nftables-json",
+   "version": "1.1.6-r2",
+   "path": "packages/mipsel_24kc/base/nftables-json-1.1.6-r2.apk",
+   "sha256": "89c3bbf3352f659164459cc9078f7b426a70a8c84c6b910db78131a6a91d1033"
+  },
+  {
+   "name": "openwrt-keyring",
+   "version": "2025.12.10~f0670054-r1",
+   "path": "packages/mipsel_24kc/base/openwrt-keyring-2025.12.10~f0670054-r1.apk",
+   "sha256": "9cb8374803ae13c507ec57bdb0f48736f36ec6ebbdf52158f4a3eb2db32ce7ff"
+  },
+  {
+   "name": "procd",
+   "version": "2026.03.13~58eb263d-r1",
+   "path": "packages/mipsel_24kc/base/procd-2026.03.13~58eb263d-r1.apk",
+   "sha256": "acafda6da1e13414cb0f9237e0c7441b4d3ee08b3fa857d4182609315164c24d"
+  },
+  {
+   "name": "procd-seccomp",
+   "version": "2026.03.13~58eb263d-r1",
+   "path": "packages/mipsel_24kc/base/procd-seccomp-2026.03.13~58eb263d-r1.apk",
+   "sha256": "0da95e4bcae280f59742517a6114fd334e05dbc41160a563daa42f3e93584a28"
+  },
+  {
+   "name": "swconfig",
+   "version": "12",
+   "path": "packages/mipsel_24kc/base/swconfig-12.apk",
+   "sha256": "8a71e01a8547d167b6ad00fec89a21bf67d22c3896e44a1488079c826f65a139"
+  },
+  {
+   "name": "ubox",
+   "version": "2025.10.30~6f78fa49-r1",
+   "path": "packages/mipsel_24kc/base/ubox-2025.10.30~6f78fa49-r1.apk",
+   "sha256": "b127614d78664047ebfe8d9deb8254653bc45d78ebfefd4beb8460a7f411db6f"
+  },
+  {
+   "name": "ubus",
+   "version": "2026.06.28~24864e78-r2",
+   "path": "packages/mipsel_24kc/base/ubus-2026.06.28~24864e78-r2.apk",
+   "sha256": "1abb7c72d705c6c8702a1904ff400fda9428b95d28994afbc331399a714367cd"
+  },
+  {
+   "name": "ubusd",
+   "version": "2026.06.28~24864e78-r2",
+   "path": "packages/mipsel_24kc/base/ubusd-2026.06.28~24864e78-r2.apk",
+   "sha256": "069821b035ae58fe159c104e5ca4b30adb3260546d315cbbba40db5b72a2d034"
+  },
+  {
+   "name": "uci",
+   "version": "2025.12.02~66127cd7-r1",
+   "path": "packages/mipsel_24kc/base/uci-2025.12.02~66127cd7-r1.apk",
+   "sha256": "abc8399a33e97097e0231a8c5829b5be999ab372fc3cbfaebed5b744cf77bc1a"
+  },
+  {
+   "name": "uclient-fetch",
+   "version": "2026.06.07~daad21fa-r1",
+   "path": "packages/mipsel_24kc/base/uclient-fetch-2026.06.07~daad21fa-r1.apk",
+   "sha256": "7103ea97ca11ae7c333773c536750dc619db14b81e9dddbc8ffeeb584f3a38eb"
+  },
+  {
+   "name": "ucode",
+   "version": "2026.07.09~b885dd0f-r3",
+   "path": "packages/mipsel_24kc/base/ucode-2026.07.09~b885dd0f-r3.apk",
+   "sha256": "322edd6f921f63cf6effd79cd66fa980540138c801416b860c7734d570340cce"
+  },
+  {
+   "name": "ucode-mod-digest",
+   "version": "2026.07.09~b885dd0f-r3",
+   "path": "packages/mipsel_24kc/base/ucode-mod-digest-2026.07.09~b885dd0f-r3.apk",
+   "sha256": "7883d343174600e2ffa46aa25a37f67728e0d008e80807e3c6b2166200280e86"
+  },
+  {
+   "name": "ucode-mod-fs",
+   "version": "2026.07.09~b885dd0f-r3",
+   "path": "packages/mipsel_24kc/base/ucode-mod-fs-2026.07.09~b885dd0f-r3.apk",
+   "sha256": "a5947d601dd54aece81d5ed06d13337f331e37a269bc0ba9eb4de176b946ca31"
+  },
+  {
+   "name": "ucode-mod-nl80211",
+   "version": "2026.07.09~b885dd0f-r3",
+   "path": "packages/mipsel_24kc/base/ucode-mod-nl80211-2026.07.09~b885dd0f-r3.apk",
+   "sha256": "e1dcbf8eda8d27d09f6ba404ed88e2bae54a3fe10fb1e7e8f2f6843c33926e5b"
+  },
+  {
+   "name": "ucode-mod-rtnl",
+   "version": "2026.07.09~b885dd0f-r3",
+   "path": "packages/mipsel_24kc/base/ucode-mod-rtnl-2026.07.09~b885dd0f-r3.apk",
+   "sha256": "7c0bfd41a994f865647388c4d40c0111c494ea18326de1f6741cc8d0902ba126"
+  },
+  {
+   "name": "ucode-mod-ubus",
+   "version": "2026.07.09~b885dd0f-r3",
+   "path": "packages/mipsel_24kc/base/ucode-mod-ubus-2026.07.09~b885dd0f-r3.apk",
+   "sha256": "41bd587b1612efe7cb1a4ddd6185d75a0c75c6b9bf1e98a6f7302a248935bed8"
+  },
+  {
+   "name": "ucode-mod-uci",
+   "version": "2026.07.09~b885dd0f-r3",
+   "path": "packages/mipsel_24kc/base/ucode-mod-uci-2026.07.09~b885dd0f-r3.apk",
+   "sha256": "48c35e97813ce0ec2773284d2045e83d013d1e01c46ab5ed6057dae45a0ab669"
+  },
+  {
+   "name": "ucode-mod-uloop",
+   "version": "2026.07.09~b885dd0f-r3",
+   "path": "packages/mipsel_24kc/base/ucode-mod-uloop-2026.07.09~b885dd0f-r3.apk",
+   "sha256": "1c82676b512fcdbfa7c4e7a196a5ecc7fda97600bb0d9db3d12fbf963b532835"
+  },
+  {
+   "name": "urandom-seed",
+   "version": "3",
+   "path": "packages/mipsel_24kc/base/urandom-seed-3.apk",
+   "sha256": "b2ca20d6717c248a8256d0ace7766db063f23c799f7614de9ca2a820b11f9871"
+  },
+  {
+   "name": "urngd",
+   "version": "2025.10.03~f17e33d9-r1",
+   "path": "packages/mipsel_24kc/base/urngd-2025.10.03~f17e33d9-r1.apk",
+   "sha256": "2af5bb36d04d36f5e864d0420830c409fdf8954ee099b6b025caf8d65ba62938"
+  },
+  {
+   "name": "usign",
+   "version": "2025.10.03~c4c72b1b-r1",
+   "path": "packages/mipsel_24kc/base/usign-2025.10.03~c4c72b1b-r1.apk",
+   "sha256": "648eee6c3aa402d34fd4057758580977faccc5623a629c1396043972612e0551"
+  },
+  {
+   "name": "wifi-scripts",
+   "version": "1.0-r1",
+   "path": "packages/mipsel_24kc/base/wifi-scripts-1.0-r1.apk",
+   "sha256": "55c874b093183eaac25d44851e5602445d900a410bcffbf511eef6701715d2df"
+  },
+  {
+   "name": "wireless-regdb",
+   "version": "2026.09.03-r1",
+   "path": "packages/mipsel_24kc/base/wireless-regdb-2026.09.03-r1.apk",
+   "sha256": "839afb3fb4a8d0a10ed84ae244ca4b291bb256918d8ccefafc382606bfe3ead6"
+  },
+  {
+   "name": "wpad-basic-mbedtls",
+   "version": "2025.08.26~ca266cc2-r7",
+   "path": "packages/mipsel_24kc/base/wpad-basic-mbedtls-2025.08.26~ca266cc2-r7.apk",
+   "sha256": "eca0675216535651ad28ed329f8624b19c756dde56de63331f9acf9d7f2ef8fc"
+  },
+  {
+   "name": "zlib",
+   "version": "1.3.1-r1",
+   "path": "packages/mipsel_24kc/base/zlib-1.3.1-r1.apk",
+   "sha256": "36f6849b4ff162004a496115081113f5b2ad992fd5e20bc6404193628dd5a71c"
+  }
+ ]
+}

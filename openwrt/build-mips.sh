@@ -7,6 +7,9 @@
 #   openwrt/build-mips.sh --no-check build and measure only
 #   openwrt/build-mips.sh --package  as the first form, then build the OpenWrt package (.apk)
 #                                    inside the SDK from the prebuilt daemon and ui/dist
+#   --twice                          with either form: build the daemon a second time into another
+#                                    target directory and compare the two byte for byte (ENK-BUILD-009);
+#                                    a difference fails
 #
 # Environment:
 #   ENKRNETT_SDK_DIR  directory that holds (or will hold) the extracted SDK; default openwrt/.cache
@@ -19,12 +22,15 @@ CACHE="${ENKRNETT_SDK_DIR:-$ROOT/openwrt/.cache}"
 OUT="$ROOT/openwrt/out"
 CHECK=1
 PACKAGE=0
-case "${1:-}" in
-  --no-check) CHECK=0 ;;
-  --package) PACKAGE=1 ;;
-  "") ;;
-  *) echo "usage: $0 [--no-check|--package]"; exit 2 ;;
-esac
+TWICE=0
+for arg in "$@"; do
+  case "$arg" in
+    --no-check) CHECK=0 ;;
+    --package) PACKAGE=1 ;;
+    --twice) TWICE=1 ;;
+    *) echo "usage: $0 [--no-check|--package] [--twice]"; exit 2 ;;
+  esac
+done
 
 lock() { python3 -c "import json,sys; d=json.load(open('$LOCK')); print(eval('d'+sys.argv[1]))" "$1"; }
 
@@ -68,6 +74,21 @@ RUSTFLAGS="$RUSTFLAGS_LOCK" cargo "+$NIGHTLY" build --release -p enkrnettd \
 BIN="$ROOT/target/mips/$RUST_TARGET/release/enkrnettd"
 cp "$BIN" "$OUT/enkrnettd"
 file "$OUT/enkrnettd" | sed 's/^/binary: /'
+
+# ENK-BUILD-009: the same source and lock built again, elsewhere, must give the same bytes.
+if [ "$TWICE" = 1 ]; then
+  echo "building again into target/mips-again (ENK-BUILD-009)"
+  rm -rf "$ROOT/target/mips-again"
+  RUSTFLAGS="$RUSTFLAGS_LOCK" cargo "+$NIGHTLY" build --release -q -p enkrnettd \
+    --target "$RUST_TARGET" -Zbuild-std="$BUILD_STD" -Zbuild-std-features="$BUILD_STD_FEATURES" \
+    --target-dir "$ROOT/target/mips-again"
+  AGAIN="$ROOT/target/mips-again/$RUST_TARGET/release/enkrnettd"
+  if cmp -s "$BIN" "$AGAIN"; then
+    echo "double build: identical ($(sha256sum "$BIN" | cut -c1-16)…)"
+  else
+    echo "ENK-BUILD-009: the two builds differ"; sha256sum "$BIN" "$AGAIN"; exit 1
+  fi
+fi
 
 # ----- sizes ---------------------------------------------------------------------------------
 readarray -t MKSQ_ARGS < <(python3 -c "import json; print('\n'.join(json.load(open('$LOCK'))['squashfs']['mksquashfs_args']))")

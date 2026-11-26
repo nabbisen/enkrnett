@@ -4,6 +4,8 @@
   "openwrt": {
     "baseline": "25.12",
     "release": "25.12.5",
+    "downloads": "https://downloads.openwrt.org/releases/25.12.5",
+    "downloads_comment": "The release's download tree: the Image Builders and SDKs above, and every package of openwrt/lock/packages/*.json by its path. ENKRNETT_MIRROR names the project's pinned mirror of the same tree instead (RFC 013 §6); the hashes are checked either way.",
     "package_arch": "mipsel_24kc",
     "targets": {
       "ramips/mt7621": {
@@ -67,5 +69,16 @@
     "daemon": 300,
     "ui": 150,
     "extras": 50
+  },
+  "node": {
+    "major": 24,
+    "comment": "The UI bundle is built with Node 24 and the exact dependency tree of ui/package-lock.json (npm ci); CI builds it twice and compares (ENK-BUILD-009)."
+  },
+  "repository_locks": {
+    "cargo": "Cargo.lock",
+    "ui": "ui/package-lock.json",
+    "packages": "openwrt/lock/packages/<profile>.json (openwrt/lock-packages.sh)",
+    "patches": "openwrt/patches/*.patch",
+    "comment": "The rest of ENK-BUILD-007: committed with the tree; a release publishes copies of all of them beside its images (openwrt/release-assemble.sh)."
   }
 }

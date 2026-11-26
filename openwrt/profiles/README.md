@@ -13,6 +13,7 @@ model crate's tests parse every profile in this directory.
 | `target`, `package_arch`, `image_builder_profile` | OpenWrt target, package architecture, and the Image Builder's `PROFILE=` name |
 | `install` | `self_install` or `expert_install`; the vendor image kind; the vendor firmware versions the installation was tested from (ENK-INST-003) |
 | `flash_image_limit_kib`, `ram_mib` | From the target's image definitions and the device page |
+| `update` | What the release index states for this device (ENK-RLS-006): `min_free_kib`, the free memory an installation needs beyond the image (ENK-UPD-003), and `install_seconds`, the duration the confirmation screen names (RFC 017 §5.6) |
 | `uplink_port` | The Ethernet port that carries the uplink (ENK-TOPO-004) |
 | `reset_button` | The platform's name of the button (ENK-OWN-021) |
 | `light` | The LED Enkrnett may blink for the identify step, or `null` (ENK-OWN-006) |

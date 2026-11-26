@@ -5,6 +5,39 @@ decisions is in `rfcs/`.
 
 ## Unreleased
 
+### Milestone M3, stage 3 (2026-11-27)
+
+- The package lock (ENK-BUILD-007): `openwrt/lock/packages/<profile>.json`, every OpenWrt package
+  an image installs with version, path under the release's download tree and SHA-256, plus
+  OpenWrt's own revision and feed commits; written by `openwrt/lock-packages.sh` from the pinned
+  Image Builder's resolution, reviewed as a diff. `inputs.json` names the download tree, the Node
+  major and where the other locks are. Device profiles gain `update.min_free_kib` and
+  `update.install_seconds`, the per-device figures of the index (ENK-RLS-006).
+- The image build from the lock (ENK-BUILD-008, 010; ENK-RLS-002): `openwrt/build-image.sh`
+  fetches each locked package by its path (from `ENKRNETT_MIRROR`, the project's pinned mirror,
+  or the download tree), checks the hash, gives the Image Builder the files and an empty feeds
+  list, applies the carried patches to the files of the locked packages (each patch header names
+  its installed file), places the `from-image` witness, names the images per ENK-RLS-002, and with
+  `--twice` builds again and compares. Both Tier 1 profiles and the x86-64 test profile are
+  bit-identical between two builds.
+- The double builds (ENK-BUILD-009): `openwrt/build-mips.sh --twice` builds the daemon again into
+  another target directory and fails on a difference; CI's `ui` job builds the bundle twice and
+  compares. Both identical.
+- The release directory (ENK-BUILD-012): `openwrt/release-assemble.sh VERSION` checks the four
+  version fields, collects the images, `SHA256SUMS`/`SHA512SUMS`, the lock with its own sums, the
+  build report for the release notes, the written source offer (OpenWrt's tag and revision, the
+  feed commits, the carried patches, Enkrnett's source), and with `--sequence` the index for the
+  signing host. CI's new `images` job builds the Tier 1 images twice, assembles and uploads
+  `enkrnett-release-unsigned`; the key stays on the signing host (ENK-RLS-007).
+- `tests/vm/successor.sh` builds the x86-64 successor images through `openwrt/build-image.sh`
+  from the lock, so the VM chain installs release-built images on every push. Every Image
+  Builder now lives under `openwrt/.cache/ib/<target>/` (`openwrt/lib.sh`, shared by the scripts).
+- ENK-BASE-005: `crates/enkrnettd/tests/fixtures/stored/{0.1.0,0.2.0}/state.json`, written by the
+  daemons of the two tags, read, served and rewritten by today's daemon in
+  `tests/stored_data.rs`; a release page without a fixture fails the test.
+- `docs/src/contributors/releasing.md` (the procedure), `docs/src/design/build.md` §7;
+  `docs/src/verification/m3.md` stage 3.
+
 ### Milestone M3, stage 2 (2026-11-26)
 
 - Installing an update (chapter 11 §3, ENK-UPD-002 to 007). `update/install`, on the owner's

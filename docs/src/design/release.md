@@ -2,8 +2,8 @@
 
 What exists of chapter 11 after the first stage of M3: the key and signature formats, the
 release index, the daemon's check, and the tool that makes keys, signatures and indexes. The
-installation of an update is stage 2; the reproducible build and the publication steps are
-stage 3 (`ROADMAP.md`, M3 in detail).
+installation of an update is stage 2 (`daemon.md` §6c, `platform.md` §11); the reproducible
+build and the publication steps are stage 3 (`build.md` §7, `docs/src/contributors/releasing.md`).
 
 ## 1. Keys and signatures
 
@@ -48,9 +48,9 @@ One small JSON document (ENK-RLS-006, RFC 016 §9), published beside its signatu
 | `baseline`, `from_baseline` | The OpenWrt baseline the image is built on, and the one a device must run to take it: equal within a baseline, different for an upgrade, which the UI announces (ENK-UPD-007) |
 | `file` | `enkrnett-<version>-<baseline>-<profile>-<kind>.bin` (ENK-RLS-002); anything else is refused |
 | `size`, `sha512` | Of the image file; the hash is lower-case hex |
-| `min_free_kib` | Free memory the installation needs beyond the image (ENK-UPD-003) |
+| `min_free_kib` | Free memory the installation needs beyond the image (ENK-UPD-003); from the device profile's `update.min_free_kib` |
 | `notes_url` | `https://` only |
-| `install_seconds` | What the confirmation screen tells the operator (RFC 017 §5.6) |
+| `install_seconds` | What the confirmation screen tells the operator (RFC 017 §5.6); from the profile's `update.install_seconds` |
 
 Limits: 64 KiB, 64 releases, an image of at most 256 MiB. Unknown fields are accepted, so a
 later tool can add some without leaving older devices unable to learn about releases; the
@@ -74,6 +74,8 @@ the baseline and as an upgrade, the one within wins. Nothing newer means "up to 
 
 The tool runs on the signing host for `keygen` and `sign`, and anywhere for the rest; CI holds
 no key (ENK-RLS-007). It depends on the model crate, `serde_json` and `rand_core` only.
+`openwrt/release-assemble.sh VERSION --sequence N --notes-url URL` calls `index` with every
+built profile's image and the figures of its profile, so that the signing host only signs.
 
 ## 4. Where the index lives
 
@@ -107,4 +109,6 @@ side verifies the same signature again with `usign`.
 | `crates/enkrnettd/tests/install.rs` | 5 | Installing against the mock platform (`daemon.md` §6c) |
 | `crates/enkrnettd/src/platform/spawn/tests.rs` | 3 | Output captured and bounded, exit status, the fixed environment, empty input; a watched file past its limit kills the program |
 | `tests/vm/update-check.sh` | see `docs/src/verification/m3.md` | The real platform: `uclient-fetch` over HTTPS with a test authority, the offer, every refusal, the sequence on flash |
-| `tests/vm/update-install.sh` | see `docs/src/verification/m3.md` | The real platform: two successor images built from this source (`tests/vm/successor.sh`), the install through the daemon, the root helper and `sysupgrade`, the first boot's report, the broken successor, the root side's refusal of a stranger's signature |
+| `tests/vm/update-install.sh` | see `docs/src/verification/m3.md` | The real platform: two successor images built from this source and from the lock (`tests/vm/successor.sh`, `openwrt/build-image.sh`), the install through the daemon, the root helper and `sysupgrade`, the first boot's report, the broken successor, the root side's refusal of a stranger's signature |
+| `crates/enkrnett-model/src/profile/tests.rs` (stage 3) | +1 | The profiles' `update` figures fit the device; impossible ones refused |
+| `crates/enkrnettd/tests/stored_data.rs` (stage 3) | 2 | The documents the 0.1.0 and 0.2.0 daemons wrote (`tests/fixtures/stored/`) are read, served and rewritten in the current format by today's daemon (ENK-BASE-005); every release with notes has a fixture |

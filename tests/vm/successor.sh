@@ -1,30 +1,29 @@
 #!/bin/bash
 # Builds a successor release for the update test on the VM (chapter 11 §3): the same source as a
-# newer version, packaged with the pinned x86/64 SDK and put into a complete x86-64 image by the
-# pinned Image Builder, as a release would be. The image carries the overlay the VM tests need
-# (the ssh key, the test key, the test authority) so that the chain goes on after the update.
+# newer version, packaged with the pinned x86/64 SDK, and put into a complete x86-64 image the way
+# a release is built (openwrt/build-image.sh: the pinned Image Builder, the locked packages of
+# openwrt/lock/packages/x86_64_generic.json and no live feed, the carried patch applied, the
+# from-image witness). The image carries the overlay the VM tests need (the ssh key, the test key,
+# the test authority) so that the chain goes on after the update.
 #
 #   tests/vm/successor.sh VM_DIR VERSION OUT_DIR [broken]
 #
 #   VERSION  the Enkrnett version the daemon reports (ENKRNETT_VERSION at build time)
 #   OUT_DIR  receives enkrnett-VERSION-25.12-x86_64_generic-sysupgrade.bin (the ext4 combined
-#            image, gzip, as sysupgrade takes it) and successor.log
+#            image, gzip, as sysupgrade takes it), its build report and successor.log
 #   broken   leaves out the wireless driver of the test VM (kmod-mac80211-hwsim): a release whose
 #            health check cannot pass on this device (ENK-UPD-005's deliberately broken successor)
 #
 # Needs the VM directory of tests/vm/image.sh (id_ed25519.pub) and the files
 # tests/vm/update-install.sh puts in VM_DIR/successor-files (the test key and authority), if any.
 set -euo pipefail
-ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+. "$(dirname "$0")/../../openwrt/lib.sh"
 VM=$(cd "${1:?VM_DIR}" && pwd)
 VERSION=${2:?VERSION}
 OUT=${3:?OUT_DIR}
 BROKEN=${4:-}
 mkdir -p "$OUT"; OUT=$(cd "$OUT" && pwd)
-LOCK="$ROOT/openwrt/lock/inputs.json"
-SDK_CACHE="${ENKRNETT_SDK_DIR_X86:-$ROOT/openwrt/.cache/x86_64}"
-IB_CACHE="${ENKRNETT_IB_DIR_X86:-$ROOT/openwrt/.cache/x86_64-ib}"
-lock() { python3 -c "import json,sys; d=json.load(open('$LOCK')); print(eval('d'+sys.argv[1]))" "$1"; }
+SDK_CACHE="${ENKRNETT_SDK_DIR_X86:-$CACHE/x86_64}"
 LOG="$OUT/successor.log"; : > "$LOG"
 
 echo "## the daemon as version $VERSION"
@@ -53,32 +52,19 @@ APK=$(find "$SDK_DIR/bin/packages" -name "enkrnett-$VERSION*.apk" | head -1)
 [ -n "$APK" ] || { echo "no package built"; exit 1; }
 echo "package: $(basename "$APK") ($(stat -c %s "$APK") bytes)"
 
-echo "## the image with the pinned Image Builder"
-IB_DIR=$(ls -d "$IB_CACHE"/openwrt-imagebuilder-*/ 2>/dev/null | head -1 || true)
-[ -n "$IB_DIR" ] || { echo "no Image Builder in $IB_CACHE: run tests/vm/image.sh first"; exit 1; }
-IB_DIR=${IB_DIR%/}
-IB_URL=$(lock "['openwrt']['targets']['x86/64']['image_builder']['url']"); echo "Image Builder: $(basename "$IB_URL")"
-# The package goes into the Image Builder's local package directory, which it indexes itself.
-rm -f "$IB_DIR"/packages/enkrnett-*.apk "$IB_DIR/packages/packages.adb"
-cp "$APK" "$IB_DIR/packages/"
+echo "## the image as a release builds it (openwrt/build-image.sh, from the lock)"
+# The overlay: the VM tests' first-boot script and modules, the ssh key, whatever the update test
+# adds (the test key, the authority). The carried patch is applied by the build, so the first-boot
+# script finds it in place; the from-image witness is the build's too.
 FILES=$(mktemp -d); trap 'rm -rf "$FILES"' EXIT
 cp -r "$ROOT/tests/vm/files/." "$FILES/"
-mkdir -p "$FILES/etc/dropbear" "$FILES/usr/share/enkrnett-vm"
+mkdir -p "$FILES/etc/dropbear"
 cp "$VM/id_ed25519.pub" "$FILES/etc/dropbear/authorized_keys"
-cp "$ROOT"/openwrt/patches/0001-wifi-scripts-owe-transition-bss-mac.patch "$FILES/usr/share/enkrnett-vm/"
 chmod 0700 "$FILES/etc/dropbear"; chmod 0600 "$FILES/etc/dropbear/authorized_keys"
 [ -d "$VM/successor-files" ] && cp -r "$VM/successor-files/." "$FILES/"
-# What the project's image build places and the package never does: the witness of an image
-# install on a target without /rom (ENK-INST-005; crates/enkrnettd/src/platform/openwrt.rs).
-mkdir -p "$FILES/usr/share/enkrnett"
-echo "placed by the project's image build; never by the package" > "$FILES/usr/share/enkrnett/from-image"
-PACKAGES="enkrnett wpad-basic-mbedtls hostapd-utils wpa-cli iw ip-full nmap tcpdump-mini patch shadow-su"
-[ "$BROKEN" = broken ] || PACKAGES="$PACKAGES kmod-mac80211-hwsim"
-rm -rf "$IB_DIR/bin"
-( cd "$IB_DIR" && make image PROFILE=generic PACKAGES="$PACKAGES" FILES="$FILES" ) >>"$LOG" 2>&1 \
-  || { echo "image build failed (see $LOG)"; tail -30 "$LOG"; exit 1; }
-IMG=$(find "$IB_DIR/bin" -name '*generic-ext4-combined.img.gz' | head -1)
-[ -n "$IMG" ] || { echo "no ext4 combined image"; exit 1; }
+DROP=""; [ "$BROKEN" = broken ] && DROP="kmod-mac80211-hwsim"
+"$ROOT/openwrt/build-image.sh" x86_64_generic --apk "$APK" --out "$OUT" --files "$FILES" --version "$VERSION" ${DROP:+--drop "$DROP"} \
+  | sed 's/^/  /'
 NAME="enkrnett-$VERSION-25.12-x86_64_generic-sysupgrade.bin"
-cp "$IMG" "$OUT/$NAME"
+[ -f "$OUT/$NAME" ] || { echo "no image built"; exit 1; }
 echo "image: $OUT/$NAME ($(stat -c %s "$OUT/$NAME") bytes)${BROKEN:+ [$BROKEN: without kmod-mac80211-hwsim]}"

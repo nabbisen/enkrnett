@@ -66,6 +66,16 @@ pub struct Argon2Params {
     pub parallelism: u32,
 }
 
+/// What the release index states for this device (ENK-RLS-006): the free memory an installation
+/// needs beyond the image itself (ENK-UPD-003) and the duration the confirmation screen names
+/// (RFC 017 §5.6). The release tool copies them into the index entry.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UpdateFigures {
+    pub min_free_kib: u64,
+    pub install_seconds: u64,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ImageSpec {
@@ -105,6 +115,7 @@ pub struct DeviceProfile {
     pub install: Install,
     pub flash_image_limit_kib: u32,
     pub ram_mib: u32,
+    pub update: UpdateFigures,
     pub uplink_port: String,
     pub reset_button: String,
     pub light: Option<Light>,
@@ -168,6 +179,18 @@ impl DeviceProfile {
             if !crate::country::is_valid_code(c) {
                 errors.push(err(format!("country {c} is not a two-letter code")));
             }
+        }
+        if self.update.min_free_kib < 8 * 1024
+            || self.update.min_free_kib >= u64::from(self.ram_mib) * 1024
+        {
+            errors.push(err(
+                "update.min_free_kib must be at least 8 MiB and below the device's RAM".into(),
+            ));
+        }
+        if !(30..=3600).contains(&self.update.install_seconds) {
+            errors.push(err(
+                "update.install_seconds must be between 30 and 3600".into()
+            ));
         }
         if self.argon2.memory_kib == 0
             || self.argon2.iterations == 0

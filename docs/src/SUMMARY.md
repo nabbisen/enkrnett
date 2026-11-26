@@ -37,9 +37,10 @@
 # Maintainers and contributors
 
 - [Building and testing](./contributors/building-and-testing.md)
+- [Releasing](./contributors/releasing.md)
 - [Daemon internal design (M1 stage 1)](./design/daemon.md)
 - [UI internal design (M1 stage 2)](./design/ui.md)
-- [Build for the device (M1 stage 3)](./design/build.md)
+- [Build for the device (M1 stage 3; the release build, M3 stage 3)](./design/build.md)
 - [OpenWrt platform (M1 stage 4)](./design/platform.md)
 - [Release tooling and the index (M3 stage 1)](./design/release.md)
 - [Measurements](./measurements/index.md)

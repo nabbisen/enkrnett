@@ -227,7 +227,7 @@ filesystem and is unpacked at the first boot, before the init script runs: the d
 alone until the VM test: an x86 ext4 image has no `/rom`, so a device updated to an image still
 said `package`. The project's image build now places `/usr/share/enkrnett/from-image` in every
 image, outside the package, and the platform reads either witness; the package never installs
-that file. `tests/vm/successor.sh` does it for the test images; the release image build of stage
-3 must do the same.
+that file. `openwrt/build-image.sh` places it (holding the image's name) in every image it
+builds, the release images and the test VM's successors alike (`build.md` §7).
 
 What the VM test observed is in `docs/src/verification/m3.md` (stage 2).
