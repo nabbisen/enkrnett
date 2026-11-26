@@ -42,6 +42,14 @@ prepare_files() {
 	chown enkrnett:enkrnett "$STATE" && chmod 0750 "$STATE"
 }
 
+# The same flag for ports that exist already (a restart of the service; see the hotplug script).
+isolate_ports() {
+	for p in /sys/class/net/br-guest/brif/*/isolated /sys/class/net/br-mgmt/brif/*/isolated; do
+		[ -e "$p" ] && echo 1 > "$p"
+	done
+	return 0
+}
+
 prepare_light() {
 	# The identify step blinks a LED (ENK-OWN-006); sysfs attributes are root's, so hand them over.
 	local board led
@@ -63,6 +71,7 @@ start_service() {
 
 	prepare_files
 	prepare_light
+	isolate_ports
 
 	procd_open_instance
 	procd_set_param command "$PROG" --listen "$listen" --state-dir "$STATE" --ui-dir /usr/share/enkrnett/ui --profiles-dir "$PROFILES"

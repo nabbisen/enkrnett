@@ -135,3 +135,33 @@ runs the checks derived from RFC 003 and RFC 004 against the service `procd` sta
 security, authorization by state, the claim, sessions, the login delay with `Retry-After`, and
 Erase through a real boot on the package path (the init script removes Enkrnett's state and
 sections; `firstboot` is for image installs). Results: `docs/src/verification/m1.md`.
+
+## 9. M2 stage 2: separation read back from the kernel
+
+Chapter 2 is mostly configuration the daemon already wrote in M1 (two bridges, three zones with
+input and forward `REJECT`, the reject of private and uplink ranges before the forwarding to
+`wan`, IPv6 dropped on input and forward, one `dnsmasq` instance per network kept off loopback
+except one, `isolate` on every BSS). What this stage adds is the part the platform does not do
+and the read-backs that make the health check tell the truth (ENK-CFG-026).
+
+| Fact | Set by | Read back by the health check |
+|---|---|---|
+| Bridge-port `isolated` on every port of `br-guest` and `br-mgmt` (ENK-CFG-023; M-8 row 6: OpenWrt 25.12 gives it to the radio's first BSS only) | `/etc/hotplug.d/net/50-enkrnett-isolate`, as root, when a network interface appears, and the init script at every service start. sysfs is root's; the daemon cannot write it. | `/sys/class/net/<bridge>/brif/<port>/isolated` for every port of every expected bridge; a `0` is `isolation_missing` |
+| One DNS listener per network (ENK-CFG-024) | The owned `dhcp` sections | The `dnsmasq` instances running (ubus `service list`) and a UDP socket on port 53 bound to each network's address (`/proc/net/udp`); otherwise `dhcp_missing` |
+| The daemon's listener on the management address only (ENK-CFG-025) | `--listen` from `/etc/config/enkrnett` | Any TCP listener on port 80 or the daemon's port bound to another address, or to every address, is `listener_exposed` (`/proc/net/tcp`, `tcp6`) |
+| Each network sees its own services only (chapter 2 §3) | The DNS and UI rules of a zone carry `dest_ip` of that network's address, so a management client cannot reach the guest DNS instance on the device's guest-side address (found by `tests/vm/isolation.sh`) | `tests/vm/isolation.sh` |
+| Nothing else listening (ENK-HARD-005) | The image (M3) | The hardening report: every bound socket other than DNS, DHCP, and the daemon on the management address makes ENK-HARD-005 "not met" |
+
+Interpretation to carry into the next amendment RFC: ENK-CFG-025 asks the health check for "a
+port scan of the device from the guest network". The daemon lives on the device and cannot stand
+on the guest network; what it can verify is the kernel's list of bound sockets, which is what a
+scan would find before the firewall. The scan from a real guest station is
+`tests/vm/isolation.sh`, which runs the rows of measurement M-8 against the daemon's own
+configuration with four simulated stations in network namespaces.
+
+Not read back, and why: PMF on the OWE BSS (`pmf_missing`): hostapd's `get_status` does not
+expose `ieee80211w`, and the generated configuration is root's. wifi-scripts always writes
+`ieee80211w=2` for `encryption owe`, and every OWE station's `mfp` flag in `get_clients` is the
+observable consequence; the status counts encrypted guests by it. `mode_differs`: the set of
+running BSSes per SSID is what the health check compares; hostapd does not report the encryption
+of a BSS through ubus.

@@ -155,6 +155,17 @@ pub fn expected_bss(phase: &Phase) -> Vec<ExpectedBss> {
     }
 }
 
+/// The bridges of a phase with the address each carries: every port of these bridges must have
+/// the kernel's `isolated` flag (ENK-CFG-023, ENK-ISO-002) and each address must have its own
+/// DNS listener (ENK-CFG-024).
+pub fn expected_bridges(phase: &Phase) -> Vec<(&'static str, &'static str)> {
+    let mut v = vec![("br-mgmt", MANAGEMENT_ADDRESS)];
+    if matches!(phase, Phase::Claimed { settings, .. } if settings.guest.enabled) {
+        v.push(("br-guest", GUEST_ADDRESS));
+    }
+    v
+}
+
 /// The `network.interface.*` names that must be up for a phase.
 pub fn expected_interfaces(phase: &Phase) -> Vec<&'static str> {
     match phase {
@@ -290,7 +301,17 @@ fn zone(name: &str, network: &str) -> Section {
         .option("forward", "REJECT")
 }
 
-fn zone_rules(zone_name: &str, prefix: &str, with_ui: bool, internet: bool) -> Vec<Section> {
+/// The input and forward rules of one zone. DNS and the UI are accepted towards the network's
+/// own address only, so that a client of one network cannot reach the other network's
+/// instance on the device (chapter 2 §3: each network sees its own services). DHCP is
+/// broadcast and stays unbound.
+fn zone_rules(
+    zone_name: &str,
+    prefix: &str,
+    address: &str,
+    with_ui: bool,
+    internet: bool,
+) -> Vec<Section> {
     let mut v = vec![
         Section::named("rule", &format!("{prefix}_no_site"))
             .option(
@@ -310,6 +331,7 @@ fn zone_rules(zone_name: &str, prefix: &str, with_ui: bool, internet: bool) -> V
         Section::named("rule", &format!("{prefix}_dns"))
             .option("src", zone_name)
             .option("proto", "tcp udp")
+            .option("dest_ip", address)
             .option("dest_port", "53")
             .option("target", "ACCEPT"),
         Section::named("rule", &format!("{prefix}_no_ip6_in"))
@@ -330,7 +352,9 @@ fn zone_rules(zone_name: &str, prefix: &str, with_ui: bool, internet: bool) -> V
                 .option("name", "management UI and API: port 80 to the daemon")
                 .option("src", zone_name)
                 .option("proto", "tcp")
+                .option("src_dip", address)
                 .option("src_dport", "80")
+                .option("dest_ip", address)
                 .option("dest_port", LISTEN_PORT.to_string())
                 .option("target", "DNAT"),
         );
@@ -339,6 +363,7 @@ fn zone_rules(zone_name: &str, prefix: &str, with_ui: bool, internet: bool) -> V
                 .option("name", "management UI and API")
                 .option("src", zone_name)
                 .option("proto", "tcp")
+                .option("dest_ip", address)
                 .option("dest_port", format!("80 {LISTEN_PORT}"))
                 .option("target", "ACCEPT"),
         );
@@ -383,9 +408,13 @@ pub fn owned_sections(plan: &Plan, radios: &[Section]) -> Owned {
     owned.firewall.push(zone("enk_mgmt", "enk_mgmt"));
     match &plan.phase {
         Phase::Closed => {
-            owned
-                .firewall
-                .extend(zone_rules("enk_mgmt", "enk_mgmt", true, false));
+            owned.firewall.extend(zone_rules(
+                "enk_mgmt",
+                "enk_mgmt",
+                MANAGEMENT_ADDRESS,
+                true,
+                false,
+            ));
         }
         Phase::Setup { label_suffix } => {
             owned.wireless.push(owe_iface(
@@ -397,9 +426,13 @@ pub fn owned_sections(plan: &Plan, radios: &[Section]) -> Owned {
                 true,
             ));
             // No Internet for setup clients (chapter 2 §2).
-            owned
-                .firewall
-                .extend(zone_rules("enk_mgmt", "enk_mgmt", true, false));
+            owned.firewall.extend(zone_rules(
+                "enk_mgmt",
+                "enk_mgmt",
+                MANAGEMENT_ADDRESS,
+                true,
+                false,
+            ));
         }
         Phase::Pending {
             management_name,
@@ -410,9 +443,13 @@ pub fn owned_sections(plan: &Plan, radios: &[Section]) -> Owned {
                 management_name,
                 management_key,
             ));
-            owned
-                .firewall
-                .extend(zone_rules("enk_mgmt", "enk_mgmt", true, true));
+            owned.firewall.extend(zone_rules(
+                "enk_mgmt",
+                "enk_mgmt",
+                MANAGEMENT_ADDRESS,
+                true,
+                true,
+            ));
         }
         Phase::Claimed {
             management_name,
@@ -424,9 +461,13 @@ pub fn owned_sections(plan: &Plan, radios: &[Section]) -> Owned {
                 management_name,
                 management_key,
             ));
-            owned
-                .firewall
-                .extend(zone_rules("enk_mgmt", "enk_mgmt", true, true));
+            owned.firewall.extend(zone_rules(
+                "enk_mgmt",
+                "enk_mgmt",
+                MANAGEMENT_ADDRESS,
+                true,
+                true,
+            ));
             if settings.guest.enabled {
                 let transition = settings.guest.mode == GuestMode::OpenToAll;
                 owned.wireless.push(owe_iface(
@@ -455,9 +496,13 @@ pub fn owned_sections(plan: &Plan, radios: &[Section]) -> Owned {
                     .dhcp
                     .push(dhcp_pool("enk_guest", "enk_guest", "enk_dns_guest", "2h"));
                 owned.firewall.push(zone("enk_guest", "enk_guest"));
-                owned
-                    .firewall
-                    .extend(zone_rules("enk_guest", "enk_guest", false, true));
+                owned.firewall.extend(zone_rules(
+                    "enk_guest",
+                    "enk_guest",
+                    GUEST_ADDRESS,
+                    false,
+                    true,
+                ));
             }
         }
     }

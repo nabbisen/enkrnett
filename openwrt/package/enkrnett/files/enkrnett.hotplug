@@ -1,0 +1,21 @@
+#!/bin/sh
+# ENK-CFG-023, ENK-ISO-002. OpenWrt 25.12 gives the kernel's bridge-port isolation flag to the
+# radio's first BSS only (measurement M-8, row 6); a guest on the second BSS of a Transition Mode
+# pair could otherwise reach a guest on the first. The flag lives in sysfs, which only root may
+# write, so this hotplug step sets it on every port of Enkrnett's bridges whenever a network
+# interface appears (hostapd adds a BSS to its bridge moments after creating it). The daemon
+# reads the flags back in its health check and undoes a change that leaves a port unisolated.
+[ "$ACTION" = add ] || exit 0
+case "$INTERFACE" in br-*|eth*|lo|wlan*) exit 0 ;; esac
+(
+	for i in $(seq 1 30); do
+		for p in /sys/class/net/br-guest/brif/*/isolated /sys/class/net/br-mgmt/brif/*/isolated; do
+			[ -e "$p" ] || continue
+			[ "$(cat "$p")" = 1 ] || echo 1 > "$p"
+		done
+		if [ -e "/sys/class/net/br-guest/brif/$INTERFACE" ] || [ -e "/sys/class/net/br-mgmt/brif/$INTERFACE" ]; then
+			exit 0
+		fi
+		sleep 1
+	done
+) &

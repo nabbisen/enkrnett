@@ -65,6 +65,8 @@ define Package/enkrnett/install
 	$(INSTALL_CONF) ./files/enkrnett.config $(1)/etc/config/enkrnett
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) ./files/enkrnett.defaults $(1)/etc/uci-defaults/90-enkrnett
+	$(INSTALL_DIR) $(1)/etc/hotplug.d/net
+	$(INSTALL_BIN) ./files/enkrnett.hotplug $(1)/etc/hotplug.d/net/50-enkrnett-isolate
 	$(INSTALL_DIR) $(1)/etc/enkrnett
 endef
 

@@ -3,12 +3,14 @@
 //! asks `netifd` to reload through ubus, and reads the effective state back through ubus and
 //! `/proc`. Nothing here runs as root and nothing spawns a process.
 //!
-//! What this stage does not yet do (M2): the pending marker and the undo-at-start-up of chapter
-//! 6 §4, the bridge-port `isolated` read-back (ENK-CFG-023), the listener port scan
-//! (ENK-CFG-025), and renumbering on an uplink collision (ENK-TOPO-003, 006).
+//! The health check treats the platform's options as requests and the kernel's and the services'
+//! reported state as the truth (ENK-CFG-026): interfaces and BSSes through ubus, bridge-port
+//! isolation through sysfs (ENK-CFG-023), DNS listeners and the daemon's own listener through
+//! `/proc/net` (ENK-CFG-024, 025). Not yet: renumbering on an uplink collision (ENK-TOPO-003,
+//! 006).
 
 use std::fs;
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -18,7 +20,8 @@ use enkrnett_model::api::{
     ManagementStatus, Memory, Radio, Storage, UplinkStatus,
 };
 use enkrnett_model::plan::{
-    self, BssRole, ExpectedBss, MANAGEMENT_ADDRESS, OWNED_PREFIX, Phase, Plan, owned_sections,
+    self, BssRole, ExpectedBss, LISTEN_PORT, MANAGEMENT_ADDRESS, OWNED_PREFIX, Phase, Plan,
+    owned_sections,
 };
 use enkrnett_model::profile::DeviceProfile;
 use enkrnett_model::settings::{GuestMode, Settings};
@@ -276,6 +279,22 @@ impl OpenWrtPlatform {
         if !self.dnsmasq_instances_running(&instances) {
             out.push(HealthDetail::DhcpMissing);
         }
+        // The kernel's view (ENK-CFG-026): the ports really isolated, DNS really listening on
+        // each network's address, the daemon's listener on the management address only.
+        let udp = sockets("/proc/net/udp", None);
+        for (bridge, address) in plan::expected_bridges(phase) {
+            if bridge_ports(bridge).iter().any(|(_, isolated)| !isolated) {
+                out.push(HealthDetail::IsolationMissing);
+            }
+            let address: Ipv4Addr = address.parse().expect("literal");
+            if !udp.iter().any(|s| s.port == 53 && s.address == address) {
+                out.push(HealthDetail::DhcpMissing);
+            }
+        }
+        if listener_exposed(&sockets("/proc/net/tcp", Some("0A"))) {
+            out.push(HealthDetail::ListenerExposed);
+        }
+        out.sort_by_key(|d| *d as u8);
         out.dedup();
         out
     }
@@ -333,22 +352,6 @@ impl OpenWrtPlatform {
         }
     }
 
-    /// Listening TCP ports of the device (`/proc/net/tcp`, state 0A).
-    fn listening_tcp_ports() -> Vec<u16> {
-        let text = fs::read_to_string("/proc/net/tcp").unwrap_or_default();
-        text.lines()
-            .skip(1)
-            .filter_map(|l| {
-                let mut cols = l.split_whitespace();
-                let local = cols.nth(1)?;
-                let state = cols.nth(1)?;
-                (state == "0A")
-                    .then(|| u16::from_str_radix(local.rsplit(':').next()?, 16).ok())
-                    .flatten()
-            })
-            .collect()
-    }
-
     /// The hardening report (ENK-HARD-006). What the daemon cannot observe as its own user is
     /// reported as not met rather than guessed met.
     fn hardening(&self) -> Vec<HardeningItem> {
@@ -357,10 +360,16 @@ impl OpenWrtPlatform {
         let luci = Path::new("/usr/lib/lua/luci").exists()
             || Path::new("/www/luci-static").exists()
             || Path::new("/usr/share/ucode/luci").exists();
-        let allowed: [u16; 3] = [53, 67, 80];
-        let unexpected = Self::listening_tcp_ports()
+        // ENK-HARD-005: nothing listens but DNS, DHCP, and the daemon on the management address.
+        let mgmt: Ipv4Addr = MANAGEMENT_ADDRESS.parse().expect("literal");
+        let unexpected = sockets("/proc/net/tcp", Some("0A"))
             .into_iter()
-            .any(|p| !allowed.contains(&p));
+            .chain(sockets("/proc/net/tcp6", Some("0A")))
+            .chain(sockets("/proc/net/udp", None))
+            .chain(sockets("/proc/net/udp6", None))
+            .any(|s| {
+                !(s.port == 53 || s.port == 67 || (s.port == LISTEN_PORT && s.address == mgmt))
+            });
         let wps = self.read_config("wireless").map(|w| w.sections().any(|s| s.entries.iter().any(|e| matches!(e, enkrnett_model::uci::Entry::Option(k, _) if k.starts_with("wps"))))).unwrap_or(true);
         vec![
             HardeningItem {
@@ -757,4 +766,85 @@ impl Platform for OpenWrtPlatform {
     fn restart(&self) -> Result<(), PlatformError> {
         self.call("system", "reboot", json!({})).map(|_| ())
     }
+}
+
+/// A bound socket as `/proc/net/{tcp,udp}` lists it. IPv6 sockets report the mapped or
+/// unspecified address as `0.0.0.0`, which is what matters: "bound to every address".
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BoundSocket {
+    pub address: Ipv4Addr,
+    pub port: u16,
+    pub uid: u32,
+}
+
+/// Parses `/proc/net/tcp`-style text. `state` keeps only that state (`0A` = LISTEN); `None`
+/// keeps every line (UDP sockets have no listening state).
+pub fn parse_sockets(text: &str, state: Option<&str>) -> Vec<BoundSocket> {
+    text.lines()
+        .skip(1)
+        .filter_map(|l| {
+            let cols: Vec<&str> = l.split_whitespace().collect();
+            let local = cols.get(1)?;
+            let st = cols.get(3)?;
+            if state.is_some_and(|wanted| *st != wanted) {
+                return None;
+            }
+            let (addr, port) = local.rsplit_once(':')?;
+            let port = u16::from_str_radix(port, 16).ok()?;
+            let uid = cols.get(7)?.parse().ok()?;
+            let address = match addr.len() {
+                // little-endian host order, as the kernel prints it
+                8 => Ipv4Addr::from(u32::from_str_radix(addr, 16).ok()?.swap_bytes()),
+                32 => {
+                    // IPv6: the last 32 bits hold a mapped IPv4 address; anything else counts
+                    // as "every address".
+                    let v4 = u32::from_str_radix(&addr[24..32], 16).ok()?;
+                    if &addr[0..24] == "0000000000000000FFFF0000" {
+                        Ipv4Addr::from(v4.swap_bytes())
+                    } else {
+                        Ipv4Addr::UNSPECIFIED
+                    }
+                }
+                _ => return None,
+            };
+            Some(BoundSocket { address, port, uid })
+        })
+        .collect()
+}
+
+fn sockets(path: &str, state: Option<&str>) -> Vec<BoundSocket> {
+    parse_sockets(&fs::read_to_string(path).unwrap_or_default(), state)
+}
+
+/// ENK-CFG-025: the daemon's port is bound to the management address and to nothing else;
+/// nothing else answers on the UI's ports. Whatever listens on every address or on the guest
+/// address at port 80 or the daemon's port is exposed to guests.
+pub fn listener_exposed(listening: &[BoundSocket]) -> bool {
+    let mgmt: Ipv4Addr = MANAGEMENT_ADDRESS.parse().expect("literal");
+    listening
+        .iter()
+        .any(|s| (s.port == LISTEN_PORT || s.port == 80) && s.address != mgmt)
+}
+
+/// The ports of a bridge with their kernel `isolated` flag (ENK-CFG-023).
+pub fn bridge_ports(bridge: &str) -> Vec<(String, bool)> {
+    bridge_ports_in(Path::new("/sys/class/net"), bridge)
+}
+
+pub fn bridge_ports_in(sys_class_net: &Path, bridge: &str) -> Vec<(String, bool)> {
+    let dir = sys_class_net.join(bridge).join("brif");
+    let Ok(entries) = fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    let mut ports: Vec<(String, bool)> = entries
+        .filter_map(|e| e.ok())
+        .map(|e| {
+            let isolated = fs::read_to_string(e.path().join("isolated"))
+                .map(|t| t.trim() == "1")
+                .unwrap_or(false);
+            (e.file_name().to_string_lossy().into_owned(), isolated)
+        })
+        .collect();
+    ports.sort();
+    ports
 }

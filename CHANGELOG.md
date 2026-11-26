@@ -5,6 +5,19 @@ release, the history of decisions is in `rfcs/`.
 
 ## Unreleased
 
+### Milestone M2, stage 2 (2026-11-26)
+
+- Separation read back from the kernel in the health check (ENK-CFG-026): the `isolated` flag of
+  every port of the guest and management bridges (ENK-CFG-023), a DNS listener on each network's
+  address (ENK-CFG-024), the daemon's listener on the management address only (ENK-CFG-025);
+  the hardening report counts every bound socket (ENK-HARD-005).
+- Package: `/etc/hotplug.d/net/50-enkrnett-isolate` sets the bridge-port isolation flag as root
+  when an interface appears (OpenWrt 25.12 gives it to the first BSS only, M-8 row 6); the init
+  script sets it at every start.
+- `tests/vm/isolation.sh`: the rows of measurement M-8 against the daemon's own configuration,
+  with four simulated stations in network namespaces, plus the client counts of chapter 7 and
+  the connection line.
+
 ### Milestone M2, stage 1 (2026-11-26)
 
 - The transaction of chapter 6 §4 (`crates/enkrnettd/src/app/change.rs`): a change is accepted

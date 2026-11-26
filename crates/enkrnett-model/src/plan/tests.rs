@@ -326,3 +326,68 @@ fn closed_phase_offers_no_wifi() {
     assert_eq!(owned.radios.len(), 2);
     assert!(expected_bss(&plan.phase).is_empty());
 }
+
+#[test]
+fn the_bridges_to_isolate_follow_the_phase() {
+    // ENK-CFG-023, ENK-CFG-024: one bridge and one DNS address per Wi-Fi network.
+    assert_eq!(
+        expected_bridges(&Phase::Setup {
+            label_suffix: "3F2A".into()
+        }),
+        vec![("br-mgmt", MANAGEMENT_ADDRESS)]
+    );
+    let claimed = Phase::Claimed {
+        management_name: "Enkrnett-3F2A".into(),
+        management_key: "k".into(),
+        settings: settings(GuestMode::OpenToAll, true),
+    };
+    assert_eq!(
+        expected_bridges(&claimed),
+        vec![("br-mgmt", MANAGEMENT_ADDRESS), ("br-guest", GUEST_ADDRESS)]
+    );
+    let off = Phase::Claimed {
+        management_name: "Enkrnett-3F2A".into(),
+        management_key: "k".into(),
+        settings: settings(GuestMode::OpenToAll, false),
+    };
+    assert_eq!(expected_bridges(&off).len(), 1);
+}
+
+#[test]
+fn dns_and_ui_rules_are_bound_to_the_networks_own_address() {
+    // A management client must not reach the guest network's DNS instance on the device, nor a
+    // guest the management one (chapter 2 §3).
+    let claimed = Phase::Claimed {
+        management_name: "Enkrnett-3F2A".into(),
+        management_key: "k".into(),
+        settings: settings(GuestMode::OpenToAll, true),
+    };
+    let plan = Plan {
+        country: "JP".into(),
+        radio: "radio0".into(),
+        phase: claimed,
+    };
+    let owned = owned_sections(&plan, &radios());
+    let rule = |name: &str| {
+        owned
+            .firewall
+            .iter()
+            .find(|s| s.name.as_deref() == Some(name))
+            .unwrap_or_else(|| panic!("{name}"))
+    };
+    assert_eq!(rule("enk_guest_dns").get("dest_ip"), Some(GUEST_ADDRESS));
+    assert_eq!(
+        rule("enk_mgmt_dns").get("dest_ip"),
+        Some(MANAGEMENT_ADDRESS)
+    );
+    assert_eq!(rule("enk_mgmt_ui").get("dest_ip"), Some(MANAGEMENT_ADDRESS));
+    assert_eq!(
+        rule("enk_mgmt_redirect").get("src_dip"),
+        Some(MANAGEMENT_ADDRESS)
+    );
+    assert_eq!(
+        rule("enk_guest_dhcp").get("dest_ip"),
+        None,
+        "DHCP is broadcast"
+    );
+}

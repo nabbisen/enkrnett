@@ -7,7 +7,7 @@
 | **Handoff** | `rfcs/handoffs/006-feasibility-measurements/README.md` |
 | **Carried out by** | Architect (acting for the development team, by the owner's instruction) |
 | **Date** | 2026-10-29 |
-| **State** | Ready for review (part 1); part 2 (real radios, real site network) waits for a router |
+| **State** | Ready for review (part 1); part 2 (real radios, real site network) waits for a router. Part 1 is repeatable against the daemon's own configuration as `tests/vm/isolation.sh` (M2 stage 2); row 6 holds there through the package's hotplug step. |
 
 ## Question
 

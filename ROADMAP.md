@@ -60,8 +60,8 @@ M3 cannot publish an image for a device sold in Japan until the legal basis is d
 | Stage | Content | State |
 |---|---|---|
 | 1 | The transaction of chapter 6 §4 in the daemon: marker on flash, apply on its own thread, health check, disconnection and confirmation by the next request, undo on failure, on the deadline, and at start-up; the UI polls the change; tests against the mock and the VM | Done 2026-11-26 |
-| 2 | Separation and hardening on the platform (chapter 2): bridge-port isolation set and read back, one DNS/DHCP instance per network checked, the listener port scan, IPv6 dropped on the Wi-Fi networks, the firewall rules of ENK-ISO-001 to 006; hwsim stations in network namespaces on the VM (M-8 rows) | Next |
-| 3 | Effective state and drift (ENK-CFG-013, 014): the 2 s status cache, the drift check every 10 minutes with *restore*; guest status and counts (chapter 7); the guest notice page (ENK-GUEST-001); renumbering on an uplink collision (ENK-TOPO-003) | |
+| 2 | Separation and hardening on the platform (chapter 2): bridge-port isolation set and read back, one DNS/DHCP instance per network checked, the listener read-back, IPv6 dropped on the Wi-Fi networks, the firewall rules of ENK-ISO-001 to 006; hwsim stations in network namespaces on the VM (M-8 rows) | Done 2026-11-26 |
+| 3 | Effective state and drift (ENK-CFG-013, 014): the 2 s status cache, the drift check every 10 minutes with *restore*; guest status and counts (chapter 7); the guest notice page (ENK-GUEST-001); renumbering on an uplink collision (ENK-TOPO-003) | Next |
 | 4 | VM integration for chapters 2, 6, 7 in CI; the 0.2.0 wrap: changelog, verification record, release notes | |
 
 ## RFC order
