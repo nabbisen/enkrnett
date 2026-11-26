@@ -8,11 +8,10 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use enkrnett_model::api::{
-    Available, Change, ChangeKind, ChangeState, CheckResult, Claim, ClaimCheck, ClaimGuest,
-    CountryChoice, Device, Empty, EraseRequest, ErrorCode, ErrorDetail, FieldCode, FieldError,
-    Greeting, HealthDetail, Installed, LastCheck, LoginRequest, ManagementKey, ManagementProposal,
-    PasswordChange, Proposal, Session, SessionKind, SettingsShape, Status, UndoReason, Update,
-    UpdateState, Version,
+    Available, ChangeKind, CheckResult, Claim, ClaimCheck, ClaimGuest, CountryChoice, Device,
+    Empty, EraseRequest, ErrorCode, ErrorDetail, FieldCode, FieldError, Greeting, Installed,
+    LastCheck, LoginRequest, ManagementKey, ManagementProposal, PasswordChange, Proposal, Session,
+    SessionKind, SettingsShape, Status, Update, UpdateState, Version,
 };
 use enkrnett_model::password::{PasswordContext, check_new_password};
 use enkrnett_model::settings::{
@@ -30,6 +29,10 @@ use crate::platform::Platform;
 use crate::session::SessionStore;
 use crate::store::{OwnerRecord, Store};
 use crate::{log, random};
+
+mod change;
+pub use change::CONFIRMATION_LIMIT;
+use change::ChangeRecord;
 
 /// A successful reply: status and JSON body.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -83,11 +86,6 @@ struct HeldProposal {
     shape: Proposal,
 }
 
-struct ChangeRecord {
-    shape: Change,
-    started: Instant,
-}
-
 struct UpdateRecord {
     state: UpdateState,
     last_check: Option<(Instant, CheckResult)>,
@@ -126,6 +124,30 @@ impl App {
         let store = Store::open(&config.state_dir, random::device_id)?;
         let now = clock.now();
         let (ownership, event) = Ownership::start(store.data.owner.is_some(), now);
+        // ENK-CFG-009: a marker left by a change that did not finish. The stored document is
+        // the one from before that change; applying it below is the undo.
+        let (change, change_counter) = match store.read_pending() {
+            None => (None, 0),
+            Some(Ok(marker)) => {
+                log::event(
+                    "change_undone",
+                    &[
+                        ("id", &marker.id),
+                        ("reason", &"restart"),
+                        ("kind", &format!("{:?}", marker.kind)),
+                    ],
+                );
+                let id = marker.id;
+                (Some(ChangeRecord::undone_by_restart(marker, now)), id)
+            }
+            Some(Err(why)) => {
+                log::event("change_undone", &[("reason", &"restart"), ("marker", &why)]);
+                (None, 0)
+            }
+        };
+        if change.is_some() || store.has_pending() {
+            store.remove_pending()?;
+        }
         let (m, t, p) = config.argon2;
         let app = App(Arc::new(Shared {
             inner: Mutex::new(Inner {
@@ -134,8 +156,8 @@ impl App {
                 guard: LoginGuard::default(),
                 store,
                 proposal: None,
-                change: None,
-                change_counter: 0,
+                change,
+                change_counter,
                 update: UpdateRecord {
                     state: UpdateState::Idle,
                     last_check: None,
@@ -238,6 +260,7 @@ impl App {
                 ],
             );
         }
+        self.tick_change();
     }
 
     pub fn state(&self) -> OwnershipState {
@@ -319,17 +342,6 @@ impl App {
             baseline: info.baseline,
             openwrt: info.openwrt,
             api: API_VERSION,
-        }
-    }
-
-    fn change_shape(inner: &Inner, now: Instant) -> Change {
-        match &inner.change {
-            None => Change::none(),
-            Some(c) => {
-                let mut shape = c.shape.clone();
-                shape.started_ago = Some(seconds_since(c.started, now));
-                shape
-            }
         }
     }
 
@@ -662,122 +674,7 @@ impl App {
         }))
     }
 
-    /// Runs a change synchronously against the platform. The transaction engine with the
-    /// pending marker, the health-check wait, and confirmation by join (chapter 6 §4) arrives
-    /// with the OpenWrt platform in M2; here the platform applies and verifies at once.
-    fn run_change(
-        &self,
-        inner: &mut Inner,
-        kind: ChangeKind,
-        new_settings: Settings,
-        new_key: Option<String>,
-    ) -> Result<Change> {
-        if matches!(
-            inner.change.as_ref().map(|c| c.shape.state),
-            Some(
-                ChangeState::Validating | ChangeState::Applying | ChangeState::WaitingConfirmation
-            )
-        ) {
-            let mut d =
-                ErrorDetail::new(ErrorCode::ChangePending).message("a change is in progress");
-            d.change = Some(Self::change_shape(inner, self.0.clock.now()));
-            return Err(ApiError(Box::new(d)));
-        }
-        let record = inner
-            .store
-            .data
-            .owner
-            .clone()
-            .expect("claimed has an owner");
-        let now = self.0.clock.now();
-        inner.change_counter += 1;
-        let needs_confirmation =
-            new_settings.management.name != record.management_name || new_key.is_some();
-        let key = new_key
-            .clone()
-            .unwrap_or_else(|| record.management_key.clone());
-        let management_name = new_settings.management.name.clone();
-        let mut shape = Change {
-            id: inner.change_counter,
-            state: ChangeState::Applying,
-            kind: Some(kind),
-            from_version: Some(record.settings.version),
-            to_version: Some(record.settings.version + 1),
-            needs_confirmation: Some(needs_confirmation),
-            confirm_in: None,
-            reason: None,
-            detail: None,
-            started_ago: Some(0),
-        };
-        let outcome = self
-            .0
-            .platform
-            .apply_settings(&management_name, &key, &new_settings);
-        match outcome {
-            Ok(details) if details.is_empty() => {
-                let mut settled = new_settings;
-                settled.version = record.settings.version + 1;
-                inner.store.data.owner = Some(OwnerRecord {
-                    password_hash: record.password_hash,
-                    management_name,
-                    management_key: key,
-                    settings: settled,
-                });
-                inner
-                    .store
-                    .save()
-                    .map_err(|e| ApiError::code(ErrorCode::Internal, &e.to_string()))?;
-                shape.state = ChangeState::Settled;
-                log::event(
-                    "change_settled",
-                    &[("id", &shape.id), ("kind", &format!("{kind:?}"))],
-                );
-            }
-            Ok(details) => {
-                // Undo: the platform re-applies the previous settings.
-                let _ = self.0.platform.apply_settings(
-                    &record.management_name,
-                    &record.management_key,
-                    &record.settings,
-                );
-                shape.state = ChangeState::Undone;
-                shape.reason = Some(UndoReason::HealthCheckFailed);
-                shape.detail = details.first().copied();
-                log::event(
-                    "change_undone",
-                    &[
-                        ("id", &shape.id),
-                        ("reason", &"health_check_failed"),
-                        ("detail", &format!("{:?}", details.first())),
-                    ],
-                );
-            }
-            Err(e) => {
-                let _ = self.0.platform.apply_settings(
-                    &record.management_name,
-                    &record.management_key,
-                    &record.settings,
-                );
-                shape.state = ChangeState::Undone;
-                shape.reason = Some(UndoReason::HealthCheckFailed);
-                shape.detail = Some(HealthDetail::ManagementDown);
-                log::event(
-                    "change_undone",
-                    &[
-                        ("id", &shape.id),
-                        ("reason", &"platform_error"),
-                        ("error", &e),
-                    ],
-                );
-            }
-        }
-        inner.change = Some(ChangeRecord {
-            shape: shape.clone(),
-            started: now,
-        });
-        Ok(shape)
-    }
-
+    /// Save (chapter 9 §3): validates, then starts the transaction of `app/change.rs`.
     pub fn settings_post(&self, token: Option<&str>, body: SettingsUpdate) -> Result<Reply> {
         let mut inner = self.0.inner.lock().expect("app");
         self.owner(&mut inner, token)?;
@@ -795,7 +692,7 @@ impl App {
         }
         let next = settings::apply_update(&record.settings, &body)
             .map_err(|fields| ApiError::invalid(fields, "settings refused"))?;
-        let change = self.run_change(&mut inner, ChangeKind::Settings, next, None)?;
+        let change = self.start_change(&mut inner, ChangeKind::Settings, next, None)?;
         Ok(Reply::accepted(&change))
     }
 
@@ -808,7 +705,7 @@ impl App {
             .owner
             .clone()
             .expect("claimed has an owner");
-        let change = self.run_change(&mut inner, ChangeKind::Restore, record.settings, None)?;
+        let change = self.start_change(&mut inner, ChangeKind::Restore, record.settings, None)?;
         Ok(Reply::accepted(&change))
     }
 
@@ -845,7 +742,7 @@ impl App {
             .clone()
             .expect("claimed has an owner");
         let new_key = random::management_key();
-        let change = self.run_change(
+        let change = self.start_change(
             &mut inner,
             ChangeKind::ManagementKey,
             record.settings,
@@ -959,12 +856,7 @@ impl App {
     pub fn update_install(&self, token: Option<&str>) -> Result<Reply> {
         let mut inner = self.0.inner.lock().expect("app");
         self.owner(&mut inner, token)?;
-        if inner.change.as_ref().is_some_and(|c| {
-            matches!(
-                c.shape.state,
-                ChangeState::Applying | ChangeState::WaitingConfirmation | ChangeState::Validating
-            )
-        }) {
+        if inner.change.as_ref().is_some_and(ChangeRecord::in_progress) {
             return Err(ApiError::code(
                 ErrorCode::ChangePending,
                 "a change is in progress",

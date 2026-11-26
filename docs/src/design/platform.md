@@ -84,6 +84,7 @@ amendment RFC (ENK-SCOPE-006).
 | Blinking the LED | The init script hands the profile's LED `brightness` attribute to the user at boot |
 | Erase | The daemon writes `/etc/enkrnett/ERASE`, takes the Wi-Fi down, and asks for a reboot (`system reboot` through ubus). The init script's `boot()` sees the marker: on an image install `firstboot -y` resets the overlay to the image; on a package install it removes Enkrnett's state and sections, because `firstboot` would remove Enkrnett itself. |
 | Reboot | `ubus call system reboot` (in the ACL) |
+| Disconnecting the management stations (ENK-API-021) | `hostapd.<mgmt> del_client {addr, reason 3, deauth true}` for every associated station, found by the management SSID (in the ACL) |
 
 ## 5. The device profile at run time
 
@@ -117,11 +118,12 @@ real boot, `procd` with capabilities (the package is built but was not installed
 
 ## 7. What this stage leaves for M2
 
-The pending marker on flash and the undo at start-up; the disconnection of management stations
-and confirmation by the first request on a new connection (ENK-API-021, 022); the bridge-port
-`isolated` read-back (ENK-CFG-023, needs `CAP_NET_ADMIN` and netlink, or the init script); the
-listener port scan (ENK-CFG-025); drift detection every 10 minutes (ENK-CFG-014); renumbering on
-an uplink collision (ENK-TOPO-003, 006); the 5 GHz radio. For the next amendment RFC: the port-80
+Done in M2 stage 1 (`docs/src/design/daemon.md` §6): the pending marker on flash and the undo at
+start-up; the disconnection of management stations and confirmation by the first request on a
+new connection (ENK-API-021, 022). Still open: the bridge-port `isolated` read-back (ENK-CFG-023,
+needs `CAP_NET_ADMIN` and netlink, or the init script); the listener port scan (ENK-CFG-025);
+drift detection every 10 minutes (ENK-CFG-014); renumbering on an uplink collision (ENK-TOPO-003,
+006); the 5 GHz radio. For the next amendment RFC: the port-80
 redirect (the listener port scan of ENK-CFG-025 then concerns 8080 too) and the setup network on
 the management interface (§2).
 

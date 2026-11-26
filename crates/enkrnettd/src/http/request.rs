@@ -11,6 +11,10 @@ pub const MAX_BODY: usize = 16 * 1024;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Request {
+    /// When the connection carrying this request was accepted, on the daemon's clock
+    /// (ENK-API-022: a request confirms a change only on a connection accepted after the
+    /// management stations were disconnected).
+    pub accepted: Instant,
     pub method: String,
     /// The path without the query string.
     pub path: String,
@@ -45,6 +49,7 @@ pub enum ReadError {
 pub fn read_request(
     stream: &mut TcpStream,
     peer: IpAddr,
+    accepted: Instant,
     timeout: Duration,
 ) -> Result<Request, ReadError> {
     let deadline = Instant::now() + timeout;
@@ -116,6 +121,7 @@ pub fn read_request(
         }
     }
     Ok(Request {
+        accepted,
         method,
         path,
         query,

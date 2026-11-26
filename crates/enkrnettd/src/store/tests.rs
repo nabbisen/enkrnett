@@ -121,3 +121,59 @@ fn an_older_document_without_new_fields_still_loads() {
     let s = Store::open(&dir.0, || "x".into()).unwrap();
     assert_eq!(s.data.index_sequence, 0);
 }
+
+#[test]
+fn the_pending_marker_is_written_read_and_removed() {
+    // ENK-CFG-006, ENK-CFG-009: the marker survives a restart; removing it twice is harmless.
+    let dir = TempDir::new();
+    let store = Store::open(&dir.0, || "dev".into()).unwrap();
+    assert!(store.read_pending().is_none());
+    assert!(!store.has_pending());
+    let marker = PendingMarker {
+        format: STORAGE_FORMAT,
+        id: 3,
+        kind: ChangeKind::Settings,
+        from_version: 1,
+        to_version: 2,
+        needs_confirmation: false,
+        previous: OwnerRecord {
+            password_hash: "h".into(),
+            management_name: "Enkrnett-3F2A".into(),
+            management_key: "k".into(),
+            settings: settings(),
+        },
+    };
+    store.write_pending(&marker).unwrap();
+    assert!(store.has_pending());
+    assert!(!dir.0.join("pending.json.tmp").exists());
+    let again = Store::open(&dir.0, || "other".into()).unwrap();
+    assert_eq!(again.read_pending().unwrap().unwrap(), marker);
+    again.remove_pending().unwrap();
+    again.remove_pending().unwrap();
+    assert!(again.read_pending().is_none());
+}
+
+#[test]
+fn an_unreadable_marker_still_counts_as_pending() {
+    let dir = TempDir::new();
+    let store = Store::open(&dir.0, || "dev".into()).unwrap();
+    std::fs::write(dir.0.join("pending.json"), b"{ not json").unwrap();
+    assert!(matches!(store.read_pending(), Some(Err(_))));
+    store.remove_pending().unwrap();
+    assert!(store.read_pending().is_none());
+}
+
+#[test]
+fn stored_files_are_readable_by_the_daemon_only() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = TempDir::new();
+    let mut s = Store::open(&dir.0, || "a".repeat(16)).unwrap();
+    s.data.owner = None;
+    s.save().unwrap();
+    let mode = std::fs::metadata(dir.0.join("state.json"))
+        .unwrap()
+        .permissions()
+        .mode()
+        & 0o777;
+    assert_eq!(mode, 0o600);
+}

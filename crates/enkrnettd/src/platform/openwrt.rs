@@ -121,7 +121,8 @@ impl OpenWrtPlatform {
     fn write_config(&self, name: &str, text: &str) -> Result<(), PlatformError> {
         let path = self.config_dir.join(name);
         let tmp = self.config_dir.join(format!(".{name}.enkrnett.tmp"));
-        fs::write(&tmp, text)
+        // 0600: `wireless` carries the management key (ENK-OWN-011 in spirit); the others follow.
+        crate::store::write_private(&tmp, text.as_bytes())
             .map_err(|e| PlatformError(format!("write {}: {e}", tmp.display())))?;
         fs::rename(&tmp, &path)
             .map_err(|e| PlatformError(format!("rename {}: {e}", path.display())))
@@ -570,6 +571,38 @@ impl Platform for OpenWrtPlatform {
             management_key: management_key.into(),
             settings: settings.clone(),
         })
+    }
+
+    fn disconnect_management_stations(&self) -> Result<(), PlatformError> {
+        let phase = self.phase.lock().expect("phase").clone();
+        let expected = phase.as_ref().map(plan::expected_bss).unwrap_or_default();
+        let Some(ssid) = expected
+            .iter()
+            .find(|b| b.role == BssRole::Management && !b.guest)
+            .map(|b| b.ssid.clone())
+        else {
+            return Ok(());
+        };
+        let objects: Vec<String> = self
+            .bss_objects()
+            .into_iter()
+            .filter(|(_, s, _)| *s == ssid)
+            .map(|(o, _, _)| o)
+            .collect();
+        let mut disconnected = 0u64;
+        for object in objects {
+            for addr in self.clients(&object).keys() {
+                // reason 3: deauthenticated because the sending station is leaving.
+                self.call(
+                    &object,
+                    "del_client",
+                    json!({"addr": addr, "reason": 3, "deauth": true, "ban_time": 0}),
+                )?;
+                disconnected += 1;
+            }
+        }
+        log::event("management_disconnected", &[("stations", &disconnected)]);
+        Ok(())
     }
 
     fn effective(&self) -> Effective {

@@ -25,6 +25,7 @@
 - [Verification](./verification/index.md)
   - [Traceability](./verification/traceability.md)
   - [Milestone M1](./verification/m1.md)
+  - [Milestone M2](./verification/m2.md)
 
 # Maintainers and contributors
 

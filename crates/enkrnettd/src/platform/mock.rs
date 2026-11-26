@@ -2,7 +2,7 @@
 //! values derived from what it was given, and records every call for tests.
 
 use std::net::IpAddr;
-use std::sync::Mutex;
+use std::sync::{Condvar, Mutex};
 
 use enkrnett_model::api::{
     CheckResult, Connection, GuestStatus, HardeningItem, HealthDetail, InstalledAs,
@@ -27,10 +27,13 @@ struct State {
     installed_as: InstalledAs,
     fail_apply_with: Option<HealthDetail>,
     index_result: CheckResult,
+    /// While true, `apply_settings` waits (tests observe the change while it is applying).
+    hold_apply: bool,
 }
 
 pub struct MockPlatform {
     state: Mutex<State>,
+    released: Condvar,
 }
 
 impl Default for MockPlatform {
@@ -55,7 +58,9 @@ impl MockPlatform {
                 installed_as: InstalledAs::Image,
                 fail_apply_with: None,
                 index_result: CheckResult::Unreachable,
+                hold_apply: false,
             }),
+            released: Condvar::new(),
         }
     }
 
@@ -94,6 +99,16 @@ impl MockPlatform {
 
     pub fn set_installed_as(&self, how: InstalledAs) {
         self.state.lock().expect("mock").installed_as = how;
+    }
+
+    /// Holds every `apply_settings` until `release_apply`: the change stays *applying*.
+    pub fn hold_apply(&self) {
+        self.state.lock().expect("mock").hold_apply = true;
+    }
+
+    pub fn release_apply(&self) {
+        self.state.lock().expect("mock").hold_apply = false;
+        self.released.notify_all();
     }
 
     /// Makes the next `apply_settings` fail its health check with `detail`.
@@ -201,6 +216,9 @@ impl Platform for MockPlatform {
             settings.version, settings.guest.name, settings.guest.mode
         ));
         let mut s = self.state.lock().expect("mock");
+        while s.hold_apply {
+            s = self.released.wait(s).expect("mock");
+        }
         if let Some(detail) = s.fail_apply_with.take() {
             return Ok(vec![detail]);
         }
@@ -208,6 +226,11 @@ impl Platform for MockPlatform {
         s.management = Some((management_name.to_string(), management_key.to_string()));
         s.applied = Some(settings.clone());
         Ok(Vec::new())
+    }
+
+    fn disconnect_management_stations(&self) -> Result<(), PlatformError> {
+        self.record("disconnect_management_stations()");
+        Ok(())
     }
 
     fn effective(&self) -> Effective {

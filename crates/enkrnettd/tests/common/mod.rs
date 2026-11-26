@@ -26,6 +26,12 @@ pub struct TestServer {
     dir: PathBuf,
 }
 
+impl TestServer {
+    pub fn state_dir(&self) -> PathBuf {
+        self.dir.clone()
+    }
+}
+
 impl Drop for TestServer {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.dir);
@@ -57,6 +63,15 @@ pub fn start_with(setup: impl FnOnce(&MockPlatform)) -> TestServer {
     let n = COUNTER.fetch_add(1, Ordering::Relaxed);
     let dir = std::env::temp_dir().join(format!("enkrnettd-it-{}-{n}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
+    start_in(dir, setup)
+}
+
+/// A second daemon over an existing state directory: what a restart sees.
+pub fn start_on(dir: &Path) -> TestServer {
+    start_in(dir.to_path_buf(), |_| {})
+}
+
+fn start_in(dir: PathBuf, setup: impl FnOnce(&MockPlatform)) -> TestServer {
     let platform = Arc::new(MockPlatform::new());
     setup(&platform);
     let clock = MockClock::new();
@@ -230,5 +245,22 @@ pub fn wait_for_call(ts: &TestServer, call: &str) {
     panic!(
         "platform call {call} did not happen: {:?}",
         ts.platform.calls()
+    );
+}
+
+/// Polls `change` with the owner's session until it reports `state`. Each poll is an owner
+/// request: on a waiting change it is also the confirmation (ENK-API-022), once the clock has
+/// moved past the disconnection.
+pub fn wait_for_change_state(ts: &TestServer, token: &str, state: &str) -> Value {
+    for _ in 0..200 {
+        let c = get(ts, "change", Some(token)).json();
+        if c["state"] == state {
+            return c;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    panic!(
+        "change did not reach {state}: {}",
+        get(ts, "change", Some(token)).body
     );
 }

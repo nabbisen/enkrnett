@@ -1,6 +1,8 @@
 //! ENK-SEC-017, 018, 020 at the parsing level; the socket level is covered by the integration
 //! tests in `tests/limits.rs`.
 
+use std::time::Instant;
+
 use super::*;
 
 #[test]
@@ -64,6 +66,7 @@ fn malformed_headers() {
 #[test]
 fn request_header_lookup_is_case_insensitive() {
     let r = Request {
+        accepted: Instant::now(),
         method: "GET".into(),
         path: "/".into(),
         query: None,

@@ -5,6 +5,19 @@ release, the history of decisions is in `rfcs/`.
 
 ## Unreleased
 
+### Milestone M2, stage 1 (2026-11-26)
+
+- The transaction of chapter 6 §4 (`crates/enkrnettd/src/app/change.rs`): a change is accepted
+  as *applying* with its marker already on flash, applied and verified on its own thread, and
+  settled, or undone with its reason. A change of the management network's name or key
+  disconnects the management stations after the health check and waits up to 600 s for the
+  owner's first request on a new connection; a marker found at start-up is reported as undone by
+  the restart. Restore keeps the version.
+- `Platform::disconnect_management_stations` (hostapd `del_client`); the accept instant on every
+  request; the UI's change display polls every second until the change is decided.
+- `pending.json` in the state directory; `tests/changes.rs` (9 tests); `tests/vm/claim.sh` drives
+  the packaged service and both kinds of change on the VM.
+
 ### Milestone M1, stage 5 (2026-11-26)
 
 - The package installed through `apk` and started by `procd` on the x86-64 VM; the x86/64 SDK

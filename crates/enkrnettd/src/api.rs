@@ -94,6 +94,11 @@ impl Api {
         }
         let token = req.header("enkrnett-session");
         let app = &self.app;
+        // ENK-API-022: a request with a valid owner session on a connection accepted after the
+        // disconnection confirms a waiting change, whatever the request is.
+        if let Some(token) = token {
+            app.note_owner_request(token, req.accepted);
+        }
         if method == Method::Post {
             check_content_type(req)?;
             json::check_strict(&req.body).map_err(|e| ApiError::code(ErrorCode::Invalid, e))?;
@@ -174,6 +179,10 @@ impl Api {
 }
 
 impl Handler for Api {
+    fn now(&self) -> std::time::Instant {
+        self.app.now()
+    }
+
     fn handle(&self, req: &Request) -> Response {
         self.app.tick();
         match req.header("host") {

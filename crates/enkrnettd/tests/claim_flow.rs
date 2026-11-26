@@ -353,7 +353,7 @@ fn sessions_logout_and_at_most_four() {
 }
 
 #[test]
-fn settings_save_version_mismatch_and_undo() {
+fn settings_save_version_mismatch_and_settle() {
     let ts = start();
     let (token, _) = claim(&ts);
     let stale = post(
@@ -385,7 +385,7 @@ fn settings_save_version_mismatch_and_undo() {
     );
     assert_eq!(ok.status, 202, "{}", ok.body);
     let change = ok.json();
-    assert_eq!(change["state"], "settled");
+    assert_eq!(change["state"], "applying");
     assert_eq!(change["kind"], "settings");
     assert_eq!(change["needs_confirmation"], false);
     assert_eq!(
@@ -395,40 +395,12 @@ fn settings_save_version_mismatch_and_undo() {
         ),
         (Some(1), Some(2))
     );
+    wait_for_change_state(&ts, &token, "settled");
     let status = get(&ts, "status", Some(&token)).json();
     assert_eq!(status["settings"]["version"], 2);
     assert_eq!(status["guest"]["mode"], "encrypted_only");
     assert_eq!(get(&ts, "change", Some(&token)).json()["id"], 1);
-    // A failed health check undoes the change and reports why.
-    ts.platform
-        .fail_next_apply(enkrnett_model::api::HealthDetail::GuestDown);
-    let undone = post(
-        &ts,
-        "settings",
-        Some(&token),
-        r#"{"version":2,"guest":{"name":"Third","mode":"open_to_all","enabled":true},"management":{"name":"Enkrnett-3F2A"}}"#,
-    );
-    assert_eq!(undone.status, 202);
-    assert_eq!(undone.json()["state"], "undone");
-    assert_eq!(undone.json()["reason"], "health_check_failed");
-    assert_eq!(undone.json()["detail"], "guest_down");
-    let status = get(&ts, "status", Some(&token)).json();
-    assert_eq!(
-        status["settings"]["version"], 2,
-        "the previous settings are back"
-    );
-    assert_eq!(status["settings"]["guest"]["name"], "Cafe Example 2");
-    // A management name change needs confirmation and is reported so.
-    let mgmt = post(
-        &ts,
-        "settings",
-        Some(&token),
-        r#"{"version":2,"guest":{"name":"Cafe Example 2","mode":"encrypted_only","enabled":true},"management":{"name":"Office"}}"#,
-    );
-    assert_eq!(mgmt.json()["needs_confirmation"], true);
-    // Restore is a change of its own kind.
-    let restore = post(&ts, "settings/restore", Some(&token), "{}");
-    assert_eq!(restore.json()["kind"], "restore");
+    // The undo, the confirmation, and restore: tests/changes.rs.
 }
 
 #[test]
@@ -443,6 +415,16 @@ fn replacing_the_management_key_returns_the_compound_response() {
     let new_key = v["management_key"]["key"].as_str().unwrap();
     assert!(is_management_key(new_key));
     assert_ne!(new_key, proposal["management"]["key"].as_str().unwrap());
+    // The radio already carries the new key; the stored document keeps the old one until the
+    // owner has joined with the new one (tests/changes.rs).
+    wait_for_change_state(&ts, &token, "waiting_confirmation");
+    assert_eq!(ts.platform.management().unwrap().1, new_key);
+    assert_eq!(
+        get(&ts, "management-key", Some(&token)).json()["key"],
+        proposal["management"]["key"]
+    );
+    ts.clock.advance(Duration::from_secs(1));
+    wait_for_change_state(&ts, &token, "settled");
     assert_eq!(
         get(&ts, "management-key", Some(&token)).json()["key"],
         new_key

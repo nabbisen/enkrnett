@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { api } from '../lib/api';
+  import { app } from '../lib/app.svelte';
   import { Countdown } from '../lib/countdown.svelte';
   import { changeSentence } from '../lib/errors';
   import { i18n } from '../lib/i18n/index.svelte';
@@ -8,7 +10,36 @@
 
   // S-11: the sentence for the change's state (chapter 10 §5.5); while the owner must join the
   // new management Wi-Fi, the new name and password, a Wi-Fi QR code, and the countdown.
-  let { change, managementKey = null }: { change: Change; managementKey?: ManagementKey | null } = $props();
+  // While the change runs, `change` is polled every second (chapter 9 §6); the poll that finds
+  // it settled or undone also refreshes the status. A poll that fails (the phone is between
+  // networks) is simply retried.
+  let { change: given, managementKey = null }: { change: Change; managementKey?: ManagementKey | null } = $props();
+  // What the polls found, until the parent hands in a new change.
+  let live = $state<Change | null>(null);
+  const change = $derived(live ?? given);
+
+  const inProgress = (c: Change) => c.state === 'validating' || c.state === 'applying' || c.state === 'waiting_confirmation';
+
+  $effect(() => {
+    void given;
+    live = null;
+  });
+
+  $effect(() => {
+    if (!inProgress(change)) return;
+    const id = change.id;
+    const timer = setInterval(async () => {
+      try {
+        const latest = await api.change();
+        if (latest.id !== id) return;
+        live = latest;
+        if (!inProgress(latest)) await app.loadStatus();
+      } catch {
+        // between networks or the device restarting the Wi-Fi: try again next second
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  });
 
   const countdown = new Countdown();
   $effect(() => {

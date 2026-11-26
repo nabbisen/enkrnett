@@ -9,7 +9,7 @@ the specification (chapters 3, 4, 6, 9); this document follows it and adds nothi
 | Delivered | Not yet (stage, milestone) |
 |---|---|
 | The workspace of chapter 11 §4: `enkrnett-model`, `enkrnett-ubus`, `enkrnettd` | The UI (`ui/`, M1 stage 2) and the browser harness (`tests/browser/`) |
-| Every resource of chapter 9 §3, against the mock platform; since stage 4 also against OpenWrt (`docs/src/design/platform.md`) | The transaction engine with the pending marker and confirmation by join (chapter 6; M2) |
+| Every resource of chapter 9 §3, against the mock platform; since M1 stage 4 also against OpenWrt (`docs/src/design/platform.md`); since M2 stage 1 the transaction of chapter 6 §4 (§6 below) | Drift detection (ENK-CFG-014), the isolation read-backs and the port scan in the health check (ENK-CFG-023 to 025; M2 stage 2) |
 | HTTP/1.1 server with the limits and headers of chapter 9 | Update download, verification, install (chapter 11; M3) |
 | Ownership state machine with timers; sessions; login delay; argon2id | The OpenWrt package, init script, ACL (`openwrt/package`; M1 stage 3) |
 | Persistence with format version; Erase | MIPS build and the squashfs size check in CI (M1 stage 3) |
@@ -76,15 +76,37 @@ Actions that end the client's own network (confirm, restart, erase) answer first
 At start and after `do_restart`, the application tells the platform what the state requires:
 `enter_setup` without an owner, `apply_settings` with one.
 
-## 6. The change runner in this stage
+## 6. The transaction (`app/change.rs`, M2 stage 1)
 
-`App::run_change` is the synchronous stand-in for the transaction of chapter 6 §4. It numbers the
-change, asks the platform to apply and verify, and either settles (version + 1, store saved) or
-undoes (the previous settings are re-applied; `reason` and `detail` are reported). The pending
-marker on flash, the 60-second health-check window, the disconnection of management stations and
-the confirmation by the first request on a new connection are the OpenWrt platform's part and
-arrive with it. The `change` shape already carries `needs_confirmation` truthfully, so the UI can
-be built against the final contract.
+Chapter 6 §4, as the daemon runs it:
+
+| Step | Where | What |
+|---|---|---|
+| Validate | `settings_post` | Version check (409 `version_mismatch` with the current document), then `settings::apply_update` (400 `invalid` with every field); nothing persistent before this passes (ENK-CFG-005) |
+| Refuse a second change | `start_change` | 409 `change_pending` with the state of the one in progress (ENK-CFG-011) |
+| Marker on flash | `start_change` | `pending.json`: id, kind, versions, `needs_confirmation`, and the previous document, written by temp-file-and-rename before the device is touched (ENK-CFG-006) |
+| 202 | `start_change` | The `applying` shape; the rest runs on its own thread |
+| Apply and verify | `perform_change` | `Platform::apply_settings`: owned sections written, reload, health check up to 60 s (ENK-CFG-007) |
+| Settle | `settle` | The candidate document becomes the stored one, the marker goes, `settled` (ENK-CFG-010) |
+| Confirmation needed | `perform_change` | After a passed health check: `disconnect_management_stations` (hostapd `del_client` with deauthentication), *then* `waiting_confirmation` with a 600 s deadline (ENK-API-021, ENK-CFG-008) |
+| Confirmed | `note_owner_request` | Called by the API layer for every request with a session header, before the request is handled: a valid owner session on a connection accepted after the disconnection settles the change, and that same response already says `settled` (ENK-API-022). No separate action. |
+| Not confirmed | `tick_change` | At the deadline the decision is taken under the lock, so no later request can confirm; the undo runs on its own thread |
+| Undo | `undo` | The previous document is re-applied; the state reads `applying` meanwhile, which is what the device is doing; then `undone` with `reason` and `detail`; the marker goes (ENK-CFG-009) |
+| Restart | `App::new` | A marker found at start-up becomes an `undone` change with reason `restart`; the stored document, which is the one from before the change, is applied as at every start; the numbering continues from the marker's id |
+
+Two interpretations to carry into the next amendment RFC:
+
+- **The snapshot is the previous desired document.** ENK-CFG-001 makes the owned sections a pure
+  function of that document, so storing the document restores the sections exactly, and the store
+  already holds it: the stored document only changes when a change settles. A second copy of the
+  rendered sections would be dead data.
+- **`validating` is never observable.** Validation is synchronous and complete before the 202.
+  The state stays in the shape for the contract's sake.
+
+The accept instant of ENK-API-022 is taken on the daemon's monotonic clock when the connection is
+accepted (`Request::accepted`), before the request is read; the disconnection instant is taken
+after `del_client` returned. Strictly later wins. Every request already closes its connection
+(`Connection: close`), so "a connection accepted after" is simply "a request that began after".
 
 ## 7. Dependencies (ENK-FOOT-016)
 

@@ -1,16 +1,19 @@
-//! What the daemon keeps on flash: the device identifier, the owner record, the settings. One
-//! JSON file with a format version (ENK-BASE-005), written to a temporary name and renamed into
-//! place (ENK-CFG-006). Erase removes it (ENK-OWN-018).
+//! What the daemon keeps on flash: the device identifier, the owner record, the settings, and,
+//! while a change runs, the pending marker. JSON files with a format version (ENK-BASE-005),
+//! each written to a temporary name and renamed into place (ENK-CFG-006). Erase removes them
+//! (ENK-OWN-018).
 
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
 use enkrnett_model::STORAGE_FORMAT;
+use enkrnett_model::api::ChangeKind;
 use enkrnett_model::settings::Settings;
 use serde::{Deserialize, Serialize};
 
 pub const FILE_NAME: &str = "state.json";
+pub const PENDING_FILE_NAME: &str = "pending.json";
 
 /// The owner and everything the claim created.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -19,6 +22,21 @@ pub struct OwnerRecord {
     pub management_name: String,
     pub management_key: String,
     pub settings: Settings,
+}
+
+/// The pending marker of chapter 6 §4: on flash from before the owned sections are written until
+/// the change settles or is undone. `previous` is the snapshot: under ENK-CFG-001 the owned
+/// sections are a pure function of the desired document, so the previous document restores them
+/// exactly. A marker found at start-up means the change is undone (ENK-CFG-009).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PendingMarker {
+    pub format: u32,
+    pub id: u64,
+    pub kind: ChangeKind,
+    pub from_version: u64,
+    pub to_version: u64,
+    pub needs_confirmation: bool,
+    pub previous: OwnerRecord,
 }
 
 /// The whole stored document.
@@ -99,19 +117,54 @@ impl Store {
 
     /// Writes the document atomically.
     pub fn save(&self) -> io::Result<()> {
-        let path = self.path();
-        let tmp = self.dir.join(format!("{FILE_NAME}.tmp"));
         let bytes = serde_json::to_vec_pretty(&self.data).map_err(io::Error::other)?;
-        {
-            let mut f = fs::File::create(&tmp)?;
-            io::Write::write_all(&mut f, &bytes)?;
-            f.sync_all()?;
+        self.write_atomically(FILE_NAME, &bytes)
+    }
+
+    /// Writes the pending marker (ENK-CFG-006), before anything else of the change touches
+    /// the device.
+    pub fn write_pending(&self, marker: &PendingMarker) -> io::Result<()> {
+        let bytes = serde_json::to_vec_pretty(marker).map_err(io::Error::other)?;
+        self.write_atomically(PENDING_FILE_NAME, &bytes)
+    }
+
+    /// The marker left by a change that did not finish, if any. An unreadable marker counts
+    /// as one: the change is undone either way, and the file goes.
+    pub fn read_pending(&self) -> Option<Result<PendingMarker, String>> {
+        match fs::read(self.dir.join(PENDING_FILE_NAME)) {
+            Ok(bytes) => Some(serde_json::from_slice(&bytes).map_err(|e| e.to_string())),
+            Err(_) => None,
         }
+    }
+
+    /// Removes the marker: the change settled or was undone.
+    pub fn remove_pending(&self) -> io::Result<()> {
+        match fs::remove_file(self.dir.join(PENDING_FILE_NAME)) {
+            Err(e) if e.kind() != io::ErrorKind::NotFound => Err(e),
+            _ => {
+                self.sync_dir();
+                Ok(())
+            }
+        }
+    }
+
+    pub fn has_pending(&self) -> bool {
+        self.dir.join(PENDING_FILE_NAME).exists()
+    }
+
+    fn write_atomically(&self, name: &str, bytes: &[u8]) -> io::Result<()> {
+        let path = self.dir.join(name);
+        let tmp = self.dir.join(format!("{name}.tmp"));
+        write_private(&tmp, bytes)?;
         fs::rename(&tmp, &path)?;
+        self.sync_dir();
+        Ok(())
+    }
+
+    fn sync_dir(&self) {
         if let Ok(d) = fs::File::open(&self.dir) {
             let _ = d.sync_all();
         }
-        Ok(())
     }
 
     /// Erase (ENK-OWN-018): removes every file of the state directory and starts a fresh
@@ -130,3 +183,20 @@ impl Store {
 
 #[cfg(test)]
 mod tests;
+
+/// Creates or truncates `path` with mode 0600, writes `bytes`, and syncs. The owner record holds
+/// the password hash and the management key; nothing on the device but the daemon reads them.
+pub fn write_private(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    use std::os::unix::fs::OpenOptionsExt;
+    let mut f = fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .mode(0o600)
+        .open(path)?;
+    io::Write::write_all(&mut f, bytes)?;
+    f.sync_all()?;
+    // An existing file keeps its old mode on open; make sure.
+    fs::set_permissions(path, std::os::unix::fs::PermissionsExt::from_mode(0o600))?;
+    Ok(())
+}

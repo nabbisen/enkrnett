@@ -1,6 +1,6 @@
-//! Everything the daemon asks of the device, behind one trait. The OpenWrt implementation
-//! (UCI, ubus, sysfs; chapter 6 and RFC 014) arrives with milestone M2. [`MockPlatform`] stands
-//! in on a workstation and in CI and records what it was asked to do.
+//! Everything the daemon asks of the device, behind one trait. [`OpenWrtPlatform`] speaks UCI,
+//! ubus, and sysfs (chapter 6 and RFC 014; `docs/src/design/platform.md`); [`MockPlatform`]
+//! stands in on a workstation and in CI and records what it was asked to do.
 
 use std::net::IpAddr;
 
@@ -96,6 +96,10 @@ pub trait Platform: Send + Sync {
         management_key: &str,
         settings: &Settings,
     ) -> Result<Vec<HealthDetail>, PlatformError>;
+
+    /// Disconnects every station of the management network with deauthentication
+    /// (ENK-API-021), so that the next request proves a new association.
+    fn disconnect_management_stations(&self) -> Result<(), PlatformError>;
 
     /// What the device is doing now.
     fn effective(&self) -> Effective;

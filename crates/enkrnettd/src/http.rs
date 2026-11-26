@@ -8,7 +8,7 @@ use std::net::{TcpListener, TcpStream};
 use std::os::fd::AsRawFd;
 use std::sync::Arc;
 use std::sync::mpsc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use enkrnett_model::api::ErrorCode;
 
@@ -24,6 +24,8 @@ pub const LISTEN_BACKLOG: i32 = 16;
 /// Handles one parsed request.
 pub trait Handler: Send + Sync {
     fn handle(&self, request: &Request) -> Response;
+    /// The daemon's monotonic clock, read when a connection is accepted.
+    fn now(&self) -> Instant;
 }
 
 /// Sets the listen backlog on an already listening socket.
@@ -79,7 +81,9 @@ fn handle_connection(mut stream: TcpStream, handler: &dyn Handler, config: &Conf
         Err(_) => return,
     };
     let _ = stream.set_nodelay(true);
-    let response = match request::read_request(&mut stream, peer, config.request_timeout) {
+    let accepted = handler.now();
+    let response = match request::read_request(&mut stream, peer, accepted, config.request_timeout)
+    {
         Ok(request) => handler.handle(&request),
         Err(request::ReadError::ClosedOrTimedOut) => return,
         Err(request::ReadError::HeadersTooLarge) => Response::error(
