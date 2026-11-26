@@ -1,0 +1,4 @@
+#!/bin/sh
+# copy a file into the test VM: ./vmscp local remote
+cd "$(dirname "$0")" || exit 1
+exec scp -O -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -i id_ed25519 -P 2222 "$1" "root@127.0.0.1:$2"

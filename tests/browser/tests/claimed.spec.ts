@@ -1,5 +1,7 @@
 // The claimed device in the browser: Status, Settings, Management Wi-Fi, Details, Erase
-// (ENK-UI-013, 016, 017, 021, 024, 027).
+// (ENK-UI-013, 016, 017, 021, 024, 027; ENK-OWE-011 the count of devices that lose the network
+// before saving; ENK-OWE-016 mode and counts on the first screen; ENK-OWE-018 and ENK-GUEST-001
+// "What this protects" and the printable notice carry the same text).
 import { expect, test } from '@playwright/test';
 import { PASSWORD, claimViaApi, expectNoForbiddenWords, loginInBrowser } from './helpers';
 

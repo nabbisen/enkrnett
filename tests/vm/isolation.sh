@@ -2,7 +2,8 @@
 # Separation on the x86-64 VM with simulated stations (chapter 2; measurement M-8 made
 # repeatable): ENK-ISO-001 to 006, ENK-NET-008, ENK-NET-010, ENK-CFG-023, ENK-CFG-024,
 # ENK-CFG-025, ENK-TOPO-001, ENK-HARD-005, ENK-HARD-008; the client counts of chapter 7
-# (ENK-STAT-*); the connection line of RFC 016 §10 (ENK-OWN-022).
+# (ENK-STAT-*; ENK-OWE-013 the two counts reported separately, ENK-OWE-014 as readings of
+# hostapd get_clients, nothing stored); the connection line of RFC 016 §10 (ENK-OWN-022).
 #
 # Needs a CLAIMED device from tests/vm/claim.sh and mac80211_hwsim with 5 radios on the VM
 # (phy0 is the device). Four stations in network namespaces: g1 OWE, g2 open BSS, g3 OWE, m1

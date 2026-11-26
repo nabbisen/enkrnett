@@ -1,0 +1,4 @@
+#!/bin/sh
+# ssh into the test VM: ./vmssh 'command'   (key: id_ed25519 beside this script, made by image.sh)
+cd "$(dirname "$0")" || exit 1
+exec ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -i id_ed25519 -p 2222 root@127.0.0.1 "$@"

@@ -46,6 +46,8 @@ echo "package: $OUT/$(basename "$APK") ($(stat -c %s "$APK") bytes)"
 cd "$VM"
 ./vm.sh start >/dev/null || true
 python3 vmsh.py wait 120 >/dev/null 2>&1 || true
+# prepare.sh may have just rebooted the VM: wait until ssh answers again.
+for i in $(seq 1 40); do ./vmssh true >/dev/null 2>&1 && break; sleep 3; done
 ./vmssh 'killall enkrnettd 2>/dev/null; /etc/init.d/enkrnett stop 2>/dev/null; apk del enkrnett 2>/dev/null; rm -rf /etc/enkrnett /usr/share/enkrnett; true' >/dev/null 2>&1 || true
 ./vmscp "$OUT/$(basename "$APK")" /tmp/enkrnett.apk >/dev/null
 ./vmssh 'set -e
@@ -54,6 +56,7 @@ echo "--- installed files"; apk info -L enkrnett | head -20
 echo "--- user"; id enkrnett
 echo "--- ownership the first-boot script will set"; ls -ld /etc/enkrnett
 # Ownership of the four files is the first-boot script's and the init script's job; nothing by hand.
-/etc/init.d/uhttpd disable 2>/dev/null; /etc/init.d/uhttpd stop 2>/dev/null; true
+# The measurement VM carries LuCI; the image of tests/vm/image.sh does not. Either way nothing else may hold port 80.
+[ -x /etc/init.d/uhttpd ] && { /etc/init.d/uhttpd disable; /etc/init.d/uhttpd stop; } 2>/dev/null; true
 echo installed; (sleep 1; reboot) >/dev/null 2>&1 &'
 echo "package installed; VM rebooting"

@@ -1,0 +1,71 @@
+name: vm
+
+# The VM integration of chapter 14 §2: the x86-64 OpenWrt test VM built from the pinned Image
+# Builder, the package installed through procd, then chapters 2, 6 and 7 and the RFC 003/004
+# contract on the real platform (tests/vm/run-all.sh). About 30 minutes with KVM, which the
+# standard GitHub-hosted Linux runners offer once the kvm device is made writable (GitHub
+# changelog 2024-04-02). Runs on every push to main, on request, and weekly against the live
+# 25.12.5 package feeds the Image Builder reads.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  vm:
+    name: OpenWrt VM: chapters 2, 6, 7 and the contract on the real platform
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils zstd xz-utils python3 openssh-client curl
+      - name: KVM for the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm || echo "no /dev/kvm: QEMU will emulate"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: vm
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - name: Build the UI
+        working-directory: ui
+        run: npm ci && npm run build
+      - name: Build the static x86-64 daemon
+        run: RUSTFLAGS="-C target-feature=+crt-static" cargo build --release -p enkrnettd --target x86_64-unknown-linux-musl
+      - name: Cache the Image Builder and the x86/64 SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            openwrt/.cache/x86_64-ib
+            openwrt/.cache/x86_64
+          key: openwrt-x86-${{ hashFiles('openwrt/lock/inputs.json') }}
+      - name: Build the test VM image
+        run: tests/vm/image.sh "$RUNNER_TEMP/vm"
+      - name: Run the chain
+        run: tests/vm/run-all.sh "$RUNNER_TEMP/vm" "$RUNNER_TEMP/vm-logs"
+      - name: Stop the VM
+        if: always()
+        run: "$RUNNER_TEMP/vm/vm.sh" stop || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vm-logs
+          path: |
+            ${{ runner.temp }}/vm-logs
+            ${{ runner.temp }}/vm/image-build.log

@@ -48,7 +48,7 @@ pub fn config_for_tests(dir: &Path) -> Config {
         hosts: vec!["localhost".into()],
         request_timeout: Duration::from_millis(800),
         response_timeout: Duration::from_secs(5),
-        version: "0.1.0".into(),
+        version: "0.2.0".into(),
         languages: vec!["en".into(), "ja".into()],
         // Small argon2 parameters keep the tests fast; the device uses the profile's.
         argon2: (64, 1, 1),

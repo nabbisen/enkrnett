@@ -24,6 +24,8 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Test
         run: cargo test --workspace
+      - name: Requirement-to-test traceability (chapter 14 rule 1)
+        run: python3 tests/traceability.py --release 0.1.0 && python3 tests/traceability.py --release 0.2.0
       - name: Release build and size (x86-64, informational until the MIPS build joins CI)
         run: |
           cargo build --release -p enkrnettd

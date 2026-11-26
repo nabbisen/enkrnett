@@ -72,7 +72,24 @@ the real squashfs figure (without it the script estimates with xz and says so). 
 100 MB) is cached in `openwrt/.cache/`; `ENKRNETT_SDK_DIR` points at an existing one. Output:
 `openwrt/out/enkrnettd`, `openwrt/out/sizes.json`, and the `.apk`.
 
-## The claim on the OpenWrt virtual machine
+## The OpenWrt virtual machine
+
+```sh
+sudo apt-get install qemu-system-x86 qemu-utils zstd    # or the distribution's equivalents
+tests/vm/image.sh openwrt/out/vm   # the x86-64 test VM from the pinned Image Builder: disk.img, launcher, ssh key
+openwrt/out/vm/vm.sh start         # QEMU with KVM when /dev/kvm is writable, software emulation otherwise
+```
+
+`tests/vm/image.sh` builds the release's generic x86/64 ext4 image plus what the tests need
+(`wpad-basic-mbedtls`, five `mac80211_hwsim` radios, `wpa-cli`, `nmap`, `tcpdump-mini`, `patch`)
+and a first-boot script (`tests/vm/files/etc/uci-defaults/80-enkrnett-vm`) that opens ssh from
+the uplink side and applies the carried wifi-scripts patch of `openwrt/patches`. The Image
+Builder is checked against the lock; the packages come from the 25.12.5 feeds it names. The VM
+directory holds `vm.sh`, `vmssh`, `vmscp`, `vmsh.py` (serial console) and the key; every script
+below takes it as its argument. The measurement VM of RFC 006 (private, `.git-exclude/tmp/m/vm/`)
+has the same layout and works too.
+
+## The claim on the virtual machine
 
 ```sh
 rustup target add x86_64-unknown-linux-musl
@@ -81,9 +98,7 @@ tests/vm/prepare.sh /path/to/vm    # user, ACL, ownership, base configuration; r
 tests/vm/claim.sh   /path/to/vm    # the claim end to end through an SSH tunnel
 ```
 
-The VM directory is the measurement VM of RFC 006 (`vm.sh`, `vmssh`, `vmscp`, the disk image);
-it is private material under `.git-exclude/tmp/m/vm/`. What the test checks is in
-`docs/src/design/platform.md` §6.
+What the test checks is in `docs/src/design/platform.md` §6.
 
 ## The package on the virtual machine
 
@@ -93,8 +108,13 @@ tests/vm/contract.sh /path/to/vm   # the RFC 003 and 004 checks against the proc
 tests/vm/isolation.sh /path/to/vm   # chapter 2 with four simulated stations in network namespaces (after claim.sh)
 tests/vm/drift.sh /path/to/vm       # a hand edit with uci: drift reported, restored through a respawn (after claim.sh)
 tests/vm/renumber.sh /path/to/vm    # colliding uplinks (VM_WAN_NET in the VM launcher): only the colliding network moves; ends with Erase
-python3 tests/traceability.py --release 0.1.0   # the requirement-to-test table; fails on an uncovered 0.1.0 requirement
+tests/vm/run-all.sh /path/to/vm [logs]  # the whole chain in the order CI runs it (about 25 minutes with KVM)
+python3 tests/traceability.py --release 0.2.0   # the requirement-to-test table; fails on an uncovered 0.2.0 requirement
 ```
+
+CI runs the chain in `.github/workflows/vm.yml` on every push to `main`, on request, and weekly
+(the Image Builder reads the live 25.12.5 feeds, so a feed change shows up there first). The
+standard GitHub-hosted Linux runners offer KVM once the workflow makes `/dev/kvm` writable.
 
 ## Validate a settings document
 

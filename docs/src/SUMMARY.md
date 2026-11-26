@@ -27,6 +27,11 @@
   - [Milestone M1](./verification/m1.md)
   - [Milestone M2](./verification/m2.md)
 
+# Releases
+
+- [Releases](./releases/index.md)
+  - [0.2.0](./releases/0.2.0.md)
+
 # Maintainers and contributors
 
 - [Building and testing](./contributors/building-and-testing.md)

@@ -49,7 +49,7 @@ History: stage 3's daemon (the API against the mock platform only) was 790 KB ra
 Stage 4 added the OpenWrt platform and brought it to 987 KB and 303 KiB, over the budget. Stage 5
 built `std` for size and without backtraces and panic locations: 723 KB and 224 KiB, with the
 platform code in. M2 stages 1 to 3 (the transaction, the kernel read-backs, drift and
-renumbering) brought it to 241 KiB (raw 789,028 bytes). The budget stands; the next lever, if it is ever needed, is
+renumbering) brought it to 240 KiB (raw 789,028 bytes; the xz estimate moves by one between builds). The budget stands; the next lever, if it is ever needed, is
 `panic_immediate_abort`, which costs the panic message in the log.
 
 ## 4. The OpenWrt package

@@ -7,7 +7,7 @@ writes the table to docs/src/verification/traceability.md. It exits non-zero whe
 allocated to the release given with --release has no test and no inspection note.
 
     tests/traceability.py            write the table
-    tests/traceability.py --release 0.1.0   also fail on uncovered 0.1.0 requirements
+    tests/traceability.py --release 0.2.0   also fail on uncovered 0.2.0 requirements
 """
 import re
 import sys
@@ -36,11 +36,26 @@ INSPECTION = {
     "ENK-SEC-014": "crates/enkrnettd: no std::process::Command; crates/enkrnett-ubus speaks ubus directly",
     "ENK-SEC-015": "crates/enkrnettd/src/http/response.rs: no-store on every API response",
     "ENK-SEC-016": "crates/enkrnettd/src/log.rs and app.rs: events carry no key, password, or token",
-    "ENK-API-027": "crates/enkrnettd/src/app.rs status reads the platform per request; the 2 s cache arrives with M2's effective-state cache",
+    "ENK-API-027": "crates/enkrnettd/src/app/readings.rs: readings at most 2 s old; tests/effective.rs",
+    "ENK-CFG-002": "crates/enkrnettd/src/platform/openwrt.rs: hostapd is reached through UCI (wireless) and ubus (hostapd.*) only; no file under /var/run/hostapd, no control socket",
+    "ENK-CFG-004": "openwrt/patches/0001-wifi-scripts-owe-transition-bss-mac.patch carried; still needed on 25.12.5 (release 0.2.0 checked the header); the test VM applies it at first boot (tests/vm/files)",
+    "ENK-GUEST-002": "release 0.2.0: the notice (ui notice.*), the status counts and the connection line reviewed against chapter 12 §7; docs/src/releases/0.2.0.md",
+    "ENK-NET-009": "no management name is published in 0.2.0 (chapter 3: the address is the path, M-1 open); the guest dnsmasq instance carries no address entry (plan.rs dnsmasq(.., None)); tests/vm/isolation.sh: a guest gets DNS and DHCP from the device and nothing else",
+    "ENK-OWE-007": "ui/src/lib/i18n/*.json mode.open, mode.encrypted; enkrnett_model::settings::GuestMode has the two values",
+    "ENK-OWE-009": "plan.rs: the OWE BSS uses encryption owe, for which wifi-scripts sets ieee80211w=2 (M-6); open: hostapd get_status exposes no ieee80211w, so the daemon cannot read PMF back (recorded for the amendment RFC); the station side is visible as mfp in get_clients",
+    "ENK-OWE-010": "plan.rs: no transition_disable option is written; tests/vm/isolation.sh reads the generated hostapd configuration",
+    "ENK-OWE-012": "ui/src/lib/i18n/*.json settings.mode_note; ui/src/screens/Settings.svelte shows it on the switch to open_to_all",
+    "ENK-OWE-015": "ui wording: status.counts.* say connected (associated), status.running says running; nothing claims what is on the air",
+    "ENK-OWE-017": "ui/src/app.css: colour on .dot.running only; no badge or word sums protection up (tests/browser claimed.spec.ts ENK-UI-021)",
+    "ENK-OWE-019": "open: ui compat.text names the generations from public sources; to be confirmed from M-4 (owner's kit) before the first release",
+    "ENK-SCOPE-004": "release 0.2.0 review of every status and message against chapters 2, 7 and 12: docs/src/releases/0.2.0.md",
+    "ENK-TOPO-002": "the VM takes its uplink by DHCP from QEMU's slirp (tests/vm); the three consumer routers are a device test (M3)",
+    "ENK-TOPO-004": "openwrt/profiles/*/profile.json uplink_port; the platform leaves every other port without a network (prepare.sh: lan proto none models the image); per-device test open",
+    "ENK-TOPO-005": "not implemented in 0.2.0 (should); device test when the Tier 1 hardware is in hand",
     "ENK-OWN-022": "tests/browser/tests/setup.spec.ts (the connection line on S-1); ui/src/components/ConnectionLine.svelte",
     "ENK-UI-018": "ui/src/lib/countdown.svelte.ts (performance.now); tests/browser setup.spec.ts shows the countdown",
     "ENK-UI-022": "ui components render API values as text; the only {@html} is the QR SVG; hostile-value test to add to the harness",
-    "ENK-FOOT-001": "openwrt/build-mips.sh measured 256 KiB (xz estimate) of 300",
+    "ENK-FOOT-001": "openwrt/build-mips.sh measured 240 KiB (xz estimate) of 300 at 0.2.0",
     "ENK-FOOT-011": "browser harness: timing check to add; the bundle is 44 KiB compressed",
     "ENK-RF-003": "openwrt/profiles: every product profile fixes the country, so no radio transmits before it is set",
     "ENK-REPO-002": "openwrt/patches/0001-…: header with upstream reference and removal condition",

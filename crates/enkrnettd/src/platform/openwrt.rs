@@ -944,11 +944,15 @@ impl Platform for OpenWrtPlatform {
         self.apply_phase(Phase::Closed).map(|_| ())
     }
 
+    /// A `config.change` event for the package `enkrnett`: procd runs the init script's reload
+    /// trigger (`procd_add_reload_trigger "enkrnett"`), which is `restart`: stop, then
+    /// `start_service` with the ownership fixed and a fresh command line. procd's own `service`
+    /// object serves it, so a minimal image needs nothing else (the `rc` object would be rpcd's).
     fn restart_service(&self) -> Result<(), PlatformError> {
         self.call(
-            "rc",
-            "init",
-            json!({"name": "enkrnett", "action": "restart"}),
+            "service",
+            "event",
+            json!({"type": "config.change", "data": {"package": "enkrnett"}}),
         )
         .map(|_| ())
     }

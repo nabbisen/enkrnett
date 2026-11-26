@@ -1,4 +1,5 @@
-// The claim in the browser, S-1 to S-9 (chapter 10 §4; ENK-UI-012, 015, 017, 025).
+// The claim in the browser, S-1 to S-9 (chapter 10 §4; ENK-UI-012, 015, 017, 025; ENK-OWE-008: the
+// mode step shows both modes with the default chosen, one line of consequence each).
 import { expect, test } from '@playwright/test';
 import { PASSWORD, expectNoForbiddenWords, finishClaim, resetDevice } from './helpers';
 

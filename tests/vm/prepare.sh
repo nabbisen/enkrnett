@@ -35,6 +35,12 @@ EOF
 for s in $(uci -q show network | sed -n "s/^network\.\(enk_[a-z0-9_]*\)=.*/\1/p" | sort -u); do uci -q delete "network.$s"; done
 uci -q commit network
 for s in $(uci -q show wireless | sed -n "s/^wireless\.\(enk_[a-z0-9_]*\)=.*/\1/p; s/^wireless\.\(default_radio[0-9]*\)=.*/\1/p" | sort -u); do uci -q delete "wireless.$s"; done
+# The radios as the VM profile declares them (openwrt/profiles/x86_64_generic: band 2g). The
+# generated defaults put mac80211_hwsim on 6 GHz (EHT80), where hostapd refuses an open BSS
+# ("Pre-RSNA security methods are not allowed in 6 GHz"); a device image ships its radios set.
+for r in $(uci -q show wireless | sed -n "s/^wireless\.\(radio[0-9]*\)=wifi-device/\1/p"); do
+  uci -q set wireless.$r.band=2g; uci -q set wireless.$r.channel=6; uci -q set wireless.$r.htmode=HT20
+done
 uci -q commit wireless
 cat > /etc/config/dhcp <<EOF
 config odhcpd "odhcpd"

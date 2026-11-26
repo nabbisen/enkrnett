@@ -1,0 +1,21 @@
+#!/bin/sh
+# First boot of the test VM (tests/vm/image.sh). Test-vehicle settings only; a device gets none
+# of this.
+# 1. ssh from the uplink: the host reaches the VM through QEMU's port forward on the WAN side.
+uci -q batch <<UCI
+set firewall.measurement_ssh=rule
+set firewall.measurement_ssh.name='measurement only: ssh from the uplink'
+set firewall.measurement_ssh.src='wan'
+set firewall.measurement_ssh.proto='tcp'
+set firewall.measurement_ssh.dest_port='22'
+set firewall.measurement_ssh.target='ACCEPT'
+UCI
+uci -q commit firewall
+# 2. The carried wifi-scripts patch (ENK-CFG-004, openwrt/patches): the release image carries it
+#    in its rootfs; here it is applied to the installed file on first boot. Idempotent: a second
+#    run finds it applied.
+P=/usr/share/enkrnett-vm/0001-wifi-scripts-owe-transition-bss-mac.patch
+if [ -f "$P" ] && ! grep -q "iface.prepare(config, phy" /usr/share/ucode/wifi/ap.uc; then
+  patch -p6 -d / -N -s < "$P" && logger -t enkrnett-vm "wifi-scripts patch 1789118599 applied"
+fi
+exit 0

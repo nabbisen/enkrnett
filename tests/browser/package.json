@@ -1,7 +1,7 @@
 {
   "name": "enkrnett-browser-harness",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The browser harness (specification chapter 14 §2): the management UI loaded from a private address against enkrnettd --mock.",
   "type": "module",
   "license": "Apache-2.0",

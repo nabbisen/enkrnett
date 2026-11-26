@@ -3,7 +3,28 @@
 Releases use semantic versioning; tags carry no prefix (RFC 013 ENK-RLS-001). Until the first
 release, the history of decisions is in `rfcs/`.
 
-## Unreleased
+## 0.2.0 (prepared 2026-11-26)
+
+The wrap of milestone M2 (ROADMAP). No 0.1.0 tag was made: the exit of M1 (the Tier 1 device)
+is still open, so the first tag will be 0.2.0 and carries everything below it. The tag itself
+is the owner's step, after the device checks; release notes: `docs/src/releases/0.2.0.md`.
+
+### Milestone M2, stage 4 (2026-11-26)
+
+- The x86-64 OpenWrt test VM is built from the pinned Image Builder by `tests/vm/image.sh`
+  (launcher in `tests/vm/launcher`, first-boot overlay in `tests/vm/files`); the private
+  measurement VM is no longer needed to run the VM tests.
+- `tests/vm/run-all.sh` runs the chain (prepare, package, claim, isolation, drift, renumber,
+  contract); `.github/workflows/vm.yml` runs it on every push to `main`, on request, and weekly,
+  with KVM on the standard runners.
+- CI fails on an uncovered 0.1.0 or 0.2.0 requirement (`tests/traceability.py`); the remaining
+  0.2.0 requirements carry inspection notes, with the open ones named as open.
+- The health check no longer counts the daemon's own listener on the address it leaves as exposed
+  (the move waited its full 60 s before).
+- The daemon asks procd for its restart with a `config.change` event for its own package (the init
+  script's reload trigger), not through the `rc` object, which belongs to rpcd and is absent on a
+  minimal image; the ACL lost its `rc` entry.
+- Version 0.2.0 in the workspace, the UI, the package.
 
 ### Milestone M2, stage 3 (2026-11-26)
 
@@ -14,7 +35,7 @@ release, the history of decisions is in `rfcs/`.
   adopted as the boot left it (`Platform::adopt_settings`); a restore cut short by a restart is
   completed by the start-up apply and reported settled.
 - A file handed back to root by a root-side `uci commit` makes the daemon ask procd to restart
-  its service (`PlatformError::NotOurs`, `ubus call rc init`); the init script restores ownership
+  its service (`PlatformError::NotOurs`, a `config.change` event on procd's `service` object); the init script restores ownership
   at every start.
 - Renumbering (ENK-TOPO-003, 006, `enkrnett_model::subnet`): only the colliding network moves,
   never back; the uplink is checked every 10 s. The daemon binds the management address the
