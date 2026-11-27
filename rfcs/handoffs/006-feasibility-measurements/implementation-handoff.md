@@ -391,3 +391,8 @@ alone?
 | Per device: whether the vendor's firmware accepted the image; whether a phone alone was enough |
 | Changes to the guide that the trial suggests |
 | No personal data of participants beyond their occupation |
+
+**Extended 2026-11-27 (M3 stage 4):** the full plan, with the sessions for set up, change, update,
+erase and recovery, the facts the first unit settles before any participant, and the pass
+criteria, is [`m-7-usability-test-plan.md`](./m-7-usability-test-plan.md). The guides it uses are
+`docs/src/guides/`.

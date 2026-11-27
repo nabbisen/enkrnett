@@ -24,11 +24,14 @@ says exactly what is encrypted and what is not, and a notice for guests that say
 
 ## State
 
-Design baseline accepted on 2026-10-31 (RFC 001 to 017). Milestone M1 is under way: the daemon
-runs the whole management API on OpenWrt (so far on a virtual machine) and against a mock, the
-management UI runs against it in English and Japanese, and both build for the router within their
-size budgets, with tests. **No release exists yet.**
-Nothing is installable on a router. See [ROADMAP.md](./ROADMAP.md).
+Design baseline accepted on 2026-10-31 (RFC 001 to 017). Milestones M1 and M2 are tagged (0.1.0,
+0.2.0, 2026-11-26) and M3 is at its 0.3.0 release candidate (2026-11-27): the daemon and the
+management UI (English and Japanese) run on OpenWrt 25.12 on the test VM, with guest Wi-Fi,
+separation, signed updates installed from the settings screen, images rebuilt from a lock and
+compared, and the operator guides in English (`docs/src/guides/`). **These releases are for
+development and testing, not for operators**: no router has run Enkrnett yet (the owner's Tier 1
+device and the legal basis for Japan are open), no release key exists, and no image is published.
+See [ROADMAP.md](./ROADMAP.md).
 
 ## Quick start
 

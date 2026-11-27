@@ -5,6 +5,38 @@ decisions is in `rfcs/`.
 
 ## Unreleased
 
+## 0.3.0 (release candidate, 2026-11-27)
+
+The wrap of milestone M3, *Installable* (ROADMAP), on top of 0.2.0: signed updates installed from
+the settings screen, every published file rebuilt from a lock and compared, the operator guides
+in English. Not yet tagged: the tag is the owner's authorization. What needs the Tier 1 router and
+the legal basis (the usability test M-7, the install from the vendor firmware, the device checks
+carried from M1) is open in the release notes, `docs/src/releases/0.3.0.md`.
+
+### Milestone M3, stage 4 (2026-11-27)
+
+- The operator guides in English, `docs/src/guides/` (ENK-INST-001 to 004): one install guide per
+  Tier 1 candidate (ELECOM WRC-1167GST2, Buffalo WCR-1166DS) with the label check first, the one
+  file, the vendor's update screen, the light, and the tested-firmware list stated honestly as
+  empty; *Set up*, *Update*, *Erase*, *Recover* (every situation with its steps, the interrupted
+  installation among them); the expert install as a package (ENK-INST-005). Every step that
+  depends on a unit is marked *to be confirmed* and listed for the usability test. The guides are
+  under the word check (`ui/scripts/wordcheck.mjs` reads `docs/src/guides`; the expert page is
+  the one exempt view).
+- The Japanese guides: by the owner's decision of 2026-11-27 a controlled future plan (ROADMAP,
+  *Future plans*), triggered by the first usability test of the English guides; a deviation on
+  ENK-INST-001 for the next amendment RFC.
+- The M-7 usability test plan, `rfcs/handoffs/006-feasibility-measurements/m-7-usability-test-plan.md`:
+  eight sessions with the guides alone (install, set up, change, update, erase from the screen
+  and with the button, the interrupted installation, the words), the eight facts the first unit
+  settles before any participant, the records, the pass criteria for the milestone.
+- The ELECOM WRC-1167GST2 profile's light corrected from `white:power` to `green:power`, as
+  OpenWrt's device tree names it (the identify step would have found no light).
+- The release directory publishes the package for the expert install, named with its
+  architecture and covered by the sums.
+- Version 0.3.0 in the four places; the stored-data fixture of 0.3.0 made at the wrap
+  (ENK-BASE-005); `tests/traceability.py --release 0.3.0` in CI, with the open items noted.
+
 ### Milestone M3, stage 3 (2026-11-27)
 
 - The package lock (ENK-BUILD-007): `openwrt/lock/packages/<profile>.json`, every OpenWrt package

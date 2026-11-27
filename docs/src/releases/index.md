@@ -8,5 +8,6 @@ device checks still open; the device checks carry into M3.
 
 | Release | Milestone | State |
 |---|---|---|
+| [0.3.0](./0.3.0.md) | M3 Installable | Release candidate 2026-11-27; awaits the owner's authorization to tag |
 | [0.2.0](./0.2.0.md) | M2 Guest Wi-Fi | Tagged 2026-11-26 at the commit that carries these notes |
 | [0.1.0](./0.1.0.md) | M1 Skeleton | Tagged 2026-11-26 at the M1 stage 5 commit (`f089392`); the notes were written after it, on `main` |

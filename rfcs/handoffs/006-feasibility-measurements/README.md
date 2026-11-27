@@ -26,6 +26,7 @@ product code.
 | [implementation-handoff.md](./implementation-handoff.md) | Setup, procedure, and data to record, per measurement |
 | [acceptance-qa-checklist.md](./acceptance-qa-checklist.md) | When a report is complete |
 | [report-template.md](./report-template.md) | The form of a report |
+| [m-7-usability-test-plan.md](./m-7-usability-test-plan.md) | M-7 in full: sessions, participants, facts the first unit settles, pass criteria (2026-11-27) |
 
 ## Who does what
 
@@ -38,7 +39,7 @@ product code.
 | M-4 OWE on candidates | Candidate devices; client devices | Development team | Holder of the devices | Blocked: see below |
 | M-8 Separation | Candidate device; two client machines | Development team | Holder of the devices | Blocked: see below |
 | M-3 Complete image | A `constrained` device | Development team | Holder of the devices | Blocked: see below |
-| M-7 Installation by non-experts | Candidate devices; participants | Architect (guide) | Owner | Blocked: see below |
+| M-7 Installation by non-experts | Candidate devices; participants | Architect (guides in `docs/src/guides/`, plan written 2026-11-27) | Owner | Blocked: see below |
 
 ## Hardware at hand
 

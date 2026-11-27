@@ -1,7 +1,7 @@
 # Roadmap
 
 **State.** The M0 design baseline is accepted (RFC 001 to 017, 2026-10-31) and the specification is published. M1 stages 1 to 5 are implemented (2026-10-31 to 2026-11-26): daemon, UI, MIPS build and package, the OpenWrt platform, and the package through `procd` on the x86-64 VM with the RFC 003 and RFC 004 checks passing against the real platform (`docs/src/verification/m1.md`). What M1 still needs is the Tier 1 device in the owner's hands. RFC 006 (measurements) is part-way: M-2, M-5, M-5b, M-6 done; M-3 and M-8 half done; M-1, M-4, M-7 outstanding.
-**Updated.** 2026-11-26
+**Updated.** 2026-11-27
 
 Order of work, not a calendar. Dates are set when milestone M0 ends, because its measurements
 decide how much work the later milestones contain.
@@ -13,7 +13,7 @@ decide how much work the later milestones contain.
 | **M0 Foundations** | — | Decisions, measurements, and the specification baseline | All RFCs listed under M0 are accepted and the specification is published (met 2026-10-31). **Proposed amendment, for the owner:** the outstanding measurements move to the milestone that needs them (M-1 → M1 harness and M3 guides; M-4, M-8 part 2 → M2; M-3 part 2, M-7 → M3), so that M0 does not stay open on hardware that cannot be switched on yet. RFC 006 moves to `done/` when its last report is accepted. |
 | **M1 Skeleton** | 0.1.0 | Daemon and management UI run together on the virtual machine and on the Tier 1 device. A device can be claimed and reset. First task: a browser harness in GitHub Actions (iOS Simulator, Android emulator) that loads the management UI from a private address against a mock daemon (owner decision 2026-10-29). | The tests derived from RFC 003 and RFC 004 pass |
 | **M2 Guest Wi-Fi** | 0.2.0 | The operator configures the guest network. Separation and hardening are in place. The status says what is protected and what is not. | The tests derived from RFC 002 and the OWE and configuration RFCs pass |
-| **M3 Installable** | 0.3.0 | A non-expert installs, sets up, updates, and resets a Tier 1 device with the guides. English and Japanese. | The usability test passes; update and upgrade are tested |
+| **M3 Installable** | 0.3.0 | A non-expert installs, sets up, updates, and resets a Tier 1 device with the guides. English now; Japanese as a future plan (owner, 2026-11-27). | The usability test passes; update and upgrade are tested. Update and upgrade: tested on the VM (2026-11-27); the usability test waits for the router and the legal basis |
 | **M4 Constrained device** | 0.4.0 | An 8 MB / 64 MB device meets the budgets. | Measured on the device; the owner decides on promotion |
 | **First release** | 1.0.0 | Release for operators | Release checklist below |
 
@@ -74,7 +74,26 @@ vendor firmware) and the legal basis (ENK-RF-005); what does not is built first.
 | 1 | The release index and the keys (chapter 11 §1–2): signify-format Ed25519 verification in the daemon, the index format with its sequence, the current and the designated next key in the image (ENK-RLS-005), the check through the platform's downloader over HTTPS, daily and on request, the switch of ENK-UPD-008, the highest accepted sequence on flash (ENK-UPD-009); the release tool (`crates/enkrnett-release`); a signed index served to the VM over HTTPS | Done 2026-11-26 (`docs/src/design/release.md`; `tests/vm/update-check.sh`) |
 | 2 | Installing (chapter 11 §3, ENK-UPD-002 to 007): download to RAM, the checks of ENK-UPD-003 one by one, `sysupgrade` keeping the owner, the key, the settings and the identifier (ENK-UPD-004), the marker and the first boot's verification, health check and report (ENK-UPD-005), the screens of RFC 017 §5.6; on the VM: an image updated to the next through the daemon with settings kept, and a deliberately broken successor | Done 2026-11-26 (`docs/src/design/daemon.md` §6c, `platform.md` §11; `tests/vm/update-install.sh`) |
 | 3 | Reproducible build and the release steps (chapter 11 §4, ENK-BUILD-007 to 012): the package set with versions and hashes in the lock and used by the image build, the double build compared in CI, the image comparison stated, images named per ENK-RLS-002, hashes, the signed index and the image signatures, the `from-image` witness in every image (`docs/src/design/platform.md` §11), the source offer; the stored-data test with the documents of 0.1.0 and 0.2.0 (ENK-BASE-005) | Done 2026-11-27 (`docs/src/design/build.md` §7, `docs/src/contributors/releasing.md`; `openwrt/lock/packages/`, `openwrt/build-image.sh`, `openwrt/release-assemble.sh`; the release key and the project site remain the owner's acts) |
-| 4 | The guides in English and Japanese (ENK-INST-001 to 005: install per Tier 1 device, set up, update, reset, recover; the expert install), the usability test plan for M-7, the 0.3.0 wrap. What needs the device or the legal basis is stated as open | Next |
+| 4 | The guides in English (ENK-INST-001 to 005: install per Tier 1 device, set up, update, erase, recover; the expert install), the usability test plan for M-7, the 0.3.0 wrap. What needs the device or the legal basis is stated as open. **Owner's decision 2026-11-27:** the guides are required in English only now; the Japanese guides are a controlled future plan (table below) | Done 2026-11-27 (`docs/src/guides/`, `rfcs/handoffs/006-feasibility-measurements/m-7-usability-test-plan.md`, `docs/src/releases/0.3.0.md`); 0.3.0 awaits the owner's authorization to tag |
+
+### M3 exit, honestly
+
+Implemented and verified on the test vehicle: update and upgrade mechanics (stages 1 to 3), the
+guides in English. Not met, because they need the Tier 1 router and the legal basis: the
+usability test (M-7), the install from the vendor firmware, the device checks carried from M1.
+0.3.0 is the development release that closes the implementable part; the release notes list the
+rest as open.
+
+## Future plans
+
+Work the owner has decided on but not scheduled. Each row names its trigger and what accepts it,
+so that it is controlled rather than forgotten.
+
+| Plan | Decided | Trigger | Accepted when | Where it is tracked |
+|---|---|---|---|---|
+| The operator guides in Japanese (ENK-INST-001 names every UI language; ENK-UI-011 asks for a native reader's review) | Owner, 2026-11-27: "The guide in English is only required now. One in Japanese should be recorded and controlled as a future plan." | The English guides have been through the usability test (M-7) once, so that the translation follows text non-experts have read | The Japanese guides exist for every English one, with the display forms of chapter 1 §4 and the word check, reviewed by a native reader (ENK-UI-011); the deviation on ENK-INST-001 closed by the amendment RFC | This table; `docs/src/guides/index.md` *Other languages*; the 0.3.0 release notes *Open*; the next amendment RFC |
+| The release key and the project site (RFC 008; RFC 013 open question 2) | Owner, standing | The owner's act on the signing host; the host chosen | A published, signed index a device accepts | `docs/src/contributors/releasing.md` §6; `openwrt/release-keys/README.md` |
+| The Tier 1 device checks (M1 stage 6, M-3 part 2, M-4, M-7, M-8 part 2) and the legal basis for Japan (ENK-RF-005) | Owner, standing | The router in hand and the authority's answer | Chapter 5 §5.1 criteria met; the profile's `verified.on_hardware` true; the owner's promotion | `docs/src/measurements/index.md`; the release notes *Open* |
 
 ## RFC order
 

@@ -2,7 +2,8 @@
 //! `tests/fixtures/stored/<version>/` were written by the daemons of the tagged releases
 //! (`fixtures/stored/README.md`); the test starts today's daemon over a copy of each, as the first
 //! boot of an update does (ENK-UPD-004, 005), and checks that the owner, the settings and the
-//! identifier are there and usable.
+//! identifier are there and usable. The daemon under test reports the next version, so that the
+//! current release's own fixture is read as a predecessor too.
 
 mod common;
 
@@ -13,7 +14,7 @@ use common::{get, login, post, start_on_configured};
 use enkrnett_model::STORAGE_FORMAT;
 use serde_json::Value;
 
-const RELEASES: &[&str] = &["0.1.0", "0.2.0"];
+const RELEASES: &[&str] = &["0.1.0", "0.2.0", "0.3.0"];
 
 fn fixture(version: &str) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -46,7 +47,7 @@ fn the_documents_of_every_earlier_release_are_read_and_served() {
         let device_id = before["device_id"].as_str().unwrap().to_string();
 
         // Today's daemon over the old directory: the first boot after an update (ENK-UPD-005).
-        let ts = start_on_configured(&dir, |c| c.version = "0.3.0".into(), |_| {});
+        let ts = start_on_configured(&dir, |c| c.version = "0.4.0".into(), |_| {});
         let greeting = get(&ts, "", None).json();
         assert_eq!(greeting["state"], "CLAIMED", "{version}: {greeting}");
 
@@ -64,7 +65,7 @@ fn the_documents_of_every_earlier_release_are_read_and_served() {
         assert_eq!(status["settings"]["country"], "JP", "{version}");
         let device = get(&ts, "device", Some(&token)).json();
         assert_eq!(device["device_id"], device_id.as_str(), "{version}");
-        assert_eq!(device["version"]["enkrnett"], "0.3.0", "{version}");
+        assert_eq!(device["version"]["enkrnett"], "0.4.0", "{version}");
 
         // What the old release never wrote defaults: no update check switch, no sequence beyond 0.
         let update = get(&ts, "update", Some(&token)).json();

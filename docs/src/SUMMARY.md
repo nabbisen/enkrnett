@@ -2,6 +2,17 @@
 
 [Introduction](./introduction.md)
 
+# Guides
+
+- [Guides](./guides/index.md)
+  - [Install: ELECOM WRC-1167GST2](./guides/install-elecom-wrc-1167gst2.md)
+  - [Install: Buffalo WCR-1166DS](./guides/install-buffalo-wcr-1166ds.md)
+  - [Set up](./guides/set-up.md)
+  - [Update](./guides/update.md)
+  - [Erase](./guides/erase.md)
+  - [Recover](./guides/recover.md)
+  - [Expert install](./guides/expert-install.md)
+
 # Specification
 
 - [Specification](./specification/index.md)
@@ -31,6 +42,7 @@
 # Releases
 
 - [Releases](./releases/index.md)
+  - [0.3.0](./releases/0.3.0.md)
   - [0.2.0](./releases/0.2.0.md)
   - [0.1.0](./releases/0.1.0.md)
 

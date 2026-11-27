@@ -55,8 +55,16 @@ for r in $REPORTS; do
   cp "$r" "$OUT/"
 done
 
+echo "## the package for the expert install (ENK-INST-005)"
+# The .apk the images were built with, named with its architecture; verified by the sums below.
+for apk in "$ROOT"/openwrt/out/enkrnett-"$VERSION"-r*.apk; do
+  [ -f "$apk" ] || continue
+  arch=$(python3 -c "import json,glob,sys; print(next(json.load(open(f))['package_arch'] for f in glob.glob('$ROOT/openwrt/profiles/*/profile.json') if json.load(open(f))['target']!='x86/64'))")
+  cp "$apk" "$OUT/$(basename "$apk" .apk)-$arch.apk"; echo "  $(basename "$apk" .apk)-$arch.apk"
+done
+
 echo "## hashes"
-( cd "$OUT" && sha256sum ./*.bin | sed 's#\./##' > SHA256SUMS && sha512sum ./*.bin | sed 's#\./##' > SHA512SUMS )
+( cd "$OUT" && sha256sum ./*.bin ./*.apk 2>/dev/null | sed 's#\./##' > SHA256SUMS && sha512sum ./*.bin ./*.apk 2>/dev/null | sed 's#\./##' > SHA512SUMS )
 cat "$OUT/SHA256SUMS" | sed 's/^/  /'
 
 echo "## the lock (ENK-BUILD-007)"

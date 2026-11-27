@@ -1,0 +1,24 @@
+{
+  "format": 1,
+  "device_id": "1381a27b4497e946",
+  "owner": {
+    "password_hash": "$argon2id$v=19$m=8192,t=3,p=1$gfbHe+zGKiXDnHCDOY6sqw$roSOIXjl1nrTdBO5h57jugwRhzFDEajSYMNDM6X1Kdo",
+    "management_name": "Enkrnett-3F2A",
+    "management_key": "essms-vme76-dqvcj-9dj6u",
+    "settings": {
+      "version": 2,
+      "country": "JP",
+      "guest": {
+        "name": "Cafe Example",
+        "mode": "encrypted_only",
+        "enabled": true
+      },
+      "management": {
+        "name": "Enkrnett-3F2A"
+      }
+    }
+  },
+  "index_sequence": 0,
+  "update_checks": null,
+  "last_auto_check": null
+}

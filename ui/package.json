@@ -1,7 +1,7 @@
 {
   "name": "enkrnett-ui",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "The Enkrnett management UI (specification chapter 10): Svelte 5 + TypeScript, served by enkrnettd.",
   "type": "module",
   "license": "Apache-2.0",

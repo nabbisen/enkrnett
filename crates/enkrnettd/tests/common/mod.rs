@@ -48,6 +48,8 @@ pub fn config_for_tests(dir: &Path) -> Config {
         hosts: vec!["localhost".into()],
         request_timeout: Duration::from_millis(800),
         response_timeout: Duration::from_secs(5),
+        // A fixed version the contract tests reason about (the install tests offer 0.3.0 over
+        // it); it is not the workspace's version on purpose.
         version: "0.2.0".into(),
         languages: vec!["en".into(), "ja".into()],
         // Small argon2 parameters keep the tests fast; the device uses the profile's.

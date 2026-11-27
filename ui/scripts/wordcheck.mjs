@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // The word check (ENK-WORD-001, ENK-UI-008; RFC 017 §8): the build fails when a catalogue string
-// contains a word that never appears in operator-facing text. `OWE` and `Enhanced Open` are
+// or a paragraph of an operator guide (docs/src/guides) contains a word that never appears in
+// operator-facing text. `OWE` and `Enhanced Open` are
 // allowed once, in the guest notice entry only.
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -53,13 +54,30 @@ export function check(catalogue, lang) {
   return offences;
 }
 
+/** The operator guides (docs/src/guides/*.md) are operator-facing text too (chapter 1 §4); the
+ * expert install page is the one exempt view, clearly marked as such. Each guide is checked
+ * paragraph by paragraph, as English, with the notice-only words forbidden as well. */
+export function checkGuides(dir = join(here, '..', '..', 'docs', 'src', 'guides')) {
+  const out = [];
+  let files = [];
+  try { files = readdirSync(dir).filter((f) => f.endsWith('.md') && f !== 'expert-install.md').sort(); } catch { return out; }
+  for (const f of files) {
+    const paragraphs = readFileSync(join(dir, f), 'utf8').split(/\n\s*\n/);
+    paragraphs.forEach((text, i) => {
+      const hits = englishHits(text, FORBIDDEN_EN).concat(englishHits(text, FORBIDDEN_EN_NOTICE_ONLY));
+      for (const word of hits) out.push({ lang: 'guide', key: `${f} ¶${i + 1}`, word });
+    });
+  }
+  return out;
+}
+
 export function checkAll() {
   const out = [];
   for (const lang of ['en', 'ja']) {
     const catalogue = JSON.parse(readFileSync(join(here, '..', 'src', 'lib', 'i18n', `${lang}.json`), 'utf8'));
     for (const o of check(catalogue, lang)) out.push({ lang, ...o });
   }
-  return out;
+  return out.concat(checkGuides());
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
@@ -68,5 +86,5 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     for (const o of offences) console.error(`wordcheck: ${o.lang} "${o.key}" contains "${o.word}"`);
     process.exit(1);
   }
-  console.log('wordcheck: both catalogues clean');
+  console.log('wordcheck: both catalogues and the guides clean');
 }

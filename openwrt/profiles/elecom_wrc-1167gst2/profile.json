@@ -20,7 +20,7 @@
   "update": { "min_free_kib": 32768, "install_seconds": 180 },
   "uplink_port": "wan",
   "reset_button": "reset",
-  "light": { "led": "white:power" },
+  "light": { "led": "green:power" },
   "radios": [
     { "band": "2g", "chip": "MT7615D", "interface_limit": 16 },
     { "band": "5g", "chip": "MT7615D", "interface_limit": 16 }
