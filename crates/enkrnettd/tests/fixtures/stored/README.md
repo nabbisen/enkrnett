@@ -8,7 +8,7 @@ not against hand-written ones.
 |---|---|---|
 | `0.1.0/` | tag `0.1.0` (`6d87e0f`, M1 stage 5 commit `f089392`) | The tag's daemon, `enkrnettd --mock --act-delay-ms 0`, walked by the tag's own `crates/enkrnettd/examples/claim-flow.sh` with the password `correct horse battery staple`: the claim (guest *Cafe Example*, `open_to_all`, JP), then the settings change to `encrypted_only`; the state directory copied after the change settled |
 | `0.2.0/` | tag `0.2.0` (`d088d40`, commit `88b5fc0`) | The same, with the tag's daemon and script |
-| `0.3.0/` | the 0.3.0 release candidate (M3 stage 4 commit, 2026-11-27) | The same, with that commit's daemon and script. Made at the wrap, before the tag: to be remade if the store changes before 0.3.0 is tagged |
+| `0.3.0/` | tag `0.3.0` (commit `59b47cc`, 2026-11-27) | The same, with that commit's daemon and script; made at the wrap commit, which is the tagged one |
 
 Both hold one file, `state.json`, format 1. The daemon of the tag wrote no other file: the pending
 marker is removed when the change settles, and the update marker arrived with M3. Nothing in a

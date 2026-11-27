@@ -5,13 +5,14 @@ decisions is in `rfcs/`.
 
 ## Unreleased
 
-## 0.3.0 (release candidate, 2026-11-27)
+## 0.3.0 (2026-11-27)
 
 The wrap of milestone M3, *Installable* (ROADMAP), on top of 0.2.0: signed updates installed from
 the settings screen, every published file rebuilt from a lock and compared, the operator guides
-in English. Not yet tagged: the tag is the owner's authorization. What needs the Tier 1 router and
-the legal basis (the usability test M-7, the install from the vendor firmware, the device checks
-carried from M1) is open in the release notes, `docs/src/releases/0.3.0.md`.
+in English. Tagged 2026-11-27 on the owner's authorization at the M3 stage 4 commit (`59b47cc`).
+What needs the Tier 1 router and the legal basis (the usability test M-7, the install from the
+vendor firmware, the device checks carried from M1) is open in the release notes,
+`docs/src/releases/0.3.0.md`.
 
 ### Milestone M3, stage 4 (2026-11-27)
 

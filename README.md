@@ -25,7 +25,7 @@ says exactly what is encrypted and what is not, and a notice for guests that say
 ## State
 
 Design baseline accepted on 2026-10-31 (RFC 001 to 017). Milestones M1 and M2 are tagged (0.1.0,
-0.2.0, 2026-11-26) and M3 is at its 0.3.0 release candidate (2026-11-27): the daemon and the
+0.2.0, 2026-11-26) and M3 (0.3.0, 2026-11-27): the daemon and the
 management UI (English and Japanese) run on OpenWrt 25.12 on the test VM, with guest Wi-Fi,
 separation, signed updates installed from the settings screen, images rebuilt from a lock and
 compared, and the operator guides in English (`docs/src/guides/`). **These releases are for
